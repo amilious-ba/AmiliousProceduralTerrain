@@ -1,0 +1,17 @@
+{
+    "name": "Amilious.Saving",
+    "rootNamespace": "",
+    "references": [
+        "GUID:1ec970ca9884e4b4f88d9aa10fca554f",
+        "GUID:de78143c5aa0e1043a8d938d28a98cc7"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

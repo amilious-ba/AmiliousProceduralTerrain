@@ -1,0 +1,106 @@
+using Amilious.Core.Serializable;
+using UnityEngine;
+
+namespace Amilious.Core.Extensions {
+    
+    public enum AxisPos {Min, Zero, Max}
+    
+    /// <summary>
+    /// This class is used to add extensions to the Vector3 class.
+    /// </summary>
+    public static class Vector3Extension {
+        
+        /// <summary>
+        /// This method is used to convert a Vector3 into a SerializableVector3.
+        /// </summary>
+        /// <param name="vector3">The Vector3 that you want to convert.</param>
+        /// <returns>A Serializable version of the given Vector3.</returns>
+        public static SerializableVector3 ToSerializable(this Vector3 vector3) {
+            return new SerializableVector3(vector3);
+        }
+        
+        /// <summary>
+        /// This method is used to check if a Vector3 contains all integers.
+        /// </summary>
+        /// <param name="vector3">The Vector3 that you want to check.</param>
+        /// <returns></returns>
+        public static bool IsIntegers(this Vector3 vector3) {
+            return vector3.x.IsInteger() && vector3.y.IsInteger() && vector3.z.IsInteger();
+        }
+
+        /// <summary>
+        /// This method is used to swap the x and y values of a Vector3.
+        /// </summary>
+        /// <param name="vector3">The Vector3 that you want to swap the values for.</param>
+        /// <param name="swap">If true the values will be swapped.</param>
+        /// <returns>The resulting Vector3.</returns>
+        public static Vector3 SwapXY(this Vector3 vector3, bool swap = true) {
+            return !swap ? new Vector3(vector3.x, vector3.y, vector3.z) : 
+                new Vector3(vector3.y, vector3.x, vector3.z);
+        }
+        
+        /// <summary>
+        /// This method is used to swap the x and z values of a Vector3.
+        /// </summary>
+        /// <param name="vector3">The Vector3 that you want to swap the values for.</param>
+        /// <param name="swap">If true the values will be swapped.</param>
+        /// <returns>The resulting Vector3.</returns>
+        public static Vector3 SwapXZ(this Vector3 vector3, bool swap = true) {
+            return !swap ? new Vector3(vector3.x, vector3.y, vector3.z) : 
+                new Vector3(vector3.z, vector3.y, vector3.x);
+        }
+        
+        /// <summary>
+        /// This method is used to swap the y and z values of a Vector3.
+        /// </summary>
+        /// <param name="vector3">The Vector3 that you want to swap the values for.</param>
+        /// <param name="swap">If true the values will be swapped.</param>
+        /// <returns>The resulting Vector3.</returns>
+        public static Vector3 SwapYZ(this Vector3 vector3, bool swap = true) {
+            return !swap ? new Vector3(vector3.x, vector3.y, vector3.z) : 
+                new Vector3(vector3.x, vector3.z, vector3.y);
+        }
+        
+        /// <summary>
+        /// This method is used to position an object withing another object.
+        /// </summary>
+        /// <param name="parentSize">The size of the parent object.</param>
+        /// <param name="size">The size of the child object.</param>
+        /// <param name="x">The x axis position type.</param>
+        /// <param name="y">The y axis position type.</param>
+        /// <param name="z">The z axis position type.</param>
+        /// <param name="offset">An optional offset that can be applied after calculating
+        /// the position.</param>
+        /// <returns>The position of the child object.</returns>
+        public static Vector3 PositionWithin(this Vector3 parentSize, Vector3 size, 
+            AxisPos x, AxisPos y, AxisPos z, Vector3? offset=null) {
+            var result = Vector3.zero;
+            var parentHalf = parentSize / 2;
+            var halfSize = size / 2f;
+            //calculate the x
+            result.x = x switch {
+                AxisPos.Min => -parentHalf.x+halfSize.x,
+                AxisPos.Zero => 0,
+                AxisPos.Max => parentHalf.x-halfSize.x,
+                _ => 0
+            };
+            //calculate the y
+            result.y = y switch {
+                AxisPos.Min => -parentHalf.y+halfSize.y,
+                AxisPos.Zero => 0,
+                AxisPos.Max => parentHalf.y-halfSize.y,
+                _ => 0
+            };
+            //calculate the z
+            result.z = z switch {
+                AxisPos.Min => -parentHalf.z+halfSize.z,
+                AxisPos.Zero => 0,
+                AxisPos.Max => parentHalf.z-halfSize.z,
+                _ => 0
+            };
+            if(offset.HasValue) result += offset.Value;
+            return result;
+        }
+        
+    }
+}

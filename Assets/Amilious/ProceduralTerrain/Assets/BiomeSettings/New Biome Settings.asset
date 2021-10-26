@@ -1,0 +1,119 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 514e828ce62745d78dec0a581a1a9ff5, type: 3}
+  m_Name: New Biome Settings
+  m_EditorClassIdentifier: 
+  serializationData:
+    SerializedFormat: 2
+    SerializedBytes: 
+    ReferencedUnityObjects: []
+    SerializedBytesString: 
+    Prefab: {fileID: 0}
+    PrefabModificationsReferencedUnityObjects: []
+    PrefabModifications: []
+    SerializationNodes:
+    - Name: biomeTable
+      Entry: 7
+      Data: 0|System.Int32[,], mscorlib
+    - Name: 
+      Entry: 12
+      Data: 8
+    - Name: ranks
+      Entry: 1
+      Data: 2|4
+    - Name: 
+      Entry: 3
+      Data: -1498540875
+    - Name: 
+      Entry: 3
+      Data: -1498540875
+    - Name: 
+      Entry: 3
+      Data: 94018922
+    - Name: 
+      Entry: 3
+      Data: 94018922
+    - Name: 
+      Entry: 3
+      Data: -934593881
+    - Name: 
+      Entry: 3
+      Data: -934593881
+    - Name: 
+      Entry: 3
+      Data: 805492430
+    - Name: 
+      Entry: 3
+      Data: 805492430
+    - Name: 
+      Entry: 13
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+  seed: seedless
+  size: 100
+  pixelMultiplier: 3
+  offset: {x: 0, y: 0}
+  previewType: 4
+  minHeatColor: {r: 1, g: 1, b: 1, a: 1}
+  maxHeatColor: {r: 1, g: 0, b: 0, a: 1}
+  minMoistureColor: {r: 1, g: 1, b: 1, a: 1}
+  maxMoistureColor: {r: 0, g: 0, b: 1, a: 1}
+  heatMapSettings: {fileID: 11400000, guid: a4cb21b497075d3498e1f1155ac076d0, type: 2}
+  moistureMapSettings: {fileID: 11400000, guid: 9d25ea652f8d7fc4c9ddabfd7d0cb63b, type: 2}
+  useOceanMap: 1
+  oceanMapSettings: {fileID: 11400000, guid: 9e22bd28666791e468f5c059cc1bff98, type: 2}
+  oceanHeight: -0.02
+  useBiomeBlending: 1
+  blendFrequency: 0.04
+  blendRadiusPadding: 32
+  oceanBiome:
+    validBiome: 0
+    name: Ocean
+    biomeId: 0
+    biomeMapColor: {r: 0, g: 0.112401485, b: 1, a: 1}
+    noiseSettings: {fileID: 11400000, guid: 21710f253a12fd84a9ae29dfff37b039, type: 2}
+    minHeight: -50
+    maxHeight: 3
+  biomeInfo:
+  - validBiome: 1
+    name: Grass
+    biomeId: -1498540875
+    biomeMapColor: {r: 0, g: 1, b: 0.20553732, a: 1}
+    noiseSettings: {fileID: 11400000, guid: 9e22bd28666791e468f5c059cc1bff98, type: 2}
+    minHeight: 0
+    maxHeight: 200
+  - validBiome: 1
+    name: Forest
+    biomeId: 805492430
+    biomeMapColor: {r: 0.9716981, g: 0.65655977, b: 0.05958529, a: 1}
+    noiseSettings: {fileID: 11400000, guid: 9e22bd28666791e468f5c059cc1bff98, type: 2}
+    minHeight: 0
+    maxHeight: 250
+  - validBiome: 1
+    name: Mountains
+    biomeId: -934593881
+    biomeMapColor: {r: 0.2924528, g: 0.23037556, b: 0.23037556, a: 1}
+    noiseSettings: {fileID: 11400000, guid: 9e22bd28666791e468f5c059cc1bff98, type: 2}
+    minHeight: 0
+    maxHeight: 100
+  - validBiome: 1
+    name: Desert
+    biomeId: 94018922
+    biomeMapColor: {r: 0.8490566, g: 0.6630157, b: 0.44455323, a: 1}
+    noiseSettings: {fileID: 11400000, guid: 9e22bd28666791e468f5c059cc1bff98, type: 2}
+    minHeight: 0
+    maxHeight: 150
+  testHeat: -1
+  testMoisture: -1
+  testResult: '0: Ocean'

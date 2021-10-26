@@ -1,0 +1,17 @@
+{
+    "name": "Amilious.ProceduralTerrain",
+    "rootNamespace": "",
+    "references": [
+        "GUID:de78143c5aa0e1043a8d938d28a98cc7",
+        "GUID:f87481c6867b5c74891b1ccc1c68fed5"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

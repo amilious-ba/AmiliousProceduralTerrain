@@ -1,0 +1,60 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c6daead1e7f24dc6bbba598cd0c0d32f, type: 3}
+  m_Name: New Noise Settings
+  m_EditorClassIdentifier: 
+  seed: seedless
+  size: 100
+  pixelMultiplier: 2
+  offset: {x: 0, y: 0}
+  previewType: 0
+  lowColor: {r: 1, g: 1, b: 1, a: 1}
+  highColor: {r: 0, g: 0, b: 0, a: 1}
+  colorMap:
+    colorMap: []
+  crossSectionDepth: 32
+  noiseType: 0
+  frequency: 0.07
+  useNoiseCurve: 1
+  noiseCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: -1
+      value: -1
+      inSlope: 0
+      outSlope: 1
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 1
+      value: 1
+      inSlope: 1
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  fractalType: 1
+  fractalOctaves: 5
+  fractalLacunarity: 2
+  fractalGain: 0.5
+  waitedStrength: 1
+  pingPongStrength: 2
+  distanceFunction: 0
+  returnType: 1
+  cellularJitter: 1

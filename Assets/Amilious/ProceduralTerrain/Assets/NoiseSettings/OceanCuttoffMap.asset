@@ -1,0 +1,76 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c6daead1e7f24dc6bbba598cd0c0d32f, type: 3}
+  m_Name: OceanCuttoffMap
+  m_EditorClassIdentifier: 
+  seed: seedless2
+  size: 200
+  pixelMultiplier: 2
+  offset: {x: 0, y: 0}
+  noisePreviewType: 1
+  lowColor: {r: 1, g: 1, b: 1, a: 1}
+  highColor: {r: 1, g: 0, b: 0, a: 1}
+  colorMap:
+    colorMap:
+    - lowestHeight: -0.5
+      color: {r: 0, g: 0.17929034, b: 0.8018868, a: 1}
+    - lowestHeight: -0.1
+      color: {r: 0, g: 0.36185417, b: 0.8, a: 1}
+    - lowestHeight: -0.02
+      color: {r: 0.6037736, g: 0.53773886, b: 0.44143826, a: 1}
+    - lowestHeight: 0.1
+      color: {r: 0.16745283, g: 0.6698113, b: 0.4344612, a: 1}
+    - lowestHeight: 0.43
+      color: {r: 0.14195444, g: 0.5471698, b: 0.3572251, a: 1}
+    - lowestHeight: 0.6
+      color: {r: 0.3584906, g: 0.33716935, b: 0.3094518, a: 1}
+    - lowestHeight: 0.8
+      color: {r: 0.2830189, g: 0.27912515, b: 0.27367392, a: 1}
+    - lowestHeight: 1
+      color: {r: 1, g: 1, b: 1, a: 1}
+  crossSectionDepth: 2
+  noiseType: 5
+  frequency: 0.0006
+  useNoiseCurve: 1
+  noiseCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: -1
+      value: -1
+      inSlope: 0
+      outSlope: 1
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 1
+      value: 1
+      inSlope: 1
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  fractalType: 1
+  fractalOctaves: 3
+  fractalLacunarity: 3
+  fractalGain: 0.5
+  waitedStrength: 0
+  pingPongStrength: 0
+  distanceFunction: 0
+  returnType: 1
+  cellularJitter: 1
