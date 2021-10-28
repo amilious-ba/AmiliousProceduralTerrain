@@ -1,9 +1,9 @@
 using System;
+using UnityEngine;
 using System.Collections.Generic;
-using Amilious.ProceduralTerrain.Biomes.Blending;
 using Amilious.ProceduralTerrain.Map;
 using Amilious.ProceduralTerrain.Noise;
-using UnityEngine;
+using Amilious.ProceduralTerrain.Biomes.Blending;
 
 namespace Amilious.ProceduralTerrain.Biomes {
     
@@ -18,7 +18,7 @@ namespace Amilious.ProceduralTerrain.Biomes {
         public int HashedSeed { get;}
 
         public BiomeMap(int hashedSeed, int size, Vector2 position, BiomeSettings settings, 
-            bool isPositionCentered = true): base(size,position, isPositionCentered) {
+            bool isPositionCentered = true) : base(size,position, isPositionCentered) {
             //set the values
             BiomeSettings = settings;
             HashedSeed = hashedSeed;
@@ -64,9 +64,8 @@ namespace Amilious.ProceduralTerrain.Biomes {
         /// This method is used to generate a <see cref="BiomeMap"/> with biome blending.
         /// </summary>
         private void GenerateBlendedMap() {
-            var b = new BiomeBlender(BiomeSettings.BlendFrequency,BiomeSettings.BlendRadiusPadding,Size);
             //generate the blend weights
-            _weights = b.GetChunkBiomeWeights(HashedSeed, Position, BiomeSettings);
+            _weights = BiomeSettings.BlendChunk(Size,HashedSeed,Position);
             //set the biome to the greatest weight
             foreach(var key in this) {
                 var currentBiome = 0;

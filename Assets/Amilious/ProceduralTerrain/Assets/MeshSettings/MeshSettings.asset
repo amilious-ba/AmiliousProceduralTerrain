@@ -14,8 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   meshScale: 1
   useFlatShading: 0
-  standardChunkSize: 96
-  flatShadedChunkSize: 72
+  chunkBaseSize: 64
+  regionSize: 8
   material: {fileID: 2100000, guid: f605b618f9b22b94e82de92114f88b75, type: 2}
   chunkLevelsOfDetail:
   - lod: 0

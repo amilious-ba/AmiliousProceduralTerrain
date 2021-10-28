@@ -16,6 +16,7 @@ namespace Amilious.ProceduralTerrain.Biomes.Blending {
         private readonly int _chunkSize;
         private readonly float _blendRadiusSq;
         private readonly ChunkPointGatherer _gatherer;
+        private readonly bool _useComputeShader;
         
         /// <summary>
         /// This constructor is used to create a new biome blender.
@@ -23,13 +24,13 @@ namespace Amilious.ProceduralTerrain.Biomes.Blending {
         /// <param name="samplingFrequency"></param>
         /// <param name="blendRadiusPadding"></param>
         /// <param name="chunkSize"></param>
-        public BiomeBlender(float samplingFrequency, float blendRadiusPadding, int chunkSize) {
+        public BiomeBlender(float samplingFrequency, float blendRadiusPadding, int chunkSize, bool useComputeShader) {
             _chunkSize = chunkSize;
             _halfChunkWidth = chunkSize / 2f;
             var blendRadius = blendRadiusPadding + GetInternalMinBlendRadiusForFrequency(samplingFrequency);
             _blendRadiusSq = blendRadius * blendRadius;
             _gatherer = new ChunkPointGatherer(samplingFrequency, blendRadius, chunkSize);
-            
+            _useComputeShader = useComputeShader;
             var blendRadiusBoundArrayCenter = (int)Mathf.Ceil(blendRadius) - 1;
             var blendRadiusBound = new float[blendRadiusBoundArrayCenter * 2 + 1];
             for (var i = 0; i < blendRadiusBound.Length; i++) {
@@ -56,18 +57,28 @@ namespace Amilious.ProceduralTerrain.Biomes.Blending {
             //does not correctly apply the position offset
             position.y *= -1;
             // Get the list of data points in range.
+            
+            //TODO: do this in compute shader
             var points = positionIsCenter? 
                 _gatherer.GetPointsFromChunkCenter(seed, position):
                     _gatherer.GetPointsFromChunkBase(seed,position);
+
             
             // Evaluate and aggregate all biomes to be blended in this chunk.
-            var weightMap = new Dictionary<int, float[,]>(); 
-            foreach(var point in points) {
-                // Get the biome for this data point from the callback.
-                var biome = evaluator.GetBiomeAt(point.X, point.Z, seed);
-                //add the biome if it does not exist
-                if(!weightMap.ContainsKey(biome))weightMap.Add(biome,new float[_chunkSize,_chunkSize]);
-                point.PointData = biome;
+            var weightMap = new Dictionary<int, float[,]>();
+            if(_useComputeShader) {
+                var biomes = evaluator.GetBiomesFromComputeShader(points, seed);
+                foreach(var biome in biomes){
+                    weightMap.Add(biome, new float[_chunkSize, _chunkSize]);
+                }
+            } else {
+                foreach(var point in points) {
+                    // Get the biome for this data point from the callback.
+                    var biome = evaluator.GetBiomeAt(point.X, point.Z, seed);
+                    //add the biome if it does not exist
+                    if(!weightMap.ContainsKey(biome)) weightMap.Add(biome, new float[_chunkSize, _chunkSize]);
+                    point.PointData = biome;
+                }
             }
 
             // If there is only one biome in range here, we can skip the actual blending step.

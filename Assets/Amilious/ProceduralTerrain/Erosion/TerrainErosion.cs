@@ -1,8 +1,6 @@
 using System.Collections.Generic;
-using Amilious.ProceduralTerrain.Map;
 using Amilious.ProceduralTerrain.Noise;
 using Amilious.Random;
-using UnityEditor.SceneManagement;
 using UnityEngine;
 
 namespace Amilious.ProceduralTerrain.Erosion {

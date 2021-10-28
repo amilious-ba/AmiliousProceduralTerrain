@@ -60,55 +60,55 @@ namespace Amilious.ProceduralTerrain.Noise {
 
         public enum NoiseType 
         { 
-            OpenSimplex2,
-            OpenSimplex2S,
-            Cellular,
-            Perlin,
-            ValueCubic,
-            Value 
+            OpenSimplex2 = 0,
+            OpenSimplex2S = 1,
+            Cellular = 2,
+            Perlin = 3,
+            ValueCubic = 4,
+            Value = 5 
         };
 
         public enum RotationType3D 
         {
-            None, 
-            ImproveXYPlanes, 
-            ImproveXZPlanes 
+            None = 0, 
+            ImproveXYPlanes = 1, 
+            ImproveXZPlanes = 2
         };
     
         public enum FractalType 
         {
-            None, 
-            FBm, 
-            Ridged, 
-            PingPong, 
-            DomainWarpProgressive, 
-            DomainWarpIndependent 
+            None = 0, 
+            FBm = 1, 
+            Ridged = 2, 
+            PingPong = 3, 
+            DomainWarpProgressive = 4, 
+            DomainWarpIndependent = 5 
         };
 
         public enum CellularDistanceFunction 
         {
-            Euclidean, 
-            EuclideanSq, 
-            Manhattan, 
-            Hybrid 
+            Euclidean = 0, 
+            EuclideanSq = 1, 
+            Manhattan = 2, 
+            Hybrid =3 
         };
     
         public enum CellularReturnType 
         {
-            CellValue, 
-            Distance, 
-            Distance2, 
-            Distance2Add, 
-            Distance2Sub, 
-            Distance2Mul, 
-            Distance2Div 
+            CellValue = 0, 
+            Distance = 1, 
+            Distance2 = 2, 
+            Distance2Add = 3, 
+            Distance2Sub = 4, 
+            Distance2Mul = 5, 
+            Distance2Div = 6 
         };
 
         public enum DomainWarpType 
         { 
-            OpenSimplex2, 
-            OpenSimplex2Reduced, 
-            BasicGrid 
+            OpenSimplex2 = 0, 
+            OpenSimplex2Reduced = 1, 
+            BasicGrid = 2
         };
 
         private enum TransformType3D 

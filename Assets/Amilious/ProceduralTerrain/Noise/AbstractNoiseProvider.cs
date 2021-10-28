@@ -33,9 +33,9 @@ namespace Amilious.ProceduralTerrain.Noise {
         /// a value between one and zero.</returns>
         public abstract float NoiseAtPoint(float x, float z, int hashedSeed);
 
-        public abstract ColorMap PreviewColors {
-            get;
-        }
+        public abstract ColorMap PreviewColors { get; }
+
+        public abstract void SetComputeShaderValues(ComputeShader computeShader, char prefix, int seed);
 
     }
 }

@@ -25,6 +25,8 @@ namespace Amilious.ProceduralTerrain.Map {
 
         [SerializeField] private MapType mapType = MapType.Pregenerated;
         [SerializeField] private bool enableSavingAndLoading = false;
+        [SerializeField] private int chunkPoolSize = 100;
+        [SerializeField] private bool generateChunksAtStart;
         [SerializeField, Tooltip("This is the distance the player needs to move before the chunk will update.")]
         private float chunkUpdateThreshold = 25f;
         [SerializeField] private float colliderGenerationThreshold = 5;
@@ -37,13 +39,14 @@ namespace Amilious.ProceduralTerrain.Map {
 
         private float _sqrChunkUpdateThreshold;
         private Vector2 _viewerPosition;
-        private Vector2 _viewerChunk;
+        private Vector2Int _viewerChunk;
         private Vector2 _oldViewerPosition;
         private float? _sqrColliderGenerationThreshold = null;
         private int? _hashedSeed = null;
-        private readonly ConcurrentDictionary<Vector2, MapChunk> _mapChunks = 
-            new ConcurrentDictionary<Vector2, MapChunk>();
-        private readonly List<MapChunk> _visibleMapChunks = new List<MapChunk>();
+        private ChunkPool _chunkPool;
+        private readonly ConcurrentDictionary<Vector2Int, Chunk> _mapChunks = 
+            new ConcurrentDictionary<Vector2Int, Chunk>();
+        private readonly List<Chunk> _visibleMapChunks = new List<Chunk>();
         
         public bool ApplyHeight { get => applyHeight; }
         
@@ -68,6 +71,8 @@ namespace Amilious.ProceduralTerrain.Map {
         
         public MapType MapType { get => mapType; }
         
+        public bool SaveEnabled { get => enableSavingAndLoading; }
+        
         public Transform Viewer { get => viewer; }
         
         public string Seed { get => seed; }
@@ -77,13 +82,14 @@ namespace Amilious.ProceduralTerrain.Map {
         /// </summary>
         /// <param name="coord">Returns the chunk if it is loaded, otherwise
         /// returns null.</param>
-        public MapChunk this[Vector2 coord] {
+        public Chunk this[Vector2Int coord] {
             get {
                 return _mapChunks.TryGetValue(coord, out var chunk) ? chunk : null;
             }
         }
 
         private void Start() {
+            _chunkPool = new ChunkPool(this, chunkPoolSize, generateChunksAtStart);
             //we use a squared threshold because it is cheaper to calculate a squared
             //distance than a normal distance.
             _sqrChunkUpdateThreshold = chunkUpdateThreshold * chunkUpdateThreshold;
@@ -96,7 +102,7 @@ namespace Amilious.ProceduralTerrain.Map {
             _viewerPosition = new Vector2(viewer.position.x, viewer.position.z);
             var currentChunkX = Mathf.RoundToInt(_viewerPosition.x / meshSettings.MeshWorldSize);
             var currentChunkY = Mathf.RoundToInt(_viewerPosition.y / meshSettings.MeshWorldSize);
-            _viewerChunk = new Vector2(currentChunkX, currentChunkY);
+            _viewerChunk = new Vector2Int(currentChunkX, currentChunkY);
             
             //check for collision mesh update
             if(_viewerPosition != _oldViewerPosition) {
@@ -120,23 +126,32 @@ namespace Amilious.ProceduralTerrain.Map {
             var updated = new HashSet<Vector2>();
             for(int i = _visibleMapChunks.Count - 1; i >= 0; i--) {
                 updated.Add(_visibleMapChunks[i].Coordinate);
-                _visibleMapChunks[i].UpdateMapChunk();
+                _visibleMapChunks[i].UpdateChunk();
             }
             
             //update non-visible or generated chunks that are in range but not visible
             var chunks = meshSettings.ChunksVisibleInViewDistance;
             for(var xOff = - chunks; xOff <= chunks; xOff++)
             for(var yOff = -chunks; yOff <= chunks; yOff++) {
-                var chunkCoord = new Vector2(_viewerChunk.x + xOff, _viewerChunk.y + yOff);
+                var chunkCoord = new Vector2Int(_viewerChunk.x + xOff, _viewerChunk.y + yOff);
                 if(updated.Contains(chunkCoord)) continue;
                 if(_mapChunks.TryGetValue(chunkCoord, out var chunk)) {
-                    chunk.UpdateMapChunk(); continue;
+                    chunk.UpdateChunk(); continue;
                 }
-                var newChunk = new MapChunk(this,chunkCoord);
+                //var newChunk = new MapChunk(this,chunkCoord);
+
+                //new system
+                var newChunk = _chunkPool.GetAvailableChunk().Setup(chunkCoord);
                 _mapChunks.TryAdd(chunkCoord, newChunk);
                 newChunk.OnVisibilityChanged += OnMapChunkVisibilityChanged;
-                newChunk.Load();
+                //newChunk.Load();
             }
+        }
+
+        public bool ReleaseChunkReference(Vector2Int chunkCoord) {
+            var result = _mapChunks.TryRemove(chunkCoord, out var chunk);
+            _visibleMapChunks.Remove(chunk);
+            return result;
         }
 
         /// <summary>
@@ -144,7 +159,7 @@ namespace Amilious.ProceduralTerrain.Map {
         /// </summary>
         /// <param name="chunk">The chunk that changed.</param>
         /// <param name="isVisible">True if the chunk is visible, otherwise false.</param>
-        private void OnMapChunkVisibilityChanged(MapChunk chunk, bool isVisible) {
+        private void OnMapChunkVisibilityChanged(Chunk chunk, bool isVisible) {
             if(isVisible) _visibleMapChunks.Add(chunk);
             else _visibleMapChunks.Remove(chunk);
         }

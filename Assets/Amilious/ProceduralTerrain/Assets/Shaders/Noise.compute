@@ -1,0 +1,188 @@
+#include "Assets/Amilious/ProceduralTerrain/Assets/Resources/FastNoiseLite.hlsl"
+#pragma kernel CSMain
+#pragma kernel GetPointBiomes
+
+RWTexture2D<float> noise_texture;
+int resolution;
+
+int seed;
+float frequency;
+int noiseType;
+int rotationType;
+int fractalType;
+int octaves;
+float lacunarity;
+float gain;
+float weightedStrength;
+float pingPongStrength;
+int cellularDistanceFunction;
+int cellularReturnType;
+float cellularJitter;
+int domainWarpType;
+float domainWarpAmplitude;
+
+[numthreads(8,8,1)]
+void CSMain (uint3 id : SV_DispatchThreadID) {
+    int istate[8];
+    float fstate[7];
+    istate[FNL_SEED_IDX] = seed;
+    istate[FNL_NOISETYPE_IDX] = noiseType;
+    istate[FNL_ROTATIONTYPE_IDX] = rotationType;
+    istate[FNL_FRACTALTYPE_IDX] = fractalType;
+    istate[FNL_OCTAVES_IDX] = octaves;
+    istate[FNL_CELLULARDISTANCEFUNCTION_IDX] = cellularDistanceFunction;
+    istate[FNL_CELLULARRETURNTYPE_IDX] = cellularReturnType;
+    istate[FNL_DOMAINWARPTYPE_IDX] = cellularJitter;
+
+    fstate[FNL_FREQUENCY_IDX] = frequency;
+    fstate[FNL_LACUNARITY_IDX] = lacunarity;
+    fstate[FNL_GAIN_IDX] = gain;
+    fstate[FNL_WEIGHTEDSTRENGTH_IDX] = weightedStrength;
+    fstate[FNL_PINGPONGSTRENGTH_IDX] = pingPongStrength;
+    fstate[FNL_CELLULARJITTER_IDX] = cellularJitter;
+    fstate[FNL_DOMAINWARPAMPLITUDE_IDX] = domainWarpAmplitude;
+
+    noise_texture[id.xy] = fnlGetNoise2D(istate, fstate, (float)id.x / resolution, (float)id.y / resolution);
+}
+
+struct biome_information{
+    float2 position;
+    int moisture_index;
+    int heat_index;    
+};
+
+//moisture settings
+int m_seed;
+int m_noise_type;
+float m_frequency;
+int m_fractal_type;
+int m_octaves;
+int m_rotation_type;
+float m_lacunarity;
+float m_gain;
+float m_weighted_strength;
+float m_ping_pong_strength;
+int m_cellular_distance_function;
+int m_cellular_return_type;
+float m_cellular_jitter;
+float m_domain_warp_amplitude;
+
+//heat settings
+int h_seed;
+int h_noise_type;
+float h_frequency;
+int h_fractal_type;
+int h_octaves;
+int h_rotation_type;
+float h_lacunarity;
+float h_gain;
+float h_weighted_strength;
+float h_ping_pong_strength;
+int h_cellular_distance_function;
+int h_cellular_return_type;
+float h_cellular_jitter;
+float h_domain_warp_amplitude;
+
+//ocean settings
+int o_seed;
+int o_noise_type;
+float o_frequency;
+int o_fractal_type;
+int o_octaves;
+int o_rotation_type;
+float o_lacunarity;
+float o_gain;
+float o_weighted_strength;
+float o_ping_pong_strength;
+int o_cellular_distance_function;
+int o_cellular_return_type;
+float o_cellular_jitter;
+float o_domain_warp_amplitude;
+
+bool use_ocean;
+float ocean_height;
+int moisture_values;
+int heat_values;
+int num_points;
+RWStructuredBuffer<biome_information> biome_info;
+
+//This method is used to get the biome indexes for
+//the given points.
+[numthreads(64,1,1)]
+void GetPointBiomes(uint3 id : SV_DispatchThreadID){
+    //get pos    
+    if(id.x>=num_points)return;
+    float2 pos = biome_info[id.x].position;
+    
+    //create moisture settings
+    int m_int_state[8];
+    float m_float_state[7];
+    m_int_state[FNL_SEED_IDX] = m_seed;
+    m_int_state[FNL_NOISETYPE_IDX] = m_noise_type;
+    m_int_state[FNL_ROTATIONTYPE_IDX] = m_rotation_type;
+    m_int_state[FNL_FRACTALTYPE_IDX] = m_fractal_type;
+    m_int_state[FNL_OCTAVES_IDX] = m_octaves;
+    m_int_state[FNL_CELLULARDISTANCEFUNCTION_IDX] = m_cellular_distance_function;
+    m_int_state[FNL_CELLULARRETURNTYPE_IDX] = m_cellular_return_type;
+    m_int_state[FNL_DOMAINWARPTYPE_IDX] = m_cellular_jitter;
+    m_float_state[FNL_FREQUENCY_IDX] = m_frequency;
+    m_float_state[FNL_LACUNARITY_IDX] = m_lacunarity;
+    m_float_state[FNL_GAIN_IDX] = m_gain;
+    m_float_state[FNL_WEIGHTEDSTRENGTH_IDX] = m_weighted_strength;
+    m_float_state[FNL_PINGPONGSTRENGTH_IDX] = m_ping_pong_strength;
+    m_float_state[FNL_CELLULARJITTER_IDX] = m_cellular_jitter;
+    m_float_state[FNL_DOMAINWARPAMPLITUDE_IDX] = m_domain_warp_amplitude;
+     
+    //create heat settings
+    int h_int_state[8];
+    float h_float_state[7];
+    h_int_state[FNL_SEED_IDX] = h_seed;
+    h_int_state[FNL_NOISETYPE_IDX] = h_noise_type;
+    h_int_state[FNL_ROTATIONTYPE_IDX] = h_rotation_type;
+    h_int_state[FNL_FRACTALTYPE_IDX] = h_fractal_type;
+    h_int_state[FNL_OCTAVES_IDX] = h_octaves;
+    h_int_state[FNL_CELLULARDISTANCEFUNCTION_IDX] = h_cellular_distance_function;
+    h_int_state[FNL_CELLULARRETURNTYPE_IDX] = h_cellular_return_type;
+    h_int_state[FNL_DOMAINWARPTYPE_IDX] = h_cellular_jitter;
+    h_float_state[FNL_FREQUENCY_IDX] = h_frequency;
+    h_float_state[FNL_LACUNARITY_IDX] = h_lacunarity;
+    h_float_state[FNL_GAIN_IDX] = h_gain;
+    h_float_state[FNL_WEIGHTEDSTRENGTH_IDX] = h_weighted_strength;
+    h_float_state[FNL_PINGPONGSTRENGTH_IDX] = h_ping_pong_strength;
+    h_float_state[FNL_CELLULARJITTER_IDX] = h_cellular_jitter;
+    h_float_state[FNL_DOMAINWARPAMPLITUDE_IDX] = h_domain_warp_amplitude;
+
+    bool get_biome = true;
+    
+    if(use_ocean==true)  { 
+        //create ocean settings
+        int o_int_state[8];
+        float o_float_state[7];
+        o_int_state[FNL_SEED_IDX] = o_seed;
+        o_int_state[FNL_NOISETYPE_IDX] = o_noise_type;
+        o_int_state[FNL_ROTATIONTYPE_IDX] = o_rotation_type;
+        o_int_state[FNL_FRACTALTYPE_IDX] = o_fractal_type;
+        o_int_state[FNL_OCTAVES_IDX] = o_octaves;
+        o_int_state[FNL_CELLULARDISTANCEFUNCTION_IDX] = o_cellular_distance_function;
+        o_int_state[FNL_CELLULARRETURNTYPE_IDX] = o_cellular_return_type;
+        o_int_state[FNL_DOMAINWARPTYPE_IDX] = o_cellular_jitter;
+        o_float_state[FNL_FREQUENCY_IDX] = o_frequency;
+        o_float_state[FNL_LACUNARITY_IDX] = o_lacunarity;
+        o_float_state[FNL_GAIN_IDX] = o_gain;
+        o_float_state[FNL_WEIGHTEDSTRENGTH_IDX] = o_weighted_strength;
+        o_float_state[FNL_PINGPONGSTRENGTH_IDX] = o_ping_pong_strength;
+        o_float_state[FNL_CELLULARJITTER_IDX] = o_cellular_jitter;
+        o_float_state[FNL_DOMAINWARPAMPLITUDE_IDX] = o_domain_warp_amplitude;
+        //check if ocean
+        if(fnlGetNoise2D(o_int_state,o_float_state,pos.x,pos.y)<=ocean_height){
+            //calculate biome indexes
+            biome_info[id.x].heat_index = -1; biome_info[id.x].moisture_index = -1;
+            get_biome = false;
+        } 
+    }
+    if(get_biome){
+        //calculate biome indexes
+        biome_info[id.x].heat_index = (int)((fnlGetNoise2D(h_int_state,h_float_state,pos.x,pos.y)+1)*(heat_values+1)*.5f-.0001f);
+        biome_info[id.x].moisture_index = (int)((fnlGetNoise2D(m_int_state, m_float_state,pos.x,pos.y)+1)*(moisture_values+1)*.5f-.0001f);
+    } 
+}

@@ -1,13 +1,10 @@
 using System;
 using System.Diagnostics;
-using Amilious.ProceduralTerrain.Map;
 using Amilious.ProceduralTerrain.Textures;
 using Amilious.Random;
 using Sirenix.OdinInspector;
 using UnityEngine.Serialization;
-#if UNITY_EDITOR
 using UnityEngine;
-#endif
 
 namespace Amilious.ProceduralTerrain.Noise {
 
@@ -165,6 +162,23 @@ namespace Amilious.ProceduralTerrain.Noise {
             _noise.SetCellularDistanceFunction(distanceFunction);
             _noise.SetCellularReturnType(returnType);
             _noise.SetCellularJitter(cellularJitter);
+        }
+
+        public override void SetComputeShaderValues(ComputeShader computeShader, char prefix, int seed) {
+            computeShader.SetInt($"{prefix}_seed",seed);
+            computeShader.SetInt($"{prefix}_noise_type",(int)noiseType);
+            computeShader.SetFloat($"{prefix}_frequency",frequency);
+            computeShader.SetInt($"{prefix}_fractal_type",(int)fractalType);
+            computeShader.SetInt($"{prefix}_octaves",fractalOctaves);
+            computeShader.SetFloat($"{prefix}_lacunarity",fractalLacunarity);
+            computeShader.SetFloat($"{prefix}_gain", fractalGain);
+            computeShader.SetFloat($"{prefix}_weighted_strength", waitedStrength);
+            computeShader.SetFloat($"{prefix}_ping_pong_strength", pingPongStrength);
+            computeShader.SetInt($"{prefix}_cellular_distance_function",(int)distanceFunction);
+            computeShader.SetInt($"{prefix}_cellular_return_type",(int)returnType);
+            computeShader.SetFloat($"{prefix}_cellular_jitter", cellularJitter);
+            computeShader.SetInt($"{prefix}_rotation_type", 0);
+            computeShader.SetFloat($"{prefix}_domain_warp_amplitude", 0f);
         }
 
         //TODO: cache the seed value as an int

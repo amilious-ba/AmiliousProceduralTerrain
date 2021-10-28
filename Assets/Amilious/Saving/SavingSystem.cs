@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.Runtime.Serialization.Formatters.Binary;
 using Amilious.Core.Extensions;
 using Amilious.Threading;
-using UnityEditor;
 
 namespace Amilious.Saving {
     
@@ -234,7 +233,7 @@ namespace Amilious.Saving {
         /// save file.</param>
         public static bool SaveFile(string saveFile, Dictionary<string,object> state) {
             var path = GetSaveFilePath(saveFile);
-            var tmpPath = FileUtil.GetUniqueTempPathInProject();
+            var tmpPath = Path.GetTempPath();
             lock(GetLock(path)) { //lock the file only allowing one instance to read or write at a single time.
                 try {
                     //write to a temp file then copy the file to the correct path

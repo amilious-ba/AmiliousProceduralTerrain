@@ -1,3 +1,6 @@
+using System.Collections.Generic;
+using Amilious.ProceduralTerrain.Sampling;
+
 namespace Amilious.ProceduralTerrain.Biomes.Blending {
     
     /// <summary>
@@ -21,5 +24,9 @@ namespace Amilious.ProceduralTerrain.Biomes.Blending {
         /// <returns>The biome id at the given position
         /// using the given hashed seed.</returns>
         int GetBiomeAt(float x, float z, int hashedSeed);
+
+        bool UsingComputeShader { get; }
+
+        List<int> GetBiomesFromComputeShader(List<SamplePoint<int>> samplePoints, int seed);
     }
 }

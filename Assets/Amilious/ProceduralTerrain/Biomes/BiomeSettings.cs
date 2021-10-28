@@ -1,19 +1,20 @@
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using Amilious.ProceduralTerrain.Biomes.Blending;
-using Amilious.ProceduralTerrain.Map;
 using Amilious.ProceduralTerrain.Noise;
+using Amilious.ProceduralTerrain.Sampling;
 using Amilious.ProceduralTerrain.Textures;
 using Amilious.Random;
-using Amilious.Threading;
 using Sirenix.OdinInspector;
 using Sirenix.Serialization;
+#if UNITY_EDITOR
 using Sirenix.Utilities.Editor;
+#endif
 using UnityEngine;
-using UnityEngine.Serialization;
 using Debug = UnityEngine.Debug;
 
 namespace Amilious.ProceduralTerrain.Biomes {
@@ -22,6 +23,9 @@ namespace Amilious.ProceduralTerrain.Biomes {
     public class BiomeSettings : SerializedScriptableObject, IBiomeEvaluator {
 
         private const string TG = "tab group";
+
+        private readonly ConcurrentDictionary<int, BiomeBlender> _biomeBlenderCache =
+            new ConcurrentDictionary<int, BiomeBlender>();
         public const string PREVIEW = "Preview";
         
         #region Inspector Preview Variables
@@ -58,7 +62,7 @@ namespace Amilious.ProceduralTerrain.Biomes {
         #region Inspector Settings Tab
         
         private const string TAB_A = "Settigns";
-        [SerializeField,TabGroup(TG, TAB_A)] 
+        [SerializeField,TabGroup(TG, TAB_A)]
         private AbstractNoiseProvider heatMapSettings;
         [SerializeField,TabGroup(TG, TAB_A)] 
         private AbstractNoiseProvider moistureMapSettings;
@@ -74,7 +78,9 @@ namespace Amilious.ProceduralTerrain.Biomes {
         private float blendFrequency;
         [SerializeField,TabGroup(TG, TAB_A), ShowIf(nameof(useBiomeBlending))] 
         private float blendRadiusPadding;
-        
+        [SerializeField,TabGroup(TG, TAB_A)] private bool useComputeShader;
+        [SerializeField,TabGroup(TG, TAB_A), ShowIf(nameof(useComputeShader))] 
+        private ComputeShader computeShader;
         #endregion
 
         #region Inspector Biomes Tab
@@ -92,8 +98,11 @@ namespace Amilious.ProceduralTerrain.Biomes {
         
         private const string TAB_C = "Biome Mapping";
         [TabGroup(TG, TAB_C)]
-        [OdinSerialize][TableMatrix(VerticalTitle ="Heat", HorizontalTitle = "Moisture", 
+        [OdinSerialize]
+        #if UNITY_EDITOR
+        [TableMatrix(VerticalTitle ="Heat", HorizontalTitle = "Moisture", 
             DrawElementMethod = nameof(GetBiomeDropdown))]
+        #endif
         // ReSharper disable once InconsistentNaming
         private int[,] biomeTable;
         [SerializeField, TabGroup(TG, TAB_C), Range(-1,1)]
@@ -108,7 +117,7 @@ namespace Amilious.ProceduralTerrain.Biomes {
         public float OceanHeight { get => oceanHeight; }
         public float BlendFrequency { get => blendFrequency; }
         public float BlendRadiusPadding { get => blendRadiusPadding; }
-        
+
         public bool UsingBiomeBlending { get => useBiomeBlending; }
         
         public bool UsingOceanMap { get => useOceanMap; }
@@ -119,11 +128,15 @@ namespace Amilious.ProceduralTerrain.Biomes {
         public AbstractNoiseProvider OceanMapSettings { get => oceanMapSettings; }
         
         #region Inspector Methods
-        public int GetBiomeDropdown(Rect rect, int value) {
-            var values = biomeInfo.Select(x => x.biomeId).ToList();
-            var names = biomeInfo.Select(x => x.name).ToList();
-            values.Add(0); names.Add("not set");
-            return SirenixEditorFields.Dropdown(rect, "", value, values.ToArray(), names.ToArray());
+        
+        public Dictionary<int,float[,]> BlendChunk(int size, int seed, Vector2 position) {
+            //try to get biomeBlender from cache
+            var found = _biomeBlenderCache.TryGetValue(size, out var biomeBlender);
+            //if the biome blender is not cached create it and cache it.
+            biomeBlender??= new BiomeBlender(blendFrequency, blendRadiusPadding,size, useComputeShader);
+            if(found) _biomeBlenderCache.TryAdd(size, biomeBlender);
+            //preform the blend
+            return biomeBlender.GetChunkBiomeWeights(seed, position, this);
         }
         
         private BiomeInfo AddNewBiomeInfo() {
@@ -142,6 +155,13 @@ namespace Amilious.ProceduralTerrain.Biomes {
         }
         
         #if UNITY_EDITOR
+        
+        public int GetBiomeDropdown(Rect rect, int value) {
+            var values = biomeInfo.Select(x => x.biomeId).ToList();
+            var names = biomeInfo.Select(x => x.name).ToList();
+            values.Add(0); names.Add("not set");
+            return SirenixEditorFields.Dropdown(rect, "", value, values.ToArray(), names.ToArray());
+        }
 
         private readonly Stopwatch _stopwatch = new Stopwatch();
         private GUIStyle _timerGUI;
@@ -197,6 +217,14 @@ namespace Amilious.ProceduralTerrain.Biomes {
             BuildLookup();
             TextLookUp();
             GeneratePreviewTexture();
+            //setup the shader
+            MoistureMapSettings.SetComputeShaderValues(computeShader,'m',4564);
+            HeatMapSettings.SetComputeShaderValues(computeShader,'h', 4564);
+            if(UsingOceanMap) OceanMapSettings.SetComputeShaderValues(computeShader, 'o', 4564);
+            computeShader.SetInt("moisture_values",biomeTable.GetUpperBound(0));
+            computeShader.SetInt("heat_values",biomeTable.GetUpperBound(1));
+            computeShader.SetBool("use_ocean",useOceanMap);
+            computeShader.SetFloat("ocean_height",oceanHeight);
         }
         
         #endif
@@ -215,7 +243,15 @@ namespace Amilious.ProceduralTerrain.Biomes {
             BuildLookup();
             #if UNITY_EDITOR
             GeneratePreviewTexture();
-            #endif
+            #endif 
+            //setup the shader
+            MoistureMapSettings.SetComputeShaderValues(computeShader,'m',4564);
+            HeatMapSettings.SetComputeShaderValues(computeShader,'h', 4564);
+            if(UsingOceanMap) OceanMapSettings.SetComputeShaderValues(computeShader, 'o', 4564);
+            computeShader.SetInt("moisture_values",biomeTable.GetUpperBound(0));
+            computeShader.SetInt("heat_values",biomeTable.GetUpperBound(1));
+            computeShader.SetBool("use_ocean",useOceanMap);
+            computeShader.SetFloat("ocean_height",oceanHeight);
         }
 
         private void BuildLookup() {
@@ -271,6 +307,46 @@ namespace Amilious.ProceduralTerrain.Biomes {
             if(!useOceanMap) return GetBiomeId(heat, moisture);
             var baseVal = oceanMapSettings.NoiseAtPoint(x, z, hashedSeed);
             return GetBiomeId(heat, moisture, baseVal);
+        }
+
+        public bool UsingComputeShader { get=>useComputeShader; }
+        
+        public List<int> GetBiomesFromComputeShader(List<SamplePoint<int>> samplePoints, int seed) {
+            var result = new List<int>();
+            
+            //create the buffer
+            var bufferData = new ShaderBufferBiomeInfo[samplePoints.Count];
+            for(int i = 0; i < samplePoints.Count; i++)
+                bufferData[i]= new ShaderBufferBiomeInfo{position = new Vector2(samplePoints[i].X,samplePoints[i].Z)};
+            var buffer = new ComputeBuffer(bufferData.Length, ShaderBufferSize);
+            buffer.SetData(bufferData);
+            //dispatch
+            int kernal = computeShader.FindKernel("GetPointBiomes");
+            computeShader.SetBuffer(kernal, "biome_info",buffer);
+            computeShader.SetInt("num_points",bufferData.Length);
+            computeShader.Dispatch(kernal,bufferData.Length/64,1,1);
+            //fetch the results
+            buffer.GetData(bufferData);
+            for(int i = 0; i < samplePoints.Count; i++) {
+                var biome = 0;
+                if(bufferData[i].moisture_index != -1 && bufferData[i].heat_index != -1) {
+                    biome = biomeTable[bufferData[i].moisture_index, bufferData[i].heat_index];
+                }
+                Debug.Log($"Position:{samplePoints[i].X}, {samplePoints[i].Z} biomeId: {biome}");
+                if(!result.Contains(biome))result.Add(biome);
+                samplePoints[i].PointData = biome;
+            }
+            //cleanup
+            buffer.Dispose();
+            return result;
+        }
+
+        public const int ShaderBufferSize = sizeof(float) * 2 + sizeof(int) * 2;
+
+        public struct ShaderBufferBiomeInfo {
+            public Vector2 position;
+            public int moisture_index;
+            public int heat_index;  
         }
     }
 

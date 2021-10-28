@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using Amilious.ProceduralTerrain.Map;
 using Sirenix.OdinInspector;
 using UnityEngine;
 
@@ -8,19 +9,14 @@ namespace Amilious.ProceduralTerrain.Mesh {
     [CreateAssetMenu(menuName = "Amilious/Procedural Terrain/Mesh Settings", order = 0), HideMonoScript]
     public class MeshSettings : UpdateableData {
 
-        public const int NUM_SUPPORTED_CHUNK_SIZES = 9;
-        public const int NUM_SUPPORTED_FLAT_SHADED_CHUNK_SIZES = 3;
-        public static readonly int[] SupportedChunkSizes = { 48, 72, 96, 120, 144, 168, 192, 216, 240 };
-        public static readonly int[] SupportedFlatShadedChunkSizes = { 48, 72, 96 };
-
+        
         [SerializeField]
         private float meshScale = 1f;
         [SerializeField,Tooltip("If ture the mesh will use more vertices so that it can be flat shaded.")]
         private bool useFlatShading = false;
-        [SerializeField, HideIf(nameof(useFlatShading)), ValueDropdown(nameof(SupportedChunkSizes))]
-        private int standardChunkSize = SupportedChunkSizes[SupportedChunkSizes.Length-1];
-        [SerializeField, ShowIf(nameof(useFlatShading)), ValueDropdown((nameof(SupportedFlatShadedChunkSizes)))]
-        private int flatShadedChunkSize = SupportedFlatShadedChunkSizes[SupportedFlatShadedChunkSizes.Length - 1];
+        [SerializeField]
+        private ChunkBaseSize chunkBaseSize = ChunkBaseSize.Base64X64;
+        [SerializeField] private RegionSize regionSize = RegionSize.Chunks8X8;
         [SerializeField] private Material material;
         [SerializeField, Required, ValidateInput(nameof(UniqueLod),
              "Each Lod must have a unique level of detail and visible distance.")]
@@ -37,10 +33,13 @@ namespace Amilious.ProceduralTerrain.Mesh {
         
         
         public float MeshScale { get => meshScale; }
-        public int ChunkSize => useFlatShading ? flatShadedChunkSize : standardChunkSize;
+        //public int ChunkSize => useFlatShading ? flatShadedChunkSize : standardChunkSize;
+        public ChunkBaseSize ChunkBaseSize { get => chunkBaseSize; }
+        public RegionSize RegionSize { get => regionSize; }
         public bool UseFlatShading { get => useFlatShading; }
         public IEnumerable<LODInfo> LevelsOfDetail { get => chunkLevelsOfDetail; }
-        public int VertsPerLine => ChunkSize + 5;
+        //public int VertsPerLine => ChunkSize + 5;
+        public int VertsPerLine => (int)ChunkBaseSize + 5;
         public float MeshWorldSize {
             get {
                 _meshWorldSize ??= (VertsPerLine - 3) * meshScale;
@@ -115,6 +114,13 @@ namespace Amilious.ProceduralTerrain.Mesh {
         #endregion
 
 
+    }
+    
+    public enum ChunkBaseSize {
+        Base8X8 = 8,
+        Base16X16 = 16,
+        Base32X32 = 32,
+        Base64X64 = 64
     }
     
 }

@@ -74,7 +74,7 @@ namespace Amilious.Threading {
         }
 
         private void Update() {
-            while(!Actions.IsEmpty) if(Actions.TryDequeue(out var action))action();
+            while(!Actions.IsEmpty) { if(Actions.TryDequeue(out var action))action(); }
         }
     }
 }

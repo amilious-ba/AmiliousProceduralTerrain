@@ -10,7 +10,7 @@ namespace Amilious.ProceduralTerrain.Mesh {
     [System.Serializable]
     public struct LODInfo {
         
-        public const int NUM_SUPPORTED_LODS = 5;
+        public const int NUM_SUPPORTED_LODS = 4;
 
         [Tooltip("This is the level of detail.  The higher the level the lower the quality.")]
         [SerializeField,PropertyRange(0,nameof(NUM_SUPPORTED_LODS))]
@@ -23,17 +23,13 @@ namespace Amilious.ProceduralTerrain.Mesh {
         /// <summary>
         /// This property can be used to get the level of detail.
         /// </summary>
-        public int LOD {
-            get { return lod; }
-        }
+        public int LOD { get { return lod; } }
         
         /// <summary>
         /// This property can be used to get the max distance that this level of
         /// detail will be displayed.
         /// </summary>
-        public float VisibleDistanceThreshold {
-            get { return visibleDistance; }
-        }
+        public float VisibleDistanceThreshold { get { return visibleDistance; } }
         
         /// <summary>
         /// This property contains the squared max distance that this level of detail
@@ -46,6 +42,8 @@ namespace Amilious.ProceduralTerrain.Mesh {
             }
         }
 
+        public int SkipStep { get => lod == 0 ? 1 : lod * 2; }
+        
     }
     
     
