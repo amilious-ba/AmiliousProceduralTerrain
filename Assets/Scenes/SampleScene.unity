@@ -153,6 +153,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 052c3c130a4c4f21ade1954845acc296, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  mapType: 0
+  enableSavingAndLoading: 0
+  chunkPoolSize: 100
+  generateChunksAtStart: 0
   chunkUpdateThreshold: 25
   colliderGenerationThreshold: 5
   seed: seedless3
