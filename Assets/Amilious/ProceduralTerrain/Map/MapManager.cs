@@ -23,7 +23,7 @@ namespace Amilious.ProceduralTerrain.Map {
          * when the player moved to far away from the origin.
          */
 
-        [SerializeField] private MapType mapType = MapType.Pregenerated;
+        [SerializeField] private MapType mapType = MapType.PreGenerated;
         [SerializeField] private bool enableSavingAndLoading = false;
         [SerializeField] private int chunkPoolSize = 100;
         [SerializeField] private bool generateChunksAtStart;
@@ -100,9 +100,7 @@ namespace Amilious.ProceduralTerrain.Map {
             
             //get the player position
             _viewerPosition = new Vector2(viewer.position.x, viewer.position.z);
-            var currentChunkX = Mathf.RoundToInt(_viewerPosition.x / meshSettings.MeshWorldSize);
-            var currentChunkY = Mathf.RoundToInt(_viewerPosition.y / meshSettings.MeshWorldSize);
-            _viewerChunk = new Vector2Int(currentChunkX, currentChunkY);
+            _viewerChunk = ChunkAtPoint(_viewerPosition);
             
             //check for collision mesh update
             if(_viewerPosition != _oldViewerPosition) {
@@ -115,6 +113,20 @@ namespace Amilious.ProceduralTerrain.Map {
                 UpdateVisibleChunks();
             }
             
+        }
+
+        public Vector2Int ChunkAtPoint(Vector3 point) {
+            return new Vector2Int(
+                Mathf.RoundToInt(point.x / meshSettings.MeshWorldSize),
+                Mathf.RoundToInt(point.z / meshSettings.MeshWorldSize)
+            );
+        }
+
+        public Vector2Int ChunkAtPoint(Vector2 point) {
+            return new Vector2Int(
+                Mathf.RoundToInt(point.x / meshSettings.MeshWorldSize),
+                Mathf.RoundToInt(point.y / meshSettings.MeshWorldSize)
+            );
         }
 
         /// <summary>
@@ -138,16 +150,19 @@ namespace Amilious.ProceduralTerrain.Map {
                 if(_mapChunks.TryGetValue(chunkCoord, out var chunk)) {
                     chunk.UpdateChunk(); continue;
                 }
-                //var newChunk = new MapChunk(this,chunkCoord);
-
-                //new system
                 var newChunk = _chunkPool.GetAvailableChunk().Setup(chunkCoord);
                 _mapChunks.TryAdd(chunkCoord, newChunk);
                 newChunk.OnVisibilityChanged += OnMapChunkVisibilityChanged;
-                //newChunk.Load();
             }
         }
 
+        /// <summary>
+        /// This method is called to remove a chunk from the loaded world.
+        /// </summary>
+        /// <param name="chunkCoord">The coordinate of the chunk that
+        /// you want to remove from the loaded world.</param>
+        /// <returns>True if the chunk was removed from the loaded world,
+        /// otherwise returns false if the given chunk was not loaded.</returns>
         public bool ReleaseChunkReference(Vector2Int chunkCoord) {
             var result = _mapChunks.TryRemove(chunkCoord, out var chunk);
             _visibleMapChunks.Remove(chunk);

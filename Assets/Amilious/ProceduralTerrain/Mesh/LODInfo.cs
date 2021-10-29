@@ -42,6 +42,10 @@ namespace Amilious.ProceduralTerrain.Mesh {
             }
         }
 
+        /// <summary>
+        /// This is the number of vertices that are skipped between each
+        /// no border vertex for the given lod.
+        /// </summary>
         public int SkipStep { get => lod == 0 ? 1 : lod * 2; }
         
     }

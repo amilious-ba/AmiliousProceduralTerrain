@@ -7,11 +7,15 @@ using Amilious.ProceduralTerrain.Noise;
 //TODO: smooth the seam between chunks of smaller lods
 
 namespace Amilious.ProceduralTerrain.Mesh {
+    
+    /// <summary>
+    /// This class is used to hold a mesh that can pe used for
+    /// a chunk in the map.
+    /// </summary>
     public class ChunkMesh {
 
-        private UnityEngine.Mesh _mesh;
+        # region Public Instance Variables
         public event Action UpdateCallback;
-        
         public Vector3[] vertices;
         public readonly int[] triangles;
         public Vector2[] uvs;
@@ -19,23 +23,118 @@ namespace Amilious.ProceduralTerrain.Mesh {
         public Vector3[] bakedNormals;
         public readonly Vector3[] outOfMeshVertices;
         public readonly int[] outOfMeshTriangles;
+        public readonly EdgeConnectionVertexData[] edgeConnectionVertices;
+        #endregion
+
+
+        #region Private Instance Variables
+        private UnityEngine.Mesh _mesh;
         private readonly Vector3[] _flatShadedVertices;
         private readonly Vector2[] _flatShadedUvs;
         private readonly Vector2[] _flatShadedUvs2;
-     
-        public readonly EdgeConnectionVertexData[] edgeConnectionVertices;
+        #endregion
         
+        
+        #region Public Properties
+        
+        /// <summary>
+        /// This property is used to check if the mesh is setup for flat shading.
+        /// </summary>
         public bool UseFlatShading { get; }
+        
+        /// <summary>
+        /// This property is used to get the meshes level of detail.
+        /// </summary>
         public int LevelOfDetail { get; }
         
+        /// <summary>
+        /// This property is used to check if the mesh has been requested yet.
+        /// </summary>
         public bool HasRequestedMesh { get; private set; }
+        
+        /// <summary>
+        /// This property is used to check if the mesh has been generated.
+        /// </summary>
         public bool HasMesh { get; private set; }
+        
+        #endregion
+        
+        
+        #region Private Properties
+        
+        /// <summary>
+        /// This property is used to check if the mesh is invalid.  If the
+        /// mesh is invalid a warning will be logged.
+        /// </summary>
+        private bool InvalidMesh {
+            get {
+                if(_mesh != null) return false;
+                Debug.LogWarning("Trying to access the ChunkMeshes mesh before it has been created.");
+                return true;
+            }
+        }
+        
+        /// <summary>
+        /// This property is used to check if the code is being executed on
+        /// the main thread.
+        /// </summary>
+        private static bool NotMainThread { get =>!Dispatcher.IsMainThread; }
+        
+        #endregion
 
+        
+        #region Constructors
+        
+        /// <summary>
+        /// This constructor is used to create a new chunk mesh.
+        /// </summary>
+        /// <param name="numVertsPerLine">The number of vertices per line. </param>
+        /// <param name="skipStep">The number of skipped vertices between each main vertex.</param>
+        /// <param name="useFlatShading">Indicates whether the mesh will be flat shaded.</param>
+        /// <param name="levelOfDetail">The meshes level of detail.</param>
+        public ChunkMesh(int numVertsPerLine, int skipStep, bool useFlatShading, int levelOfDetail) {
+            UseFlatShading = useFlatShading;
+            LevelOfDetail = levelOfDetail;
+            var numMeshEdgeVertices = (numVertsPerLine - 2) * 4 - 4;
+            var numEdgeConnectionVertices = (skipStep - 1) * (numVertsPerLine - 5) / skipStep * 4;
+            var numMainVerticesPerLine = (numVertsPerLine - 5) / skipStep + 1;
+            var numMainVertices = numMainVerticesPerLine * numMainVerticesPerLine;
+            vertices = new Vector3[numMeshEdgeVertices + numEdgeConnectionVertices + numMainVertices];
+            uvs = new Vector2[vertices.Length];
+            uvs2 = new Vector2[vertices.Length];
+            edgeConnectionVertices = new EdgeConnectionVertexData[numEdgeConnectionVertices];
+            var numMeshEdgeTriangles = 8 * (numVertsPerLine - 4);
+            var numMainTriangles = (numMainVerticesPerLine - 1) * (numMainVerticesPerLine - 1) * 2;
+            triangles = new int[(numMeshEdgeTriangles + numMainTriangles) * 3];
+            outOfMeshVertices = new Vector3[numVertsPerLine * 4 - 4];
+            outOfMeshTriangles = new int[24 * (numVertsPerLine-2)];
+            if(!UseFlatShading) return;
+            _flatShadedVertices = new Vector3[triangles.Length];
+            _flatShadedUvs = new Vector2[triangles.Length];
+            _flatShadedUvs2 = new Vector2[triangles.Length];
+        }
+        
+        #endregion
+
+
+        #region Public Methods
+
+        /// <summary>
+        /// This method is used to reset the mesh.  This clears the loading variables
+        /// so that the mesh can be used for a new chunk.
+        /// </summary>
         public void Reset() {
             HasRequestedMesh = false;
             HasMesh = false;
         }
 
+        /// <summary>
+        /// This method is used to request the chunks mesh.
+        /// </summary>
+        /// <param name="heightMap">The height map that you want to use to generate the mesh.</param>
+        /// <param name="meshSettings">The mesh settings.</param>
+        /// <param name="applyHeight">If true the height map's height values will be applied,
+        /// otherwise the heights will be set to zero.</param>
         public void RequestMesh(NoiseMap heightMap, MeshSettings meshSettings, bool applyHeight = true) {
             HasRequestedMesh = true;
             var future = new Future<ChunkMesh>();
@@ -54,42 +153,40 @@ namespace Amilious.ProceduralTerrain.Mesh {
                 LevelOfDetail, this, applyHeight));
         }
 
-        public ChunkMesh(int numVertsPerLine, int skipIncrement, bool useFlatShading, int levelOfDetail) {
-            UseFlatShading = useFlatShading;
-            LevelOfDetail = levelOfDetail;
-            var numMeshEdgeVertices = (numVertsPerLine - 2) * 4 - 4;
-            var numEdgeConnectionVertices = (skipIncrement - 1) * (numVertsPerLine - 5) / skipIncrement * 4;
-            var numMainVerticesPerLine = (numVertsPerLine - 5) / skipIncrement + 1;
-            var numMainVertices = numMainVerticesPerLine * numMainVerticesPerLine;
-            vertices = new Vector3[numMeshEdgeVertices + numEdgeConnectionVertices + numMainVertices];
-            uvs = new Vector2[vertices.Length];
-            uvs2 = new Vector2[vertices.Length];
-            edgeConnectionVertices = new EdgeConnectionVertexData[numEdgeConnectionVertices];
-            var numMeshEdgeTriangles = 8 * (numVertsPerLine - 4);
-            var numMainTriangles = (numMainVerticesPerLine - 1) * (numMainVerticesPerLine - 1) * 2;
-            triangles = new int[(numMeshEdgeTriangles + numMainTriangles) * 3];
-            outOfMeshVertices = new Vector3[numVertsPerLine * 4 - 4];
-            outOfMeshTriangles = new int[24 * (numVertsPerLine-2)];
-            if(!UseFlatShading) return;
-            _flatShadedVertices = new Vector3[triangles.Length];
-            _flatShadedUvs = new Vector2[triangles.Length];
-            _flatShadedUvs2 = new Vector2[triangles.Length];
-        }
-        
+        /// <summary>
+        /// This method is used to assign the mesh to a given mesh filter.
+        /// </summary>
+        /// <param name="meshFilter">The mesh filter that you want to apply the mesh to.</param>
+        /// <returns>True if the mesh is valid and was applied to the given mesh filter.</returns>
         public bool AssignTo(MeshFilter meshFilter) {
             if(InvalidMesh) return false;
             meshFilter.sharedMesh = _mesh;
             return true;
         }
 
+        /// <summary>
+        /// This method is used to assign the mesh to a give mesh collider.
+        /// </summary>
+        /// <param name="meshCollider">The mesh collider that you want to apply the mesh to.</param>
+        /// <returns>True if the mesh is valid and was applied to the give mesh collider.</returns>
         public bool AssignTo(MeshCollider meshCollider) {
             if(InvalidMesh) return false;
             meshCollider.sharedMesh = _mesh;
             return true;
         }
         
+        /// <summary>
+        /// This method is used to apply any changes that have been made to the mesh.
+        /// </summary>
+        /// <param name="recalculateBounds"></param>
+        /// <returns>True if the method was executed or queued to the dispatcher, otherwise
+        /// returns false if the mesh is invalid.</returns>
         public bool ApplyChanges(bool recalculateBounds=false) {
-            if(InvalidMesh  || NotMainThread) return false;
+            if(InvalidMesh) return false;
+            if(NotMainThread) {
+                Dispatcher.InvokeAsync(() => { ApplyChanges(recalculateBounds);});
+                return true;
+            }
             _mesh.vertices = UseFlatShading?_flatShadedVertices:vertices;
             _mesh.triangles = triangles;
             _mesh.uv = UseFlatShading?_flatShadedUvs:uvs;
@@ -100,22 +197,28 @@ namespace Amilious.ProceduralTerrain.Mesh {
             return true;
         }
 
-        private bool InvalidMesh {
-            get {
-                if(_mesh != null) return false;
-                Debug.LogWarning("Trying to access the ChunkMeshes mesh before it has been created.");
-                return true;
-            }
-        }
-
-        private static bool NotMainThread {
-            get {
-                if(Dispatcher.IsMainThread) return false;
-                Debug.LogWarning("Trying to apply changes to the ChunkMeshes mesh outside main thread.");
-                return true;
+        /// <summary>
+        /// This method is used to process the mesh to be used.  It will apply flat shadding
+        /// and bake normals.
+        /// </summary>
+        public void ProcessMesh() {
+            if (UseFlatShading) {
+                FlatShading ();
+            } else {
+                BakeNormals ();
+                ProcessEdgeConnectionVertices();
             }
         }
         
+        #endregion
+        
+        
+        #region Private Methods
+        
+        /// <summary>
+        /// This method is used to calculate the normals.
+        /// </summary>
+        /// <returns>Returns the calculated normals.</returns>
         private Vector3[] CalculateNormals() {
      
             var vertexNormals = new Vector3[vertices.Length];
@@ -149,13 +252,23 @@ namespace Amilious.ProceduralTerrain.Mesh {
      
         }
 
+        /// <summary>
+        /// This method is used to align edge vertices and apply the correct normals.
+        /// </summary>
         private void ProcessEdgeConnectionVertices() {
             foreach (var e in edgeConnectionVertices) {
-                bakedNormals [e.vertexIndex] = bakedNormals [e.mainVertexAIndex] 
-                    * (1 - e.dstPercentFromAToB) + bakedNormals [e.mainVertexBIndex] * e.dstPercentFromAToB;
+                bakedNormals[e.vertexIndex] = bakedNormals [e.mainVertexAIndex] * (1 - e.dstPercentFromAToB) 
+                    + bakedNormals [e.mainVertexBIndex] * e.dstPercentFromAToB;
             }
         }
-
+        
+        /// <summary>
+        /// This method is sued to calculate a surface normal from the given indices.
+        /// </summary>
+        /// <param name="indexA">The first index.</param>
+        /// <param name="indexB">The second index.</param>
+        /// <param name="indexC">The third index.</param>
+        /// <returns>The calculated surface normal.</returns>
         private Vector3 SurfaceNormalFromIndices(int indexA, int indexB, int indexC) {
             var pointA = indexA < 0?outOfMeshVertices[-indexA-1] : vertices [indexA];
             var pointB = indexB < 0?outOfMeshVertices[-indexB-1] : vertices [indexB];
@@ -164,48 +277,29 @@ namespace Amilious.ProceduralTerrain.Mesh {
             var sideAC = pointC - pointA;
             return Vector3.Cross (sideAB, sideAC).normalized;
         }
-     
-        public void ProcessMesh() {
-            if (UseFlatShading) {
-                FlatShading ();
-            } else {
-                BakeNormals ();
-                ProcessEdgeConnectionVertices();
-            }
-        }
 
+        /// <summary>
+        /// This method is used to bake the normals.
+        /// </summary>
         private void BakeNormals() {
             bakedNormals = CalculateNormals ();
         }
 
+        /// <summary>
+        /// This method is used to apply flat shadding.
+        /// </summary>
         private void FlatShading() {
             var flatShadedVertices = new Vector3[triangles.Length];
             var flatShadedUvs = new Vector2[triangles.Length];
-     
             for (var i = 0; i < triangles.Length; i++) {
-                flatShadedVertices [i] = vertices [triangles [i]];
-                flatShadedUvs [i] = uvs [triangles [i]];
-                triangles [i] = i;
+                flatShadedVertices [i] = vertices[triangles [i]];
+                flatShadedUvs [i] = uvs[triangles [i]];
+                _flatShadedUvs2[i] = uvs2[triangles[i]];
+                triangles[i] = i;
             }
-     
-            vertices = flatShadedVertices;
-            uvs = flatShadedUvs;
         }
-     
-        /*public UnityEngine.Mesh CreateMesh() {
-            _mesh = new UnityEngine.Mesh {
-                vertices = vertices,
-                triangles = triangles,
-                uv = uvs
-            };
-            if (UseFlatShading) {
-                _mesh.RecalculateNormals ();
-            } else {
-                _mesh.uv2 = uvs2;
-                _mesh.normals = bakedNormals;
-            }
-            return _mesh;
-        }*/
 
+        #endregion
+        
     }
 }

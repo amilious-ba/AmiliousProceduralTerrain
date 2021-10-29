@@ -3,7 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace Amilious.ProceduralTerrain.Map {
+namespace Amilious.ProceduralTerrain {
     
     /// <summary>
     /// This is a base class for the other map data classes.
@@ -12,7 +12,7 @@ namespace Amilious.ProceduralTerrain.Map {
     /// the map.</typeparam>
     public class MapData<T> : IEnumerable<Vector2Int> {
         
-        protected T[,] values;
+        protected readonly T[,] values;
         
         /// <summary>
         /// This property is true if the position is centered,
