@@ -1,11 +1,11 @@
 using System;
 using System.Linq;
 using UnityEngine;
+using Amilious.Threading;
 using Amilious.ProceduralTerrain.Mesh;
 using Amilious.ProceduralTerrain.Biomes;
 using Amilious.ProceduralTerrain.Noise;
 using Amilious.ProceduralTerrain.Textures;
-using Amilious.Threading;
 
 namespace Amilious.ProceduralTerrain.Map {
     
@@ -103,6 +103,11 @@ namespace Amilious.ProceduralTerrain.Map {
             IsInUse = false;
         }
 
+        /// <summary>
+        /// This method is called when the chunk should be updated.  This
+        /// is called if the chunk is visible and the player moved enough
+        /// that the chunks need to update.
+        /// </summary>
         public void UpdateChunk() {
             if(!_heightMapReceived) return;
             var distanceFromViewer = Mathf.Sqrt(_bounds.SqrDistance(ViewerPosition));
@@ -114,6 +119,11 @@ namespace Amilious.ProceduralTerrain.Map {
             OnVisibilityChanged?.Invoke(this,visible);
         }
         
+        /// <summary>
+        /// This method is used to update the chunks level of detail.
+        /// </summary>
+        /// <param name="distanceFromViewer">The chunks distance from the
+        /// viewer.</param>
         private void UpdateLOD(float distanceFromViewer) {
             var lodIndex = 0;
             for(var i = 0; i < _detailLevels.Length - 1; i++) {
@@ -131,6 +141,9 @@ namespace Amilious.ProceduralTerrain.Map {
             }
         }
         
+        /// <summary>
+        /// This method is used to load the chunk.
+        /// </summary>
         private void Load() {
             if(_manager.SaveEnabled) {
                 //ToDo:Try load from file
@@ -155,6 +168,9 @@ namespace Amilious.ProceduralTerrain.Map {
             });
         }
 
+        /// <summary>
+        /// This method is used to handle the collision mesh.
+        /// </summary>
         public void UpdateCollisionMesh() {
             if(_hasSetCollider) return;
             var sqrDistanceFromViewer = _bounds.SqrDistance(ViewerPosition);
