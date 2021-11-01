@@ -26,8 +26,13 @@ namespace Amilious.ProceduralTerrain.Mesh {
              "The collider level of detail must be one of your chunk's lods.")]
         private int colliderLOD;
 
+        [SerializeField, Tooltip("This distance should be greater than the max lod distance.")]
+        private float chunkUnloadDistance = 600;
+
         private float? _meshWorldSize = null;
         private float? _maxViewDistance = null;
+        private float? _maxViewDistanceSq = null;
+        private float? _chunkUnloadDistanceSq = null;
         private int? _chunksVisibleInViewDistance = null;
         private int? _colliderLODIndex = null;
         
@@ -52,6 +57,23 @@ namespace Amilious.ProceduralTerrain.Mesh {
                 return _maxViewDistance.Value;
             }
         }
+
+        public float MaxViewDistanceSq {
+            get {
+                _maxViewDistanceSq ??= MaxViewDistance * MaxViewDistance;
+                return _maxViewDistanceSq.Value;
+            }
+        }
+        
+        public float ChunkUnloadDistance { get => chunkUnloadDistance; }
+
+        public float ChunkUnloadDistanceSq {
+            get {
+                _chunkUnloadDistanceSq ??= chunkUnloadDistance * chunkUnloadDistance;
+                return _chunkUnloadDistanceSq.Value;
+            }
+        }
+        
         public int ChunksVisibleInViewDistance {
             get {
                 _chunksVisibleInViewDistance ??= (int)Mathf.Round(MaxViewDistance / MeshWorldSize);

@@ -155,7 +155,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   mapType: 0
   enableSavingAndLoading: 0
-  chunkPoolSize: 100
+  chunkPoolSize: 500
   generateChunksAtStart: 0
   chunkUpdateThreshold: 25
   colliderGenerationThreshold: 5

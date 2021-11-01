@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using Amilious.ProceduralTerrain.Biomes;
@@ -37,6 +38,11 @@ namespace Amilious.ProceduralTerrain.Map {
         [SerializeField, Required] private BiomeSettings biomeSettings;
         [SerializeField] private Transform viewer;
 
+        public event Action OnStartUpdate;
+        public event Action<int,int,int,int> OnUpdateVisible;
+        public event Action OnEndUpdate;
+        public event Action OnUpdateCollisionMesh;
+        
         private float _sqrChunkUpdateThreshold;
         private Vector2 _viewerPosition;
         private Vector2Int _viewerChunk;
@@ -46,7 +52,6 @@ namespace Amilious.ProceduralTerrain.Map {
         private ChunkPool _chunkPool;
         private readonly ConcurrentDictionary<Vector2Int, Chunk> _mapChunks = 
             new ConcurrentDictionary<Vector2Int, Chunk>();
-        private readonly List<Chunk> _visibleMapChunks = new List<Chunk>();
         
         public bool ApplyHeight { get => applyHeight; }
         
@@ -83,10 +88,11 @@ namespace Amilious.ProceduralTerrain.Map {
         /// <param name="coord">Returns the chunk if it is loaded, otherwise
         /// returns null.</param>
         public Chunk this[Vector2Int coord] {
-            get {
-                return _mapChunks.TryGetValue(coord, out var chunk) ? chunk : null;
-            }
+            get => _mapChunks.TryGetValue(coord, out var chunk) ? chunk : null;
         }
+
+        public bool IsVisible(Vector2Int key) => _mapChunks.TryGetValue(key, out var chunk) 
+            && chunk != null && chunk.gameObject.activeSelf;
 
         private void Start() {
             _chunkPool = new ChunkPool(this, chunkPoolSize, generateChunksAtStart);
@@ -99,20 +105,19 @@ namespace Amilious.ProceduralTerrain.Map {
         private void Update() {
             
             //get the player position
-            _viewerPosition = new Vector2(viewer.position.x, viewer.position.z);
+            var position = viewer.position;
+            _viewerPosition = new Vector2(position.x, position.z);
             _viewerChunk = ChunkAtPoint(_viewerPosition);
             
             //check for collision mesh update
             if(_viewerPosition != _oldViewerPosition) {
-                foreach(var chunk in _visibleMapChunks) chunk.UpdateCollisionMesh();
+                OnUpdateCollisionMesh?.Invoke();
             }
 
             //check if visible chunks need to be updated.
-            if((_oldViewerPosition - _viewerPosition).sqrMagnitude > _sqrChunkUpdateThreshold) {
-                _oldViewerPosition = _viewerPosition;
-                UpdateVisibleChunks();
-            }
-            
+            if(!((_oldViewerPosition - _viewerPosition).sqrMagnitude > _sqrChunkUpdateThreshold)) return;
+            _oldViewerPosition = _viewerPosition;
+            UpdateVisibleChunks();
         }
 
         public Vector2Int ChunkAtPoint(Vector3 point) {
@@ -122,6 +127,12 @@ namespace Amilious.ProceduralTerrain.Map {
             );
         }
 
+        /// <summary>
+        /// This method is used to get the chunk id for the chunk
+        /// at the given <see cref="Vector2"/> position.
+        /// </summary>
+        /// <param name="point">The position you want to get the chunk of.</param>
+        /// <returns>The chunk id or coordinate at the given position.</returns>
         public Vector2Int ChunkAtPoint(Vector2 point) {
             return new Vector2Int(
                 Mathf.RoundToInt(point.x / meshSettings.MeshWorldSize),
@@ -133,27 +144,18 @@ namespace Amilious.ProceduralTerrain.Map {
         /// This method is used update visible chunks.
         /// </summary>
         private void UpdateVisibleChunks() {
-            
-            //update visible chunks
-            var updated = new HashSet<Vector2>();
-            for(int i = _visibleMapChunks.Count - 1; i >= 0; i--) {
-                updated.Add(_visibleMapChunks[i].Coordinate);
-                _visibleMapChunks[i].UpdateChunk();
-            }
-            
-            //update non-visible or generated chunks that are in range but not visible
+            OnStartUpdate?.Invoke();
             var chunks = meshSettings.ChunksVisibleInViewDistance;
+            OnUpdateVisible?.Invoke(_viewerChunk.x-chunks,_viewerChunk.x+chunks,
+                _viewerChunk.y-chunks,_viewerChunk.y+chunks);
             for(var xOff = - chunks; xOff <= chunks; xOff++)
             for(var yOff = -chunks; yOff <= chunks; yOff++) {
                 var chunkCoord = new Vector2Int(_viewerChunk.x + xOff, _viewerChunk.y + yOff);
-                if(updated.Contains(chunkCoord)) continue;
-                if(_mapChunks.TryGetValue(chunkCoord, out var chunk)) {
-                    chunk.UpdateChunk(); continue;
-                }
+                if(_mapChunks.ContainsKey(chunkCoord)) continue;
                 var newChunk = _chunkPool.GetAvailableChunk().Setup(chunkCoord);
                 _mapChunks.TryAdd(chunkCoord, newChunk);
-                newChunk.OnVisibilityChanged += OnMapChunkVisibilityChanged;
             }
+            OnEndUpdate?.Invoke();
         }
 
         /// <summary>
@@ -164,19 +166,7 @@ namespace Amilious.ProceduralTerrain.Map {
         /// <returns>True if the chunk was removed from the loaded world,
         /// otherwise returns false if the given chunk was not loaded.</returns>
         public bool ReleaseChunkReference(Vector2Int chunkCoord) {
-            var result = _mapChunks.TryRemove(chunkCoord, out var chunk);
-            _visibleMapChunks.Remove(chunk);
-            return result;
-        }
-
-        /// <summary>
-        /// This method is called when a chunks visibility changes.
-        /// </summary>
-        /// <param name="chunk">The chunk that changed.</param>
-        /// <param name="isVisible">True if the chunk is visible, otherwise false.</param>
-        private void OnMapChunkVisibilityChanged(Chunk chunk, bool isVisible) {
-            if(isVisible) _visibleMapChunks.Add(chunk);
-            else _visibleMapChunks.Remove(chunk);
+            return _mapChunks.TryRemove(chunkCoord, out _);
         }
         
     }

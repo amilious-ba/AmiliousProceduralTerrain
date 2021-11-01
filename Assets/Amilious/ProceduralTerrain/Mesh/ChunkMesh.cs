@@ -142,7 +142,7 @@ namespace Amilious.ProceduralTerrain.Mesh {
                 //if the mesh does not exist we need to create it.
                 _mesh ??= new UnityEngine.Mesh();
                 //apply the changes to the mesh
-                ApplyChanges();
+                ApplyChanges(true);
                 HasMesh = true;
                 UpdateCallback?.Invoke();
             });
@@ -273,9 +273,9 @@ namespace Amilious.ProceduralTerrain.Mesh {
             var pointA = indexA < 0?outOfMeshVertices[-indexA-1] : vertices [indexA];
             var pointB = indexB < 0?outOfMeshVertices[-indexB-1] : vertices [indexB];
             var pointC = indexC < 0?outOfMeshVertices[-indexC-1] : vertices [indexC];
-            var sideAB = pointB - pointA;
-            var sideAC = pointC - pointA;
-            return Vector3.Cross (sideAB, sideAC).normalized;
+            var sideAb = pointB - pointA;
+            var sideAc = pointC - pointA;
+            return Vector3.Cross (sideAb, sideAc).normalized;
         }
 
         /// <summary>

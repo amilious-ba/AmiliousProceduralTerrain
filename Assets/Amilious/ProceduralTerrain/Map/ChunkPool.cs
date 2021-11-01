@@ -25,13 +25,14 @@ namespace Amilious.ProceduralTerrain.Map {
             for(var i=0;i<poolSize;i++){ _chunkPool.Add(Chunk.CreateNew(_manager));}
         }
 
-        /// <summary>
+         /// <summary>
         /// This method is used to get an available <see cref="Chunk"/> from the <see cref="ChunkPool"/>.
         /// </summary>
         /// <returns>An available <see cref="Chunk"/> that has been pulled from the <see cref="ChunkPool"/>.</returns>
         public Chunk GetAvailableChunk() {
             lock(_poolLock) { //makes sure that we do not return a chunk that is already in use
-                foreach(var chunk in _chunkPool.Where(chunk => !chunk.IsInUse)) {
+                foreach(var chunk in _chunkPool) {
+                    if(chunk.IsInUse) continue;
                     chunk.PullFromPool();
                     return chunk;
                 }

@@ -19,7 +19,8 @@ MonoBehaviour:
   material: {fileID: 2100000, guid: f605b618f9b22b94e82de92114f88b75, type: 2}
   chunkLevelsOfDetail:
   - lod: 0
-    visibleDistance: 200
+    visibleDistance: 300
   - lod: 2
-    visibleDistance: 400
+    visibleDistance: 600
   colliderLOD: 0
+  chunkUnloadDistance: 800

@@ -53,6 +53,17 @@ namespace Amilious.ProceduralTerrain.Map {
             if(!IsInUse) gameObject.SetActive(false);
         }
 
+        private void OnDestroy() {
+            _manager.OnStartUpdate -= StartUpdateCycle;
+            _manager.OnUpdateVisible -= UpdateChunk;
+            _manager.OnEndUpdate -= ValidateNonUpdatedChunk;
+            _manager.OnUpdateCollisionMesh -= UpdateCollisionMesh;
+            foreach(var mesh in _lodMeshes) {
+                mesh.UpdateCallback -= UpdateChunk;
+                mesh.UpdateCallback -= UpdateCollisionMesh;
+            }
+        }
+
         /// <summary>
         /// This method is used to update the chunk to be used as a
         /// specified chunk.
@@ -79,6 +90,10 @@ namespace Amilious.ProceduralTerrain.Map {
         /// <param name="setActive"></param>
         public void PullFromPool(bool setActive = false) {
             IsInUse = true;
+            _manager.OnStartUpdate += StartUpdateCycle;
+            _manager.OnUpdateVisible += UpdateChunk;
+            _manager.OnEndUpdate += ValidateNonUpdatedChunk;
+            _manager.OnUpdateCollisionMesh += UpdateCollisionMesh;
             if(setActive) gameObject.SetActive(true);
         }
 
@@ -90,6 +105,10 @@ namespace Amilious.ProceduralTerrain.Map {
             if(_manager.SaveEnabled) {
                 //TODO: save the chunk data
             }
+            _manager.OnStartUpdate -= StartUpdateCycle;
+            _manager.OnUpdateVisible -= UpdateChunk;
+            _manager.OnEndUpdate -= ValidateNonUpdatedChunk;
+            _manager.OnUpdateCollisionMesh -= UpdateCollisionMesh;
             gameObject.SetActive(false);
             //remove the chunk from the dictionary
             _manager.ReleaseChunkReference(Coordinate);
@@ -103,31 +122,49 @@ namespace Amilious.ProceduralTerrain.Map {
             IsInUse = false;
         }
 
+        private bool _updated;
+
+        private void StartUpdateCycle() { _updated = false; }
+
+        private void UpdateChunk() => UpdateChunk(int.MinValue, int.MaxValue, int.MinValue, int.MaxValue);
+        
         /// <summary>
         /// This method is called when the chunk should be updated.  This
         /// is called if the chunk is visible and the player moved enough
         /// that the chunks need to update.
         /// </summary>
-        public void UpdateChunk() {
-            if(!_heightMapReceived) return;
-            var distanceFromViewer = Mathf.Sqrt(_bounds.SqrDistance(ViewerPosition));
+        public void UpdateChunk(int xMin, int xMax, int yMin, int yMax) {
+            if(!_heightMapReceived|| !IsInUse) return;
+            if(Coordinate.x < xMin || Coordinate.x > xMax) return;
+            if(Coordinate.y < yMin || Coordinate.y > yMax) return;
+            _updated = true;
+            //var distanceFromViewer = Mathf.Sqrt(_bounds.SqrDistance(ViewerPosition));
+            var distanceFromViewerSq =
+                _bounds.SqrDistance(ViewerPosition);
             var wasVisible =  gameObject.activeSelf;
-            var visible = distanceFromViewer <= _meshSettings.MaxViewDistance;
-            if(visible) UpdateLOD(distanceFromViewer);
+            var visible = distanceFromViewerSq <= _meshSettings.MaxViewDistanceSq;
+            if(visible) UpdateLOD(distanceFromViewerSq);
             if(wasVisible == visible) return;
             gameObject.SetActive(visible);
             OnVisibilityChanged?.Invoke(this,visible);
+        }
+
+        public void ValidateNonUpdatedChunk() {
+            if(!IsInUse||gameObject.activeSelf||_updated) return;
+            if(_bounds.SqrDistance(ViewerPosition) < _meshSettings.ChunkUnloadDistanceSq) return;
+            //The chunk can be unloaded
+            ReleaseToPool();
         }
         
         /// <summary>
         /// This method is used to update the chunks level of detail.
         /// </summary>
-        /// <param name="distanceFromViewer">The chunks distance from the
+        /// <param name="distanceFromViewerSq">The chunks distance from the
         /// viewer.</param>
-        private void UpdateLOD(float distanceFromViewer) {
+        private void UpdateLOD(float distanceFromViewerSq) {
             var lodIndex = 0;
             for(var i = 0; i < _detailLevels.Length - 1; i++) {
-                if(distanceFromViewer > _detailLevels[i].VisibleDistanceThreshold)
+                if(distanceFromViewerSq > _detailLevels[i].SqrVisibleDistanceThreshold)
                     lodIndex = i + 1;
                 else break;
             }
@@ -172,7 +209,7 @@ namespace Amilious.ProceduralTerrain.Map {
         /// This method is used to handle the collision mesh.
         /// </summary>
         public void UpdateCollisionMesh() {
-            if(_hasSetCollider) return;
+            if(!IsInUse || !gameObject.activeSelf || _hasSetCollider) return;
             var sqrDistanceFromViewer = _bounds.SqrDistance(ViewerPosition);
             if(sqrDistanceFromViewer < _detailLevels[_meshSettings.ColliderLODIndex].SqrVisibleDistanceThreshold)
                 if(!_lodMeshes[_meshSettings.ColliderLODIndex].HasRequestedMesh)
@@ -211,6 +248,5 @@ namespace Amilious.ProceduralTerrain.Map {
             }
             return chunk;
         }
-        
     }
 }
