@@ -16,20 +16,6 @@ namespace Amilious.ProceduralTerrain.Map {
     [HideMonoScript]
     public class Chunk : MonoBehaviour {
         
-        #region Chunk Logger
-        private bool UseChunkLog { get => _manager.UseChunkLog; }
-        [ShowInInspector, DisplayAsString(false), HideLabel, ShowIf(nameof(UseChunkLog))]
-        private string _chunkLog = string.Empty;
-        private void LogChunk(string message, bool showId = false) {
-            if(!_manager.UseChunkLog) return;
-            lock(_chunkLog) {
-                if(_chunkLog != string.Empty) _chunkLog += '\n';
-                var thread = Dispatcher.IsMainThread ? "Main     Thread" : "Worker Thread";
-                _chunkLog += $"[{thread}] {(showId ? $"({Coordinate.x},{Coordinate.y})" : "")} {message}";
-            }
-        }
-        #endregion
-        
         private MapManager _manager;
         private MeshRenderer _meshRenderer;
         private MeshFilter _meshFilter;
@@ -67,7 +53,6 @@ namespace Amilious.ProceduralTerrain.Map {
             _meshRenderer = gameObject.AddComponent<MeshRenderer>();
             //if not in use disable gameObject
             if(!IsInUse) gameObject.SetActive(false);
-            LogChunk("Added Game Object Components.");
         }
 
         private void OnDestroy() {
@@ -90,7 +75,6 @@ namespace Amilious.ProceduralTerrain.Map {
         /// on the same like as getting the chunk from the pool.</returns>
         public Chunk Setup(Vector2Int coordinate) {
             Coordinate = coordinate;
-            LogChunk("Setting Up Chunk", true);
             var floatCoord = new Vector2(Coordinate.x, Coordinate.y);
             _sampleCenter = floatCoord * _meshSettings.MeshWorldSize / _meshSettings.MeshScale;
             _position = floatCoord * _meshSettings.MeshWorldSize;
@@ -113,7 +97,6 @@ namespace Amilious.ProceduralTerrain.Map {
             _manager.OnEndUpdate += ValidateNonUpdatedChunk;
             _manager.OnUpdateCollisionMesh += UpdateCollisionMesh;
             if(setActive) gameObject.SetActive(true);
-            LogChunk("Pulled from pool.");
         }
 
         /// <summary>
@@ -138,7 +121,6 @@ namespace Amilious.ProceduralTerrain.Map {
             _heightMapReceived = false;
             gameObject.name = $"Chunk (pooled)";
             //return to pool
-            LogChunk("Returned to pool.");
             IsInUse = false;
         }
 
@@ -165,7 +147,6 @@ namespace Amilious.ProceduralTerrain.Map {
             var visible = distanceFromViewerSq <= _meshSettings.MaxViewDistanceSq;
             if(visible) UpdateLOD(distanceFromViewerSq);
             if(wasVisible == visible) return;
-            LogChunk($"SetActive({visible})",true);
             gameObject.SetActive(visible);
             OnVisibilityChanged?.Invoke(this,visible);
         }
@@ -194,10 +175,8 @@ namespace Amilious.ProceduralTerrain.Map {
             if(lodMesh.HasMesh) {
                 _previousLODIndex = lodIndex;
                 lodMesh.AssignTo(_meshFilter);
-                LogChunk($"Loaded existing mesh for LOD {lodIndex}!",true);
             }else if(!lodMesh.HasRequestedMesh) {
                 lodMesh.RequestMesh(_heightMap, _meshSettings, _manager.ApplyHeight);
-                LogChunk($"Requesting mesh for LOD {lodIndex}!",true);
             }
         }
         
@@ -208,26 +187,37 @@ namespace Amilious.ProceduralTerrain.Map {
             if(_manager.SaveEnabled) {
                 //ToDo:Try load from file
             }
-            var future = new Future<NoiseMap>();
-            future.OnSuccess(heightMap => {
-                _heightMap = heightMap.value;
+            var future = new Future<LoadData>();
+            future.OnSuccess(data => {
+                var loadData = data.value;
+                if(!IsInUse || loadData.coord != Coordinate) return;
+                _biomeMap = loadData.biomeMap;
+                _heightMap = loadData.heightMap;
                 if(_manager.MapPaintingMode != MapPaintingMode.Material) {
-                    _previewTexture = _biomeMap.GenerateTexture(_preparedColors,1);
+                    _previewTexture = _biomeMap.GenerateTexture(loadData.preparedColors,1);
                     _meshRenderer.material.mainTexture = _previewTexture;
                 }
                 _heightMapReceived = true;
-                LogChunk("Received biome and height maps!", true);
                 UpdateChunk();
             });
             future.OnError(x => Debug.LogError(x.error));
             future.Process(()=> {
                 //generate the biome map
-                LogChunk("Generating biome and height maps!", true);
-                _biomeMap = _biomeSettings.GenerateBiomeMap(_meshSettings.VertsPerLine, _seed, _sampleCenter);
-                var heightMap = _biomeMap.GenerateHeightMap();
-                _preparedColors = _biomeMap.GenerateTextureColors(heightMap, _manager.MapPaintingMode, 1);
-                return heightMap;
+                var loadData = new LoadData {
+                    coord = Coordinate,
+                    biomeMap = _biomeSettings.GenerateBiomeMap(_meshSettings.VertsPerLine, _seed, _sampleCenter)
+                };
+                loadData.heightMap = loadData.biomeMap.GenerateHeightMap();
+                loadData.preparedColors = loadData.biomeMap.GenerateTextureColors(loadData.heightMap, _manager.MapPaintingMode, 1);
+                return loadData;
             });
+        }
+
+        private struct LoadData {
+            public NoiseMap heightMap;
+            public BiomeMap biomeMap;
+            public Color[] preparedColors;
+            public Vector2Int coord;
         }
 
         /// <summary>
@@ -271,7 +261,6 @@ namespace Amilious.ProceduralTerrain.Map {
                 if(i == chunk._meshSettings.ColliderLODIndex)
                     chunk._lodMeshes[i].UpdateCallback += chunk.UpdateCollisionMesh;
             }
-            chunk.LogChunk("Created the chunk.");
             return chunk;
         }
     }

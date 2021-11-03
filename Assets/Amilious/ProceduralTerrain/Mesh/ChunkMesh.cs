@@ -29,6 +29,7 @@ namespace Amilious.ProceduralTerrain.Mesh {
         private readonly Vector3[] _flatShadedVertices;
         private readonly Vector2[] _flatShadedUvs;
         private readonly Vector2[] _flatShadedUvs2;
+        private int lastRequestIndex = 0;
         #endregion
         
         
@@ -134,8 +135,10 @@ namespace Amilious.ProceduralTerrain.Mesh {
         /// otherwise the heights will be set to zero.</param>
         public void RequestMesh(NoiseMap heightMap, MeshSettings meshSettings, bool applyHeight = true) {
             HasRequestedMesh = true;
-            var future = new Future<ChunkMesh>();
-            future.OnSuccess(meshData=> {
+            var future = new Future<int>();
+            future.OnSuccess(data=> {
+                //prevent loading of mesh if delayed.
+                if(data.value != lastRequestIndex) return;
                 //if the mesh does not exist we need to create it.
                 _mesh ??= new UnityEngine.Mesh();
                 //apply the changes to the mesh
@@ -146,8 +149,12 @@ namespace Amilious.ProceduralTerrain.Mesh {
             future.OnError(meshData => {
                 Debug.LogError(meshData.error);
             });
-            future.Process(()=> MeshChunkGenerator.Generate(heightMap, meshSettings, 
-                LevelOfDetail, this, applyHeight));
+            future.Process(()=> {
+                var requestId = ++lastRequestIndex;
+                MeshChunkGenerator.Generate(heightMap, meshSettings,
+                    LevelOfDetail, this, applyHeight);
+                return requestId;
+            });
         }
 
         /// <summary>
