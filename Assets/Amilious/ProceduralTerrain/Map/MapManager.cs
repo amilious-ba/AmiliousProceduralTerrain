@@ -30,6 +30,7 @@ namespace Amilious.ProceduralTerrain.Map {
         [SerializeField] private bool generateChunksAtStart;
         [SerializeField, Tooltip("This is the distance the player needs to move before the chunk will update.")]
         private float chunkUpdateThreshold = 25f;
+        [SerializeField] private bool enableChunkLog;
         [SerializeField] private float colliderGenerationThreshold = 5;
         [SerializeField, Required] private string seed;
         [SerializeField] private MapPaintingMode mapPaintingMode;
@@ -42,6 +43,8 @@ namespace Amilious.ProceduralTerrain.Map {
         public event Action<int,int,int,int> OnUpdateVisible;
         public event Action OnEndUpdate;
         public event Action OnUpdateCollisionMesh;
+        
+        public bool UseChunkLog { get => enableChunkLog; }
         
         private float _sqrChunkUpdateThreshold;
         private Vector2 _viewerPosition;

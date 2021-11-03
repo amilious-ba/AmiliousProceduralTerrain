@@ -158,6 +158,7 @@ MonoBehaviour:
   chunkPoolSize: 500
   generateChunksAtStart: 0
   chunkUpdateThreshold: 25
+  enableChunkLog: 1
   colliderGenerationThreshold: 5
   seed: seedless3
   mapPaintingMode: 2

@@ -1,6 +1,5 @@
 using System;
 using System.Linq;
-using System.Threading;
 using UnityEngine;
 using Amilious.Threading;
 using Amilious.ProceduralTerrain.Mesh;
@@ -8,7 +7,6 @@ using Amilious.ProceduralTerrain.Biomes;
 using Amilious.ProceduralTerrain.Noise;
 using Amilious.ProceduralTerrain.Textures;
 using Sirenix.OdinInspector;
-using UnityEditor;
 
 namespace Amilious.ProceduralTerrain.Map {
     
@@ -17,17 +15,20 @@ namespace Amilious.ProceduralTerrain.Map {
     /// </summary>
     [HideMonoScript]
     public class Chunk : MonoBehaviour {
-
-        [ShowInInspector, DisplayAsString(false), HideLabel]
+        
+        #region Chunk Logger
+        private bool UseChunkLog { get => _manager.UseChunkLog; }
+        [ShowInInspector, DisplayAsString(false), HideLabel, ShowIf(nameof(UseChunkLog))]
         private string _chunkLog = string.Empty;
-
         private void LogChunk(string message, bool showId = false) {
+            if(!_manager.UseChunkLog) return;
             lock(_chunkLog) {
                 if(_chunkLog != string.Empty) _chunkLog += '\n';
                 var thread = Dispatcher.IsMainThread ? "Main     Thread" : "Worker Thread";
                 _chunkLog += $"[{thread}] {(showId ? $"({Coordinate.x},{Coordinate.y})" : "")} {message}";
             }
         }
+        #endregion
         
         private MapManager _manager;
         private MeshRenderer _meshRenderer;
@@ -189,7 +190,6 @@ namespace Amilious.ProceduralTerrain.Map {
                 else break;
             }
             if(lodIndex == _previousLODIndex) return;
-            LogChunk($"Desired LOD changed to {lodIndex}!",true);
             var lodMesh = _lodMeshes[lodIndex];
             if(lodMesh.HasMesh) {
                 _previousLODIndex = lodIndex;
