@@ -186,7 +186,7 @@ namespace Amilious.ProceduralTerrain.Map {
                 //ToDo:Try load from file
             }
             var future = new Future<NoiseMap>();
-            future.OnSuccess((heightMap) => {
+            future.OnSuccess(heightMap => {
                 _heightMap = heightMap.value;
                 if(_manager.MapPaintingMode != MapPaintingMode.Material) {
                     _previewTexture = _biomeMap.GenerateTexture(_preparedColors,1);

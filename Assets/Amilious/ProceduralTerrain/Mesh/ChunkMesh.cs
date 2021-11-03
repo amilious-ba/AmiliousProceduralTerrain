@@ -16,9 +16,9 @@ namespace Amilious.ProceduralTerrain.Mesh {
 
         # region Public Instance Variables
         public event Action UpdateCallback;
-        public Vector3[] vertices;
+        public readonly Vector3[] vertices;
         public readonly int[] triangles;
-        public Vector2[] uvs;
+        public readonly Vector2[] uvs;
         public readonly Vector2[] uvs2;
         public Vector3[] bakedNormals;
         public readonly Vector3[] outOfMeshVertices;
