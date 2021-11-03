@@ -3,9 +3,6 @@ using UnityEngine;
 using Amilious.Threading;
 using Amilious.ProceduralTerrain.Noise;
 
-//TODO: bake flat shaded normals
-//TODO: smooth the seam between chunks of smaller lods
-
 namespace Amilious.ProceduralTerrain.Mesh {
     
     /// <summary>
