@@ -11,6 +11,7 @@ namespace Amilious.Saving {
     /// </summary>
     [System.Serializable]
     public class SaveData {
+        
         /// <summary>
         /// This constructor is used to create a new SaveData to collect data from the game.
         /// </summary>
@@ -44,6 +45,7 @@ namespace Amilious.Saving {
         /// <see cref="SerializableVector3"/>, <see cref="SerializableVector2Int"/>,
         /// <see cref="SerializableVector3Int"/>, <see cref="SerializableQuaternion"/></remarks>
         public bool TryFetchData<T>(string key, out T data) {
+            key = AddPrefix(key);
             data = default;
             switch(data) {
                 //If trying to get a Vector2 get and convert a serializable version
@@ -97,6 +99,7 @@ namespace Amilious.Saving {
         /// <typeparam name="T">The type of the data that you want to add.</typeparam>
         /// <returns></returns>
         public bool TryStoreData<T>(string key, T data) {
+            key = AddPrefix(key);
             switch(data) {
                 case Vector2 v2: //convert Vector2 to serializable
                     DataDictionary[key] = v2.ToSerializable();
@@ -134,7 +137,7 @@ namespace Amilious.Saving {
         /// <param name="applyLocalScale">If true the local scale will also be applied.</param>
         /// <returns>True if the transform data was set, otherwise returns false.</returns>
         public bool TryRestoreTransformData(string key, Transform transform, bool applyLocalScale = false) {
-            if(!TryFetchData(key, out SerializableTransform st)) return false;
+            if(!TryFetchData(AddPrefix(key), out SerializableTransform st)) return false;
             st.UpdateTransform(transform, applyLocalScale);
             return true;
         }
@@ -153,6 +156,14 @@ namespace Amilious.Saving {
         /// This property is used to get the path of the save file.
         /// </summary>
         public string SavePath => SavingSystem.GetSaveFilePath(SaveFile);
+        
+        public string Prefix { get; private set; }
+
+        public void SetPrefix(string prefix) => Prefix = prefix;
+
+        public void ClearPrefix() => Prefix = null;
+
+        private string AddPrefix(string key) => (Prefix == null) ? key : $"{Prefix}_{key}";
 
     }
 }

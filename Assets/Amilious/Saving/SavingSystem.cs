@@ -20,6 +20,7 @@ namespace Amilious.Saving {
         private static readonly ConcurrentDictionary<string, object> FileLocks = new ConcurrentDictionary<string, object>();
         private const string LAST_LOADED = "LastLoadedSceneIdentifier";
         private static long _actionID = 0;
+        private static string _persistentDataPath;
         
         #endregion
 
@@ -70,7 +71,16 @@ namespace Amilious.Saving {
             var dispatcher = FindObjectOfType<Dispatcher>();
             if(dispatcher != null) return;
             gameObject.AddComponent<Dispatcher>();
+            //_persistentDataPath = Application.persistentDataPath;
+        }
 
+        private void OnValidate() { /*_persistentDataPath = Application.persistentDataPath;*/ }
+
+        public static string PersistentDataPath {
+            get {
+                if(_persistentDataPath == null) return Application.persistentDataPath;
+                return _persistentDataPath;
+            }
         }
 
         /// <summary>
@@ -139,13 +149,10 @@ namespace Amilious.Saving {
             if(captureState) CaptureState(saveFile, state);
             state[LAST_LOADED] = 
                 LastLoadedScene.TryGetValue(saveFile, out var value) ? value : null;
-            var future = new Future<bool>();
-            future.OnSuccess(result => OnSaveComplete?.Invoke(saveFile, id,result.value));
-            future.OnError(result => {
-                Debug.LogError(result.error);
-                OnSaveComplete?.Invoke(saveFile, id, false);
-            });
-            future.Process(() => SaveFile(saveFile, state));
+            SaveFileAsync(saveFile,state, SaveComplete);
+            void SaveComplete(bool success) {
+                OnSaveComplete?.Invoke(saveFile, id, success);
+            }
         }
         
         /// <summary>
@@ -174,18 +181,13 @@ namespace Amilious.Saving {
         public static void LoadAsync(string saveFile, bool restoreState = true) {
             var id = ++_actionID;
             OnLoadStart?.Invoke(saveFile,id);
-            var future = new Future<Dictionary<string, object>>();
-            future.OnSuccess((result) => {
+            LoadFileAsync(saveFile, LoadedData);
+            void LoadedData(Dictionary<string, object> state) {
                 LastLoadedScene[saveFile] = 
-                    result.value.TryGetValue(LAST_LOADED, out object value) ? value : null;
-                if(restoreState) RestoreState(saveFile, result.value);
+                    state.TryGetValue(LAST_LOADED, out var value) ? value : null;
+                if(restoreState) RestoreState(saveFile, state);
                 OnLoadComplete?.Invoke(saveFile,id, true);
-            });
-            future.OnError(result => {
-                Debug.LogError(result.error);
-                OnLoadComplete?.Invoke(saveFile,id, false);
-            });
-            future.Process(() => LoadFile(saveFile));
+            }
         }
 
         /// <summary>
@@ -194,7 +196,19 @@ namespace Amilious.Saving {
         /// <param name="saveFile">The name of the save file without the path or extension.</param>
         /// <returns>The full path to the save file with the extension.</returns>
         public static string GetSaveFilePath(string saveFile) {
-            return Path.Combine(Application.persistentDataPath, saveFile + ".sav");
+            return Path.Combine(PersistentDataPath, saveFile + ".sav");
+        }
+
+        /// <summary>
+        /// This method is used to get the path of the save directory.
+        /// </summary>
+        /// <param name="subDir">An optional sub directory that you want to be
+        /// added to the path.</param>
+        /// <returns>The save directory path.</returns>
+        public static string GetSaveDirectory(string subDir = null) {
+            return subDir == null ? 
+                PersistentDataPath : 
+                Path.Combine(PersistentDataPath, subDir);
         }
 
         /// <summary>
@@ -210,6 +224,29 @@ namespace Amilious.Saving {
                 var formatter = new BinaryFormatter();
                 return (Dictionary<string, object>)formatter.Deserialize(fileSteam);
             }
+        }
+
+        /// <summary>
+        /// This method is used to load a file asynchronously.
+        /// </summary>
+        /// <param name="saveFile">The name of the save file without the path.</param>
+        /// <param name="callback">The method that will be called once the load is complete.</param>
+        public static void LoadFileAsync(string saveFile, Action<Dictionary<string, object>> callback) {
+            var path = GetSaveFilePath(saveFile);
+            var future = new Future<Dictionary<string, object>>();
+            future.OnError(x => {
+                Debug.LogError(x.error);
+                callback(null);
+            });
+            future.OnSuccess(data => callback(data.value));
+            future.Process(() => {
+                lock(GetLock(path)) { //lock the file only allowing one instance to read or write at a single time.
+                    if(!File.Exists(path)) return new Dictionary<string, object>();
+                    using var fileSteam = File.Open(path, FileMode.Open);
+                    var formatter = new BinaryFormatter();
+                    return (Dictionary<string, object>)formatter.Deserialize(fileSteam);
+                }
+            });
         }
         
         /// <summary>
@@ -249,6 +286,43 @@ namespace Amilious.Saving {
                     return false;
                 }
             }
+        }
+        
+        /// <summary>
+        /// This method is used to save a file asynchronously.
+        /// </summary>
+        /// <param name="saveFile">The name of the save file without the path.</param>
+        /// <param name="state">The game state that you want to save to the
+        /// save file.</param>
+        /// <param name="callback">The method that will be called when the save
+        /// is complete.  This method takes a bool that will be true if the file
+        /// was saved, otherwise it will return false.</param>
+        public static void SaveFileAsync(string saveFile, Dictionary<string, object> state, Action<bool> callback) {
+            var path = GetSaveFilePath(saveFile);
+            var tmpPath = Path.GetTempPath();
+            var future = new Future<bool>();
+            future.OnError(x => {
+                Debug.LogError(x.error);
+                callback(false);
+            });
+            future.OnSuccess(x => callback(x.value));
+            future.Process(()=>{
+                lock(GetLock(path)) { //lock the file only allowing one instance to read or write at a single time.
+                    try {
+                        //write to a temp file then copy the file to the correct path
+                        using var fileStream = File.Open(tmpPath, FileMode.Create);
+                        var formatter = new BinaryFormatter();
+                        formatter.Serialize(fileStream, state);
+                        fileStream.Close();
+                        File.Copy(tmpPath,path,true);
+                        try { File.Delete(tmpPath); }catch { }
+                        return true;
+                    }catch(Exception ex) {
+                        Debug.LogError(ex);
+                        return false;
+                    }
+                }
+            });
         }
 
         /// <summary>
