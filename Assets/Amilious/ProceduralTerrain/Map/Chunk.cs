@@ -152,7 +152,7 @@ namespace Amilious.ProceduralTerrain.Map {
         }
 
         public void ValidateNonUpdatedChunk() {
-            if(!IsInUse||gameObject.activeSelf||_updated) return;
+            if(!IsInUse||_updated) return;
             if(_bounds.SqrDistance(ViewerPosition) < _meshSettings.ChunkUnloadDistanceSq) return;
             //The chunk can be unloaded
             ReleaseToPool();
