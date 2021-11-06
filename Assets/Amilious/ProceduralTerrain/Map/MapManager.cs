@@ -1,5 +1,5 @@
 using System;
-using System.Collections.Concurrent;
+using System.Diagnostics;
 using Amilious.ProceduralTerrain.Biomes;
 using Amilious.ProceduralTerrain.Mesh;
 using Amilious.Random;
@@ -41,7 +41,12 @@ namespace Amilious.ProceduralTerrain.Map {
         public event Action<int,int,int,int> OnUpdateVisible;
         public event Action OnEndUpdate;
         public event Action OnUpdateCollisionMesh;
-        
+
+
+        public delegate void ViewerChangedChunkDelegate(Transform viewer, Vector2Int oldChunkId, Vector2Int newChunkId);
+        public delegate void ChunksUpdatedDelegate(ChunkPool chunkPool, long ms);
+        public event ChunksUpdatedDelegate OnChunksUpdated;
+        public event ViewerChangedChunkDelegate OnViewerChangedChunk;
         
         private float _sqrChunkUpdateThreshold;
         private Vector2 _viewerPosition;
@@ -55,6 +60,8 @@ namespace Amilious.ProceduralTerrain.Map {
         
         public MeshSettings MeshSettings { get => meshSettings; }
         public BiomeSettings BiomeSettings { get => biomeSettings; }
+
+        public Vector2 ViewerPositionXZ => new Vector2(viewer.position.x, viewer.position.z);
         
         public MapPaintingMode MapPaintingMode { get => mapPaintingMode; }
 
@@ -94,9 +101,12 @@ namespace Amilious.ProceduralTerrain.Map {
         private void Update() {
             
             //get the player position
-            var position = viewer.position;
-            _viewerPosition = new Vector2(position.x, position.z);
-            _viewerChunk = ChunkAtPoint(_viewerPosition);
+            _viewerPosition = ViewerPositionXZ;
+            var vChunk = ChunkAtPoint(_viewerPosition);
+            if(vChunk != _viewerChunk) {
+                OnViewerChangedChunk?.Invoke(viewer,_viewerChunk,vChunk);
+                _viewerChunk = vChunk;
+            }
             
             //check for collision mesh update
             if(_viewerPosition != _oldViewerPosition) {
@@ -129,10 +139,13 @@ namespace Amilious.ProceduralTerrain.Map {
             );
         }
 
+        private readonly Stopwatch _updateSW = new Stopwatch();
+        
         /// <summary>
         /// This method is used update visible chunks.
         /// </summary>
         private void UpdateVisibleChunks() {
+            _updateSW.Restart();
             OnStartUpdate?.Invoke();
             var chunks = meshSettings.ChunksVisibleInViewDistance;
             OnUpdateVisible?.Invoke(_viewerChunk.x-chunks,_viewerChunk.x+chunks,
@@ -143,6 +156,7 @@ namespace Amilious.ProceduralTerrain.Map {
                 _chunkPool.LoadChunk(chunkCoord);
             }
             OnEndUpdate?.Invoke();
+            OnChunksUpdated?.Invoke(_chunkPool,_updateSW.ElapsedMilliseconds);
         }
         
     }

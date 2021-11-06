@@ -75,9 +75,7 @@ namespace Amilious.ProceduralTerrain.Map {
         /// specified chunk.
         /// </summary>
         /// <param name="coordinate">The chunks coordinate.</param>
-        /// <returns>This same chunk so that this method can be called
-        /// on the same like as getting the chunk from the pool.</returns>
-        public Chunk Setup(Vector2Int coordinate) {
+        public void Setup(Vector2Int coordinate) {
             Coordinate = coordinate;
             var floatCoord = new Vector2(Coordinate.x, Coordinate.y);
             _sampleCenter = floatCoord * _meshSettings.MeshWorldSize / _meshSettings.MeshScale;
@@ -85,9 +83,8 @@ namespace Amilious.ProceduralTerrain.Map {
             _bounds = new Bounds(_position, Vector3.one * _meshSettings.MeshWorldSize);
             gameObject.name = $"Chunk ({Coordinate.x},{Coordinate.y})";
             transform.position = new Vector3(_position.x, 0, _position.y);
-            Load();
             HasProcessedRelease = false;
-            return this;
+            Load();
         }
 
         /// <summary>
