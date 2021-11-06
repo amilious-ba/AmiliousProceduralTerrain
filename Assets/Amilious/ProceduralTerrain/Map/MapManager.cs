@@ -2,6 +2,7 @@ using System;
 using System.Diagnostics;
 using Amilious.ProceduralTerrain.Biomes;
 using Amilious.ProceduralTerrain.Mesh;
+using Amilious.ProceduralTerrain.Saving;
 using Amilious.Random;
 using Amilious.Threading;
 using Sirenix.OdinInspector;
@@ -14,7 +15,7 @@ namespace Amilious.ProceduralTerrain.Map {
     /// that loads and unloads chunks from the world.  It is also the class that
     /// will generate and hold all of the world.
     /// </summary>
-    [RequireComponent(typeof(Dispatcher)), HideMonoScript]
+    [RequireComponent(typeof(Dispatcher), typeof(MapSaver)), HideMonoScript]
     public class MapManager : MonoBehaviour {
 
         /*
@@ -60,6 +61,8 @@ namespace Amilious.ProceduralTerrain.Map {
         
         public MeshSettings MeshSettings { get => meshSettings; }
         public BiomeSettings BiomeSettings { get => biomeSettings; }
+        
+        public MapSaver MapSaver { get; private set; }
 
         public Vector2 ViewerPositionXZ => new Vector2(viewer.position.x, viewer.position.z);
         
@@ -88,6 +91,7 @@ namespace Amilious.ProceduralTerrain.Map {
         public string Seed { get => seed; }
 
         private void Awake() {
+            MapSaver = GetComponent<MapSaver>();
             _chunkPool = generateChunksAtStart?
                 new ChunkPool(this, chunkPoolSize):
                 new ChunkPool(this);

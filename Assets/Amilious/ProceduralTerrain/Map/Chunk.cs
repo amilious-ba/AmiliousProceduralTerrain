@@ -7,6 +7,7 @@ using Amilious.ProceduralTerrain.Mesh;
 using Amilious.ProceduralTerrain.Biomes;
 using Amilious.ProceduralTerrain.Noise;
 using Amilious.ProceduralTerrain.Textures;
+using Amilious.Saving;
 using Sirenix.OdinInspector;
 
 namespace Amilious.ProceduralTerrain.Map {
@@ -37,7 +38,6 @@ namespace Amilious.ProceduralTerrain.Map {
         private Color[] _preparedColors;
         private int _seed;
         private ChunkPool _chunkPool;
-
         private ReusableFuture loader;
 
         public event Action<Chunk, bool> OnVisibilityChanged;
@@ -113,7 +113,9 @@ namespace Amilious.ProceduralTerrain.Map {
         /// to the chunk pool.
         /// </summary>
         public bool ReleaseToPool() {
-            if(_manager.SaveEnabled) {
+            if(_manager.SaveEnabled && _heightMapReceived) {
+                //var saveData = new SaveData();
+                //_biomeMap.Save(saveData);
                 //TODO: save the chunk data
             }
             loader.Cancel();
@@ -203,16 +205,11 @@ namespace Amilious.ProceduralTerrain.Map {
         }
 
         private bool ProcessLoadData(CancellationToken token) {
-            _biomeMap.Generate(_sampleCenter, token);
+            if(_manager.SaveEnabled && _manager.MapSaver.LoadData(Coordinate, out var saveData)) {
+                _biomeMap.Load(saveData);
+            }else _biomeMap.Generate(_sampleCenter, token);
             _biomeMap.GenerateTextureColors(_preparedColors, _manager.MapPaintingMode, 1);
             return true;
-        }
-
-        private struct LoadData {
-            public NoiseMap heightMap;
-            public BiomeMap biomeMap;
-            public Color[] preparedColors;
-            public Vector2Int coord;
         }
 
         /// <summary>

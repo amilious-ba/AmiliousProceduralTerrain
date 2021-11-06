@@ -3,6 +3,9 @@ using System.Collections.Generic;
 using UnityEngine;
 
 namespace Amilious.RayCasting {
+    
+    //TODO: add methods for box cast
+    
     public class BufferedRaycast : MonoBehaviour {
         private readonly RaycastHit[] _raycastBuffer;
         private readonly float[] _distanceBuffer;

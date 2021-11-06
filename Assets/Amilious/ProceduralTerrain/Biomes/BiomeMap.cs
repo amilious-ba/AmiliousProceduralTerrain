@@ -85,7 +85,7 @@ namespace Amilious.ProceduralTerrain.Biomes {
         /// This method is used to load the <see cref="BiomeMap"/>.
         /// </summary>
         /// <param name="saveData">The <see cref="SaveData"/> that is being used to load the data.</param>
-        private void Load(SaveData saveData) {
+        public void Load(SaveData saveData) {
             saveData.SetPrefix(PREFIX);
             Position = saveData.FetchData<Vector2>(POSITION);
             values = saveData.FetchData<int[,]>(BIOME_VALUES);
