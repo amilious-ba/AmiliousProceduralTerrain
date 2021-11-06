@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Threading;
 using Amilious.ProceduralTerrain.Sampling;
 using UnityEngine;
 
@@ -133,7 +134,7 @@ namespace Amilious.ProceduralTerrain.Biomes.Blending {
             _pointsToSearch = pointsToSearchList.ToArray();
         }
         
-        public List<SamplePoint<T>> GetPoints<T>(long seed, float x, float z) {
+        public List<SamplePoint<T>> GetPoints<T>(long seed, float x, float z, CancellationToken cancellationToken) {
             x *= _frequency;
             z *= _frequency;
 
@@ -173,6 +174,9 @@ namespace Amilious.ProceduralTerrain.Biomes.Blending {
             // Loop through pregenerated array of all points which could be in range, relative to the closest.
             var worldPointsList = new List<SamplePoint<T>>(_pointsToSearch.Length);
             foreach(var point in _pointsToSearch) {
+                
+                cancellationToken.ThrowIfCancellationRequested();
+                
                 // Prime multiplications for jitter hash
                 var xsvp = xsbp + point.xsvp;
                 var zsvp = zsbp + point.zsvp;

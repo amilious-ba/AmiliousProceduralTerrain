@@ -1,6 +1,8 @@
 using System;
 using UnityEngine;
 using Amilious.ProceduralTerrain.Map;
+using Amilious.Saving;
+using UnityEngine.PlayerLoop;
 
 namespace Amilious.ProceduralTerrain.Noise {
     
@@ -8,6 +10,10 @@ namespace Amilious.ProceduralTerrain.Noise {
     /// This class is used to hold a noise map.
     /// </summary>
     public class NoiseMap: MapData<float> {
+
+        private const string PREFIX = "noiseMap";
+        private const string VALUES = "values";
+        private const string POSITION = "position";
         
         #region Properties
         
@@ -98,6 +104,37 @@ namespace Amilious.ProceduralTerrain.Noise {
             if(!ContainsKey(key)) return false;
             this[key] = value;
             return true;
+        }
+
+        /// <summary>
+        /// This method can be used to change the position of the map.
+        /// </summary>
+        /// <remarks>This method does not regenerate the values.</remarks>
+        /// <param name="position">The new position of the map.</param>
+        public void ResetPosition(Vector2 position) {
+            Position = position;
+        }
+
+        /// <summary>
+        /// This method is used to save the <see cref="NoiseMap"/>.
+        /// </summary>
+        /// <param name="saveData">The <see cref="SaveData"/> that will be used to save the map values.</param>
+        public void Save(SaveData saveData) {
+            saveData.SetPrefix(PREFIX);
+            saveData.StoreData(VALUES, values);
+            saveData.StoreData(POSITION, Position);
+            saveData.ClearPrefix();
+        }
+
+        /// <summary>
+        /// This method is used to load the <see cref="NoiseMap"/>.
+        /// </summary>
+        /// <param name="saveData">The <see cref="SaveData"/> that will be used to load the map values.</param>
+        public void Load(SaveData saveData) {
+            saveData.SetPrefix(PREFIX);
+            values = saveData.FetchData<float[,]>(VALUES);
+            Position = saveData.FetchData<Vector2>(POSITION);
+            saveData.ClearPrefix();
         }
 
         #endregion

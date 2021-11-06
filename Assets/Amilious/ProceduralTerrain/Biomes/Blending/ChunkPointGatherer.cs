@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Threading;
 using Amilious.ProceduralTerrain.Sampling;
 using UnityEngine;
 
@@ -32,33 +33,37 @@ namespace Amilious.ProceduralTerrain.Biomes.Blending {
             _unfilteredPointGatherer = new UnfilteredPointGatherer(frequency,
                     maxPointContributionRadius + chunkSize * ChunkRadiusRatio);
         }
-        
+
         /// <summary>
         /// This method is used to get the <see cref="SamplePoint{T}"/>s for the
         /// <see cref="BiomeBlender"/> using the chunks top left position.
         /// </summary>
         /// <param name="seed">The seed to use for the <see cref="SamplePoint{T}"/> generation.</param>
         /// <param name="topLeftPosition">The top left position of the chunk.</param>
+        /// <param name="token">A cancellation token that can be used to cancel the process.</param>
         /// <returns>The <see cref="SamplePoint{T}"/>s that will be used in the
         /// <see cref="BiomeBlender"/>.</returns>
-        public List<SamplePoint<int>> GetPointsFromChunkBase(long seed, Vector2 topLeftPosition) {
+        public List<SamplePoint<int>> GetPointsFromChunkBase(long seed, Vector2 topLeftPosition,
+            CancellationToken token) {
             var centerPosition = topLeftPosition;
             centerPosition.x+= _halfChunkWidth;
             centerPosition.y+= _halfChunkWidth;
-            return GetPointsFromChunkCenter(seed, centerPosition);
+            return GetPointsFromChunkCenter(seed, centerPosition, token);
         }
-        
+
         /// <summary>
         /// This method is used to get the <see cref="SamplePoint{T}"/>s for the
         /// <see cref="BiomeBlender"/> using the chunks center position.
         /// </summary>
         /// <param name="seed">The seed to use for the <see cref="SamplePoint{T}"/> generation.</param>
         /// <param name="centerPosition">The top left position of the chunk.</param>
+        /// <param name="token">A cancellation token that can be used to cancel the process.</param>
         /// <returns>The <see cref="SamplePoint{T}"/>s that will be used in the
         /// <see cref="BiomeBlender"/>.</returns>
-        public List<SamplePoint<int>> GetPointsFromChunkCenter(long seed, Vector2 centerPosition) {
+        public List<SamplePoint<int>> GetPointsFromChunkCenter(long seed, Vector2 centerPosition,
+            CancellationToken token) {
             var worldPoints =
-                    _unfilteredPointGatherer.GetPoints<int>(seed, centerPosition.x, centerPosition.y);
+                    _unfilteredPointGatherer.GetPoints<int>(seed, centerPosition.x, centerPosition.y,token);
             for (var i = 0; i < worldPoints.Count; i++) {
                 var point = worldPoints[i];
                 // Check if point contribution radius lies outside any coordinate in the chunk
@@ -74,6 +79,7 @@ namespace Amilious.ProceduralTerrain.Biomes.Blending {
                 worldPoints[i] = worldPoints[lastIndex];
                 worldPoints.RemoveAt(lastIndex);
                 i--;
+                token.ThrowIfCancellationRequested();
             }
             
             return worldPoints;

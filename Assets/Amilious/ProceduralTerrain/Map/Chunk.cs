@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using System.Threading;
 using UnityEngine;
 using Amilious.Threading;
 using Amilious.ProceduralTerrain.Mesh;
@@ -31,12 +32,13 @@ namespace Amilious.ProceduralTerrain.Map {
         private Bounds _bounds;
         private bool _hasSetCollider;
         private Transform _viewer;
-        private NoiseMap _heightMap;
         private BiomeMap _biomeMap;
         private Texture2D _previewTexture;
         private Color[] _preparedColors;
         private int _seed;
         private ChunkPool _chunkPool;
+
+        private ReusableFuture<bool> loader;
 
         public event Action<Chunk, bool> OnVisibilityChanged;
         
@@ -55,6 +57,10 @@ namespace Amilious.ProceduralTerrain.Map {
             _meshFilter = gameObject.AddComponent<MeshFilter>();
             _meshCollider = gameObject.AddComponent<MeshCollider>();
             _meshRenderer = gameObject.AddComponent<MeshRenderer>();
+            //setup loader
+            loader = new ReusableFuture<bool>();
+            loader.OnError(error => Debug.Log("Error: "+error));
+            loader.OnProcess(ProcessLoadData).OnSuccess(OnDataLoaded);
             //if not in use disable gameObject
             if(!IsInUse) gameObject.SetActive(false);
         }
@@ -84,7 +90,8 @@ namespace Amilious.ProceduralTerrain.Map {
             gameObject.name = $"Chunk ({Coordinate.x},{Coordinate.y})";
             transform.position = new Vector3(_position.x, 0, _position.y);
             HasProcessedRelease = false;
-            Load();
+            //Load();
+            loader.Process();
         }
 
         /// <summary>
@@ -109,6 +116,7 @@ namespace Amilious.ProceduralTerrain.Map {
             if(_manager.SaveEnabled) {
                 //TODO: save the chunk data
             }
+            loader.Cancel();
             _manager.OnStartUpdate -= StartUpdateCycle;
             _manager.OnUpdateVisible -= UpdateChunk;
             _manager.OnEndUpdate -= ValidateNonUpdatedChunk;
@@ -139,12 +147,15 @@ namespace Amilious.ProceduralTerrain.Map {
         /// </summary>
         public void UpdateChunk(int xMin, int xMax, int yMin, int yMax) {
             if(!_heightMapReceived|| !IsInUse) return;
-            if(Coordinate.x < xMin || Coordinate.x > xMax) return;
-            if(Coordinate.y < yMin || Coordinate.y > yMax) return;
+            if(Coordinate.x < xMin || Coordinate.x > xMax || Coordinate.y < yMin || Coordinate.y > yMax) {
+                //out of range so make sure it is disabled
+                if(!gameObject.activeSelf) return;
+                gameObject.SetActive(false);
+                OnVisibilityChanged?.Invoke(this,false);
+                return;
+            }
             _updated = true;
-            //var distanceFromViewer = Mathf.Sqrt(_bounds.SqrDistance(ViewerPosition));
-            var distanceFromViewerSq =
-                _bounds.SqrDistance(ViewerPosition);
+            var distanceFromViewerSq = _bounds.SqrDistance(ViewerPosition);
             var wasVisible =  gameObject.activeSelf;
             var visible = distanceFromViewerSq <= _meshSettings.MaxViewDistanceSq;
             if(visible) UpdateLOD(distanceFromViewerSq);
@@ -178,41 +189,23 @@ namespace Amilious.ProceduralTerrain.Map {
                 _previousLODIndex = lodIndex;
                 lodMesh.AssignTo(_meshFilter);
             }else if(!lodMesh.HasRequestedMesh) {
-                lodMesh.RequestMesh(_heightMap, _meshSettings, _manager.ApplyHeight);
+                lodMesh.RequestMesh(_biomeMap.HeightMap, _meshSettings, _manager.ApplyHeight);
             }
         }
-        
-        /// <summary>
-        /// This method is used to load the chunk.
-        /// </summary>
-        private void Load() {
-            if(_manager.SaveEnabled) {
-                //ToDo:Try load from file
+
+        private void OnDataLoaded(bool complete) {
+            if(_manager.MapPaintingMode != MapPaintingMode.Material) {
+                _previewTexture = _biomeMap.GenerateTexture(_preparedColors,1);
+                _meshRenderer.material.mainTexture = _previewTexture;
             }
-            var future = new Future<LoadData>();
-            future.OnSuccess(data => {
-                var loadData = data.value;
-                if(!IsInUse || loadData.coord != Coordinate) return;
-                _biomeMap = loadData.biomeMap;
-                _heightMap = loadData.heightMap;
-                if(_manager.MapPaintingMode != MapPaintingMode.Material) {
-                    _previewTexture = _biomeMap.GenerateTexture(loadData.preparedColors,1);
-                    _meshRenderer.material.mainTexture = _previewTexture;
-                }
-                _heightMapReceived = true;
-                UpdateChunk();
-            });
-            future.OnError(x => Debug.LogError(x.error));
-            future.Process(()=> {
-                //generate the biome map
-                var loadData = new LoadData {
-                    coord = Coordinate,
-                    biomeMap = _biomeSettings.GenerateBiomeMap(_meshSettings.VertsPerLine, _seed, _sampleCenter)
-                };
-                loadData.heightMap = loadData.biomeMap.GenerateHeightMap();
-                loadData.preparedColors = loadData.biomeMap.GenerateTextureColors(loadData.heightMap, _manager.MapPaintingMode, 1);
-                return loadData;
-            });
+            _heightMapReceived = true;
+            UpdateChunk();
+        }
+
+        private bool ProcessLoadData(CancellationToken token) {
+            _biomeMap.Generate(_sampleCenter, token);
+            _biomeMap.GenerateTextureColors(_preparedColors, _manager.MapPaintingMode, 1);
+            return true;
         }
 
         private struct LoadData {
@@ -230,7 +223,7 @@ namespace Amilious.ProceduralTerrain.Map {
             var sqrDistanceFromViewer = _bounds.SqrDistance(ViewerPosition);
             if(sqrDistanceFromViewer < _detailLevels[_meshSettings.ColliderLODIndex].SqrVisibleDistanceThreshold)
                 if(!_lodMeshes[_meshSettings.ColliderLODIndex].HasRequestedMesh)
-                    _lodMeshes[_meshSettings.ColliderLODIndex].RequestMesh(_heightMap, _meshSettings, _manager.ApplyHeight);
+                    _lodMeshes[_meshSettings.ColliderLODIndex].RequestMesh(_biomeMap.HeightMap, _meshSettings, _manager.ApplyHeight);
             if(sqrDistanceFromViewer > _manager.SqrColliderGenerationThreshold) return;
             if(!_lodMeshes[_meshSettings.ColliderLODIndex].HasMesh) return;
             _lodMeshes[_meshSettings.ColliderLODIndex].AssignTo(_meshCollider);
@@ -252,6 +245,8 @@ namespace Amilious.ProceduralTerrain.Map {
             chunk._biomeSettings = manager.BiomeSettings;
             chunk._viewer = manager.Viewer;
             chunk._seed = manager.HashedSeed;
+            chunk._biomeMap = new BiomeMap(manager.HashedSeed,manager.MeshSettings.VertsPerLine, manager.BiomeSettings);
+            chunk._preparedColors = new Color[chunk._biomeMap.GetBorderCulledValuesCount(1)];
             //create meshes
             chunk._detailLevels = chunk._meshSettings.LevelsOfDetail.ToArray();
             chunk._lodMeshes = new ChunkMesh[chunk._detailLevels.Length];

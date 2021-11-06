@@ -129,14 +129,23 @@ namespace Amilious.ProceduralTerrain.Biomes {
         
         #region Inspector Methods
         
-        public Dictionary<int,float[,]> BlendChunk(int size, int seed, Vector2 position) {
+        /// <summary>
+        /// This method is used to blend the biome data for a chunk.
+        /// </summary>
+        /// <param name="size">The size of the chunk.</param>
+        /// <param name="seed">The seed for the chunk.</param>
+        /// <param name="position">The position of the chunk.</param>
+        /// <param name="token">A cancellation token that can be used to
+        /// cancel the blending.</param>
+        /// <returns>A dictionary of the biomes and their weights.</returns>
+        public Dictionary<int, float[,]> BlendChunk(int size, int seed, Vector2 position, CancellationToken token) {
             //try to get biomeBlender from cache
             var found = _biomeBlenderCache.TryGetValue(size, out var biomeBlender);
             //if the biome blender is not cached create it and cache it.
             biomeBlender??= new BiomeBlender(blendFrequency, blendRadiusPadding,size, useComputeShader);
             if(found) _biomeBlenderCache.TryAdd(size, biomeBlender);
             //preform the blend
-            return biomeBlender.GetChunkBiomeWeights(seed, position, this);
+            return biomeBlender.GetChunkBiomeWeights(seed, position, this, token);
         }
         
         private BiomeInfo AddNewBiomeInfo() {
@@ -175,7 +184,8 @@ namespace Amilious.ProceduralTerrain.Biomes {
             var heatMap = heatMapSettings.Generate(size,SeedGenerator.GetSeedInt(seed),offset);
             var moistureMap = moistureMapSettings.Generate(size,SeedGenerator.GetSeedInt(seed),offset);
             //var baseMap = baseMapSettings.Generate(size, SeedGenerator.GetSeedInt(seed), offset);
-            var biomeMap = new BiomeMap(SeedGenerator.GetSeedInt(seed), size, offset, this);
+            var biomeMap = new BiomeMap(SeedGenerator.GetSeedInt(seed), size, this);
+            biomeMap.Generate(offset);
             _stopwatch.Stop();
             _generateHeightTime = $"  Biome Map: min {_stopwatch.Elapsed.Minutes} sec {_stopwatch.Elapsed.Seconds} ms {_stopwatch.Elapsed.Milliseconds}";
             _stopwatch.Reset();
@@ -290,7 +300,9 @@ namespace Amilious.ProceduralTerrain.Biomes {
         /// <returns>The generated biome map.</returns>
         public BiomeMap GenerateBiomeMap(int size, int hashedSeed, Vector2? position = null) {
             position??=Vector2.zero;
-            return new BiomeMap(hashedSeed, size, position.Value, this);
+            var map = new BiomeMap(hashedSeed, size, this);
+            map.Generate(position.Value);
+            return map;
         }
 
         /// <summary>
@@ -316,18 +328,18 @@ namespace Amilious.ProceduralTerrain.Biomes {
             
             //create the buffer
             var bufferData = new ShaderBufferBiomeInfo[samplePoints.Count];
-            for(int i = 0; i < samplePoints.Count; i++)
+            for(var i = 0; i < samplePoints.Count; i++)
                 bufferData[i]= new ShaderBufferBiomeInfo{position = new Vector2(samplePoints[i].X,samplePoints[i].Z)};
-            var buffer = new ComputeBuffer(bufferData.Length, ShaderBufferSize);
+            var buffer = new ComputeBuffer(bufferData.Length, SHADER_BUFFER_SIZE);
             buffer.SetData(bufferData);
             //dispatch
-            int kernal = computeShader.FindKernel("GetPointBiomes");
-            computeShader.SetBuffer(kernal, "biome_info",buffer);
+            var kernel = computeShader.FindKernel("GetPointBiomes");
+            computeShader.SetBuffer(kernel, "biome_info",buffer);
             computeShader.SetInt("num_points",bufferData.Length);
-            computeShader.Dispatch(kernal,bufferData.Length/64,1,1);
+            computeShader.Dispatch(kernel,bufferData.Length/64,1,1);
             //fetch the results
             buffer.GetData(bufferData);
-            for(int i = 0; i < samplePoints.Count; i++) {
+            for(var i = 0; i < samplePoints.Count; i++) {
                 var biome = 0;
                 if(bufferData[i].moisture_index != -1 && bufferData[i].heat_index != -1) {
                     biome = biomeTable[bufferData[i].moisture_index, bufferData[i].heat_index];
@@ -341,11 +353,15 @@ namespace Amilious.ProceduralTerrain.Biomes {
             return result;
         }
 
-        public const int ShaderBufferSize = sizeof(float) * 2 + sizeof(int) * 2;
+        public const int SHADER_BUFFER_SIZE = sizeof(float) * 2 + sizeof(int) * 2;
 
         public struct ShaderBufferBiomeInfo {
             public Vector2 position;
+            // ReSharper disable once InconsistentNaming
+            // ReSharper disable once UnassignedField.Global
             public int moisture_index;
+            // ReSharper disable once InconsistentNaming
+            // ReSharper disable once UnassignedField.Global
             public int heat_index;  
         }
     }

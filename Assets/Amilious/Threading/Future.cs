@@ -25,7 +25,9 @@ namespace Amilious.Threading {
         /// <summary>
         /// The future failed to resolve a value.
         /// </summary>
-        Error
+        Error,
+        
+        Canceled
     }
 
     /// <summary>

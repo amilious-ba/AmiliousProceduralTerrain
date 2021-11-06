@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using UnityEngine;
 
 //https://github.com/KdotJPG/Scattered-Biome-Blender
@@ -17,13 +18,15 @@ namespace Amilious.ProceduralTerrain.Biomes.Blending {
         private readonly float _blendRadiusSq;
         private readonly ChunkPointGatherer _gatherer;
         private readonly bool _useComputeShader;
-        
+
         /// <summary>
         /// This constructor is used to create a new biome blender.
         /// </summary>
-        /// <param name="samplingFrequency"></param>
-        /// <param name="blendRadiusPadding"></param>
-        /// <param name="chunkSize"></param>
+        /// <param name="samplingFrequency">The blend sample frequency.</param>
+        /// <param name="blendRadiusPadding">The blend radius padding.</param>
+        /// <param name="chunkSize">The chunk size.</param>
+        /// <param name="useComputeShader">If true the code will try uses the
+        /// compute shader.</param>
         public BiomeBlender(float samplingFrequency, float blendRadiusPadding, int chunkSize, bool useComputeShader) {
             _chunkSize = chunkSize;
             _halfChunkWidth = chunkSize / 2f;
@@ -48,11 +51,12 @@ namespace Amilious.ProceduralTerrain.Biomes.Blending {
         /// <param name="position">The chunks position.</param>
         /// <param name="evaluator">This is the object that will return the biome id based
         /// on x, z, and the hashed seed.</param>
+        /// <param name="token">A cancellation token that can be used to cancel the process.</param>
         /// <param name="positionIsCenter">This value should be true if the chunk's position
         /// is centered, otherwise false.</param>
         /// <returns>A dictionary of this chunk's biome weights.</returns>
         public Dictionary<int, float[,]> GetChunkBiomeWeights(int seed, Vector2 position,
-            IBiomeEvaluator evaluator,  bool positionIsCenter = true) {
+            IBiomeEvaluator evaluator, CancellationToken token,  bool positionIsCenter = true) {
             //we need to negate the z because the unfilteredPointGather
             //does not correctly apply the position offset
             position.y *= -1;
@@ -60,10 +64,9 @@ namespace Amilious.ProceduralTerrain.Biomes.Blending {
             
             //TODO: do this in compute shader
             var points = positionIsCenter? 
-                _gatherer.GetPointsFromChunkCenter(seed, position):
-                    _gatherer.GetPointsFromChunkBase(seed,position);
+                _gatherer.GetPointsFromChunkCenter(seed, position, token):
+                    _gatherer.GetPointsFromChunkBase(seed,position, token);
 
-            
             // Evaluate and aggregate all biomes to be blended in this chunk.
             var weightMap = new Dictionary<int, float[,]>();
             if(_useComputeShader) {
@@ -73,6 +76,7 @@ namespace Amilious.ProceduralTerrain.Biomes.Blending {
                 }
             } else {
                 foreach(var point in points) {
+                    token.ThrowIfCancellationRequested();
                     // Get the biome for this data point from the callback.
                     var biome = evaluator.GetBiomeAt(point.X, point.Z, seed);
                     //add the biome if it does not exist
@@ -95,16 +99,11 @@ namespace Amilious.ProceduralTerrain.Biomes.Blending {
                 x -= _halfChunkWidth;
                 z -= _halfChunkWidth;
             }
-            var centerX = position.x;
-            var centerY = -position.y;
-            if(positionIsCenter) {
-                centerX -= _halfChunkWidth;
-                centerY -= _halfChunkWidth;
-            }
             
             var xStart = x;
             for(var iz = 0; iz < _chunkSize; iz++) {
                 for(var ix = 0; ix < _chunkSize; ix++) {
+                    token.ThrowIfCancellationRequested();
                     // Consider each data point to see if it's inside the radius for this column.
                     var columnTotalWeight = 0.0f;
                     foreach(var point in points) {

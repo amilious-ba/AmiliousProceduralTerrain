@@ -12,7 +12,7 @@ namespace Amilious.ProceduralTerrain {
     /// the map.</typeparam>
     public class MapData<T> : IEnumerable<Vector2Int> {
         
-        protected readonly T[,] values;
+        protected T[,] values;
         
         /// <summary>
         /// This property is true if the position is centered,
@@ -227,7 +227,7 @@ namespace Amilious.ProceduralTerrain {
         /// <summary>
         /// This property is used to get the position of the map data.
         /// </summary>
-        public Vector2 Position { get; }
+        public Vector2 Position { get; protected set; }
         
         /// <summary>
         /// This method is used to get the size using the given borderCulling.

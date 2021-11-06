@@ -1,9 +1,9 @@
 using System;
 using UnityEngine;
+using System.Threading;
 using System.Collections.Generic;
-using Amilious.ProceduralTerrain.Map;
 using Amilious.ProceduralTerrain.Noise;
-using Amilious.ProceduralTerrain.Biomes.Blending;
+using Amilious.Saving;
 
 namespace Amilious.ProceduralTerrain.Biomes {
     
@@ -13,31 +13,98 @@ namespace Amilious.ProceduralTerrain.Biomes {
     /// </summary>
     public class BiomeMap : MapData<int> {
 
+
+        private const string PREFIX = "biomeMapData";
+        private const string BIOME_VALUES = "biomeValue";
+        private const string BIOME_WEIGHTS = "biomeWeights";
+        private const string POSITION = "position";
+        
         private Dictionary<int, float[,]> _weights = new Dictionary<int, float[,]>();
         public BiomeSettings BiomeSettings { get;}
         public int HashedSeed { get;}
 
-        public BiomeMap(int hashedSeed, int size, Vector2 position, BiomeSettings settings, 
-            bool isPositionCentered = true) : base(size,position, isPositionCentered) {
+        /// <summary>
+        /// This property is used to get the height map of this biome map.
+        /// </summary>
+        public NoiseMap HeightMap { get; private set; }
+
+        
+        public BiomeMap(int hashedSeed, int size, BiomeSettings settings, 
+            bool isPositionCentered = true) : base(size,Vector2.zero, isPositionCentered) {
             //set the values
             BiomeSettings = settings;
             HashedSeed = hashedSeed;
+            HeightMap = new NoiseMap(Size, Position, new Vector2(-1, 1), IsPositionCentered);
+        }
+
+        /// <summary>
+        /// This method is used to generate the biome map.
+        /// </summary>
+        /// <param name="position">The position the generated map is for.</param>
+        /// <param name="token">A cancellation token that can be used to cancel the generation.</param>
+        /// <seealso cref="Generate(UnityEngine.Vector2)"/>
+        public void Generate(Vector2 position, CancellationToken token) {
+            Position = position;
+            HeightMap.ResetPosition(position);
             //generate the map
-            if(BiomeSettings.UsingBiomeBlending) GenerateBlendedMap();
-            else GenerateNonBlendedMap();
-            
+            if(BiomeSettings.UsingBiomeBlending) GenerateBlendedMap(token);
+            else GenerateNonBlendedMap(token);
+            GenerateHeightMap();
+        }
+        
+        /// <summary>
+        /// This method is used to generate the <see cref="BiomeMap"/>..
+        /// </summary>
+        /// <param name="position">The position the generated map is for.</param>
+        /// <seealso cref="Generate(UnityEngine.Vector2,System.Threading.CancellationToken)"/>
+        public void Generate(Vector2 position) {
+            Position = position;
+            HeightMap.ResetPosition(position);
+            //generate the map
+            var tokenSource = new CancellationTokenSource();
+            if(BiomeSettings.UsingBiomeBlending) GenerateBlendedMap(tokenSource.Token);
+            else GenerateNonBlendedMap(tokenSource.Token);
+            GenerateHeightMap();
+            tokenSource.Dispose();
+        }
+
+        /// <summary>
+        /// This method is used to save the <see cref="BiomeMap"/>.
+        /// </summary>
+        /// <param name="saveData">The <see cref="SaveData"/> that is being used to save the data.</param>
+        public void Save(SaveData saveData) {
+            saveData.SetPrefix(PREFIX);
+            saveData.StoreData(BIOME_VALUES, values);
+            saveData.StoreData(BIOME_WEIGHTS, _weights);
+            saveData.StoreData(POSITION, Position);
+            saveData.ClearPrefix();
+            HeightMap.Save(saveData);
+        }
+
+        /// <summary>
+        /// This method is used to load the <see cref="BiomeMap"/>.
+        /// </summary>
+        /// <param name="saveData">The <see cref="SaveData"/> that is being used to load the data.</param>
+        private void Load(SaveData saveData) {
+            saveData.SetPrefix(PREFIX);
+            Position = saveData.FetchData<Vector2>(POSITION);
+            values = saveData.FetchData<int[,]>(BIOME_VALUES);
+            _weights = saveData.FetchData<Dictionary<int, float[,]>>(BIOME_WEIGHTS);
+            saveData.ClearPrefix();
+            HeightMap.Load(saveData);
         }
 
         /// <summary>
         /// This method is used to generate a <see cref="BiomeMap"/> without blending the biomes.
         /// </summary>
-        private void GenerateNonBlendedMap() {
+        private void GenerateNonBlendedMap(CancellationToken token) {
             //create maps
             var heatMap = BiomeSettings.HeatMapSettings.Generate(Size, HashedSeed, Position);
             var moistureMap = BiomeSettings.MoistureMapSettings.Generate(Size, HashedSeed, Position);
             if(BiomeSettings.UsingOceanMap) {
                 var oceanMap = BiomeSettings.OceanMapSettings.Generate(Size, HashedSeed, Position);
                 foreach(var key in heatMap) {
+                    token.ThrowIfCancellationRequested();
                     this[key] = BiomeSettings.GetBiomeId(
                         heatMap[key], moistureMap[key], oceanMap[key]);
                     //add biome type
@@ -49,6 +116,7 @@ namespace Amilious.ProceduralTerrain.Biomes {
                 }
             }else {
                 foreach(var key in heatMap) {
+                    token.ThrowIfCancellationRequested();
                     this[key] = BiomeSettings.GetBiomeId(heatMap[key], moistureMap[key]);
                     //add biome type
                     if(!_weights.ContainsKey(this[key])) {
@@ -63,14 +131,15 @@ namespace Amilious.ProceduralTerrain.Biomes {
         /// <summary>
         /// This method is used to generate a <see cref="BiomeMap"/> with biome blending.
         /// </summary>
-        private void GenerateBlendedMap() {
+        private void GenerateBlendedMap(CancellationToken token) {
             //generate the blend weights
-            _weights = BiomeSettings.BlendChunk(Size,HashedSeed,Position);
+            _weights = BiomeSettings.BlendChunk(Size,HashedSeed,Position, token);
             //set the biome to the greatest weight
             foreach(var key in this) {
                 var currentBiome = 0;
                 var currentWeight = 0f;
                 foreach(var biome in _weights.Keys) {
+                    token.ThrowIfCancellationRequested();
                     var value = _weights[biome][key.x,key.y];
                     if(!(value > currentWeight)) continue;
                     currentWeight = value;
@@ -188,16 +257,15 @@ namespace Amilious.ProceduralTerrain.Biomes {
             return BiomeSettings.GetBiomeInfo(this[key]);
         }
 
-        public NoiseMap GenerateHeightMap() {
-            var heightMap = new NoiseMap(Size, Position, new Vector2(-1, 1), IsPositionCentered);
-            var centerX = heightMap.Position.x;
-            var centerY = -heightMap.Position.y;
+        private void GenerateHeightMap() {
+            var centerX = HeightMap.Position.x;
+            var centerY = -HeightMap.Position.y;
             if(IsPositionCentered) {
-                centerX -= heightMap.HalfSize;
-                centerY -= heightMap.HalfSize;
+                centerX -= HeightMap.HalfSize;
+                centerY -= HeightMap.HalfSize;
             }
             //generate noise
-            foreach(var key in heightMap) {
+            foreach(var key in HeightMap) {
                 var heightValue = 0f;
                 foreach(var biome in _weights.Keys) {
                     if(_weights[biome][key.x, key.y] == 0) continue;
@@ -206,9 +274,8 @@ namespace Amilious.ProceduralTerrain.Biomes {
                     var lerp = Mathf.InverseLerp(-1, 1, rawHeight);
                     heightValue += Mathf.Lerp(info.minHeight,info.maxHeight,lerp) * _weights[biome][key.x,key.y];
                 }
-                heightMap.TrySetValue(key,heightValue);
+                HeightMap.TrySetValue(key,heightValue);
             }
-            return heightMap;
         }
         
     }

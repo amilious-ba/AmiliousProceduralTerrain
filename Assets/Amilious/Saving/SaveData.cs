@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.IO;
 using Amilious.Core.Extensions;
 using Amilious.Core.Serializable;
 using UnityEngine;
@@ -90,6 +91,19 @@ namespace Amilious.Saving {
         }
 
         /// <summary>
+        /// This method is used to get data.
+        /// </summary>
+        /// <param name="key">The name of the data you want to fetch.</param>
+        /// <typeparam name="T">The type of data you are requesting.</typeparam>
+        /// <returns>The requested data.</returns>
+        /// <exception cref="InvalidDataException">This is thrown if the data was invalid.</exception>
+        public T FetchData<T>(string key) {
+            var result = TryFetchData(key, out T data);
+            if(result) return data;
+            throw new InvalidDataException("The data was invalid or did not exist for the given key.");
+        }
+        
+        /// <summary>
         /// This method is used to try add data to the SaveData.
         /// </summary>
         /// <param name="key">A unique key for the data that will be used to
@@ -129,6 +143,18 @@ namespace Amilious.Saving {
         }
 
         /// <summary>
+        /// This method is used to store data.
+        /// </summary>
+        /// <param name="key">The name of the data you want to store.</param>
+        /// <param name="data">The data you want to store.</param>
+        /// <typeparam name="T">The type of data you want to store.</typeparam>
+        /// <exception cref="InvalidDataException">Thrown if unable to serialize the given data.</exception>
+        public void StoreData<T>(string key, T data) {
+            var result = TryStoreData(key, data);
+            if(!result) throw new InvalidDataException("The provided data could not be serialized!");
+        }
+        
+        /// <summary>
         /// This method is used to restore values to the given transform.
         /// </summary>
         /// <param name="key">The unique key that was used to save the data.</param>
@@ -157,13 +183,28 @@ namespace Amilious.Saving {
         /// </summary>
         public string SavePath => SavingSystem.GetSaveFilePath(SaveFile);
         
+        /// <summary>
+        /// This property contains the currently set prefix.
+        /// </summary>
         public string Prefix { get; private set; }
 
+        /// <summary>
+        /// This method is used to set the prefix.
+        /// </summary>
+        /// <param name="prefix">The string that you want to use as a prefix.</param>
         public void SetPrefix(string prefix) => Prefix = prefix;
 
+        /// <summary>
+        /// This method is used to clear the prefix.
+        /// </summary>
         public void ClearPrefix() => Prefix = null;
 
-        private string AddPrefix(string key) => (Prefix == null) ? key : $"{Prefix}_{key}";
+        /// <summary>
+        /// This method is used to add the prefix to the provided key.
+        /// </summary>
+        /// <param name="key">The key you want to add the prefix to.</param>
+        /// <returns>The key proceeded by the prefix.</returns>
+        private string AddPrefix(string key) => Prefix == null ? key : $"{Prefix}_{key}";
 
     }
 }
