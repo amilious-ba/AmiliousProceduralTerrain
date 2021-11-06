@@ -36,11 +36,15 @@ namespace Amilious.ProceduralTerrain.Map {
         private Texture2D _previewTexture;
         private Color[] _preparedColors;
         private int _seed;
-        
+        private ChunkPool _chunkPool;
+
         public event Action<Chunk, bool> OnVisibilityChanged;
         
         public bool IsInUse { get; private set; } = false;
         public Vector2Int Coordinate { get; private set; }
+        
+        public bool HasProcessedRelease { get; private set; }
+
         private Vector2 ViewerPosition => new Vector2 (_viewer.position.x, _viewer.position.z);
 
         private void Awake() {
@@ -82,6 +86,7 @@ namespace Amilious.ProceduralTerrain.Map {
             gameObject.name = $"Chunk ({Coordinate.x},{Coordinate.y})";
             transform.position = new Vector3(_position.x, 0, _position.y);
             Load();
+            HasProcessedRelease = false;
             return this;
         }
 
@@ -103,7 +108,7 @@ namespace Amilious.ProceduralTerrain.Map {
         /// This method is used to dispose of a chunk and add it back
         /// to the chunk pool.
         /// </summary>
-        public void ReleaseToPool() {
+        public bool ReleaseToPool() {
             if(_manager.SaveEnabled) {
                 //TODO: save the chunk data
             }
@@ -112,8 +117,6 @@ namespace Amilious.ProceduralTerrain.Map {
             _manager.OnEndUpdate -= ValidateNonUpdatedChunk;
             _manager.OnUpdateCollisionMesh -= UpdateCollisionMesh;
             gameObject.SetActive(false);
-            //remove the chunk from the dictionary
-            _manager.ReleaseChunkReference(Coordinate);
             //reset the mesh values
             foreach(var mesh in _lodMeshes) mesh.Reset();
             _previousLODIndex = -1;
@@ -122,6 +125,8 @@ namespace Amilious.ProceduralTerrain.Map {
             gameObject.name = $"Chunk (pooled)";
             //return to pool
             IsInUse = false;
+            HasProcessedRelease = true;
+            return _chunkPool.ReturnToPool(this);
         }
 
         private bool _updated;
@@ -241,7 +246,7 @@ namespace Amilious.ProceduralTerrain.Map {
         /// <param name="manager">The map manager that will be used
         /// for the chunk.</param>
         /// <returns>The newly generated chunk.</returns>
-        public static Chunk CreateNew(MapManager manager) {
+        public static Chunk CreateNew(MapManager manager, ChunkPool chunkPool) {
             var gameObject = new GameObject($"Chunk (pooled)") {
                 transform = { parent = manager.transform }
             };
@@ -253,6 +258,7 @@ namespace Amilious.ProceduralTerrain.Map {
             //create meshes
             chunk._detailLevels = chunk._meshSettings.LevelsOfDetail.ToArray();
             chunk._lodMeshes = new ChunkMesh[chunk._detailLevels.Length];
+            chunk._chunkPool = chunkPool;
             for(var i = 0; i < chunk._detailLevels.Length; i++) {
                 chunk._lodMeshes[i] = new ChunkMesh(chunk._meshSettings.VertsPerLine,
                     chunk._detailLevels[i].SkipStep, chunk._meshSettings.UseFlatShading ,

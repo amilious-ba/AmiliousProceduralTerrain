@@ -50,8 +50,6 @@ namespace Amilious.ProceduralTerrain.Map {
         private float? _sqrColliderGenerationThreshold = null;
         private int? _hashedSeed = null;
         private ChunkPool _chunkPool;
-        private readonly ConcurrentDictionary<Vector2Int, Chunk> _mapChunks = 
-            new ConcurrentDictionary<Vector2Int, Chunk>();
         
         public bool ApplyHeight { get => applyHeight; }
         
@@ -82,20 +80,11 @@ namespace Amilious.ProceduralTerrain.Map {
         
         public string Seed { get => seed; }
 
-        /// <summary>
-        /// This can be used to get a loaded chunk based on it's coordinate.
-        /// </summary>
-        /// <param name="coord">Returns the chunk if it is loaded, otherwise
-        /// returns null.</param>
-        public Chunk this[Vector2Int coord] {
-            get => _mapChunks.TryGetValue(coord, out var chunk) ? chunk : null;
+        private void Awake() {
+            _chunkPool = new ChunkPool(this);
         }
 
-        public bool IsVisible(Vector2Int key) => _mapChunks.TryGetValue(key, out var chunk) 
-            && chunk != null && chunk.gameObject.activeSelf;
-
         private void Start() {
-            _chunkPool = new ChunkPool(this, chunkPoolSize, generateChunksAtStart);
             //we use a squared threshold because it is cheaper to calculate a squared
             //distance than a normal distance.
             _sqrChunkUpdateThreshold = chunkUpdateThreshold * chunkUpdateThreshold;
@@ -151,22 +140,9 @@ namespace Amilious.ProceduralTerrain.Map {
             for(var xOff = - chunks; xOff <= chunks; xOff++)
             for(var yOff = -chunks; yOff <= chunks; yOff++) {
                 var chunkCoord = new Vector2Int(_viewerChunk.x + xOff, _viewerChunk.y + yOff);
-                if(_mapChunks.ContainsKey(chunkCoord)) continue;
-                var newChunk = _chunkPool.GetAvailableChunk().Setup(chunkCoord);
-                _mapChunks.TryAdd(chunkCoord, newChunk);
+                _chunkPool.LoadChunk(chunkCoord);
             }
             OnEndUpdate?.Invoke();
-        }
-
-        /// <summary>
-        /// This method is called to remove a chunk from the loaded world.
-        /// </summary>
-        /// <param name="chunkCoord">The coordinate of the chunk that
-        /// you want to remove from the loaded world.</param>
-        /// <returns>True if the chunk was removed from the loaded world,
-        /// otherwise returns false if the given chunk was not loaded.</returns>
-        public bool ReleaseChunkReference(Vector2Int chunkCoord) {
-            return _mapChunks.TryRemove(chunkCoord, out _);
         }
         
     }
