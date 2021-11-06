@@ -25,8 +25,8 @@ namespace Amilious.ProceduralTerrain.Map {
 
         [SerializeField] private MapType mapType = MapType.PreGenerated;
         [SerializeField] private bool enableSavingAndLoading = false;
-        [SerializeField] private int chunkPoolSize = 100;
         [SerializeField] private bool generateChunksAtStart;
+        [SerializeField, ShowIf(nameof(generateChunksAtStart))] private int chunkPoolSize = 100;
         [SerializeField, Tooltip("This is the distance the player needs to move before the chunk will update.")]
         private float chunkUpdateThreshold = 25f;
         [SerializeField] private float colliderGenerationThreshold = 5;
@@ -88,7 +88,9 @@ namespace Amilious.ProceduralTerrain.Map {
         public string Seed { get => seed; }
 
         private void Awake() {
-            _chunkPool = new ChunkPool(this);
+            _chunkPool = generateChunksAtStart?
+                new ChunkPool(this, chunkPoolSize):
+                new ChunkPool(this);
         }
 
         private void Start() {
