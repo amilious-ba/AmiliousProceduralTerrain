@@ -1,4 +1,5 @@
 using System;
+using System.Threading;
 using UnityEngine;
 using Amilious.Threading;
 using Amilious.ProceduralTerrain.Noise;
@@ -29,7 +30,7 @@ namespace Amilious.ProceduralTerrain.Mesh {
         private readonly Vector3[] _flatShadedVertices;
         private readonly Vector2[] _flatShadedUvs;
         private readonly Vector2[] _flatShadedUvs2;
-        private int lastRequestIndex = 0;
+        private ReusableFuture<bool,NoiseMap,MeshSettings,bool> _meshRequester;
         #endregion
         
         
@@ -91,6 +92,10 @@ namespace Amilious.ProceduralTerrain.Mesh {
         /// <param name="useFlatShading">Indicates whether the mesh will be flat shaded.</param>
         /// <param name="levelOfDetail">The meshes level of detail.</param>
         public ChunkMesh(int numVertsPerLine, int skipStep, bool useFlatShading, int levelOfDetail) {
+            _meshRequester = new ReusableFuture<bool, NoiseMap, MeshSettings,bool>();
+            _meshRequester.OnError(Debug.LogError);
+            _meshRequester.OnSuccess(MeshReceived);
+            _meshRequester.OnProcess(MeshRequest);
             UseFlatShading = useFlatShading;
             LevelOfDetail = levelOfDetail;
             var numMeshEdgeVertices = (numVertsPerLine - 2) * 4 - 4;
@@ -122,6 +127,7 @@ namespace Amilious.ProceduralTerrain.Mesh {
         /// so that the mesh can be used for a new chunk.
         /// </summary>
         public void Reset() {
+            _meshRequester.Cancel();
             HasRequestedMesh = false;
             HasMesh = false;
         }
@@ -135,26 +141,25 @@ namespace Amilious.ProceduralTerrain.Mesh {
         /// otherwise the heights will be set to zero.</param>
         public void RequestMesh(NoiseMap heightMap, MeshSettings meshSettings, bool applyHeight = true) {
             HasRequestedMesh = true;
-            var future = new Future<int>();
-            future.OnSuccess(data=> {
-                //prevent loading of mesh if delayed.
-                if(data.value != lastRequestIndex) return;
-                //if the mesh does not exist we need to create it.
-                _mesh ??= new UnityEngine.Mesh();
-                //apply the changes to the mesh
-                ApplyChanges(true);
-                HasMesh = true;
-                UpdateCallback?.Invoke();
-            });
-            future.OnError(meshData => {
-                Debug.LogError(meshData.error);
-            });
-            future.Process(()=> {
-                var requestId = ++lastRequestIndex;
-                MeshChunkGenerator.Generate(heightMap, meshSettings,
-                    LevelOfDetail, this, applyHeight);
-                return requestId;
-            });
+            _meshRequester.Process(heightMap,meshSettings,applyHeight);
+        }
+
+        /// <summary>
+        /// This method is executed by the mesh requester to generate the mesh.
+        /// </summary>
+        /// <returns>true</returns>
+        private bool MeshRequest(NoiseMap heightMap, MeshSettings meshSettings, bool applyHeight, CancellationToken token) {
+            MeshChunkGenerator.Generate(heightMap, meshSettings, LevelOfDetail, this, token, applyHeight);
+            return true;
+        }
+
+        private void MeshReceived(bool success) {
+            //if the mesh does not exist we need to create it.
+            _mesh ??= new UnityEngine.Mesh();
+            //apply the changes to the mesh
+            ApplyChanges(true);
+            HasMesh = true;
+            UpdateCallback?.Invoke();
         }
 
         /// <summary>

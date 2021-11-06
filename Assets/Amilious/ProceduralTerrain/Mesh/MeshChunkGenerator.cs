@@ -1,3 +1,4 @@
+using System.Threading;
 using Amilious.ProceduralTerrain.Noise;
 using UnityEngine;
 
@@ -5,8 +6,8 @@ namespace Amilious.ProceduralTerrain.Mesh {
     
     public static class MeshChunkGenerator {
 
-    public static ChunkMesh Generate(NoiseMap heightMap, MeshSettings meshSettings, int levelOfDetail, 
-        ChunkMesh chunkMesh = null, bool applyHeight = true) {
+    public static void Generate(NoiseMap heightMap, MeshSettings meshSettings, int levelOfDetail,
+        ChunkMesh chunkMesh, CancellationToken token, bool applyHeight = true) {
 
         var skipIncrement = levelOfDetail == 0 ? 1 : levelOfDetail * 2;
         var numVertsPerLine = meshSettings.VertsPerLine;
@@ -21,6 +22,7 @@ namespace Amilious.ProceduralTerrain.Mesh {
  
         for (var y = 0; y < numVertsPerLine; y++) {
             for (var x = 0; x < numVertsPerLine; x++) {
+                token.ThrowIfCancellationRequested();
                 var isOutOfMeshVertex = y == 0 || y == numVertsPerLine - 1 || x == 0 || x == numVertsPerLine - 1;
                 var isSkippedVertex = x > 2 && x < numVertsPerLine - 3 && y > 2 && y < numVertsPerLine - 3 && 
                                       ((x - 2) % skipIncrement != 0 || (y - 2) % skipIncrement != 0);
@@ -36,6 +38,7 @@ namespace Amilious.ProceduralTerrain.Mesh {
  
         for (var y = 0; y < numVertsPerLine; y++) {
             for (var x = 0; x < numVertsPerLine; x++) {
+                token.ThrowIfCancellationRequested();
                 var isSkippedVertex = x > 2 && x < numVertsPerLine - 3 && y > 2 && y < numVertsPerLine - 3 && 
                                       ((x - 2) % skipIncrement != 0 || (y - 2) % skipIncrement != 0);
                 if(isSkippedVertex) continue;
@@ -116,8 +119,6 @@ namespace Amilious.ProceduralTerrain.Mesh {
         }
  
         chunkMesh.ProcessMesh ();
- 
-        return chunkMesh;
 
         }
         

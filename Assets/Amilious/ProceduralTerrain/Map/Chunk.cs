@@ -38,7 +38,7 @@ namespace Amilious.ProceduralTerrain.Map {
         private int _seed;
         private ChunkPool _chunkPool;
 
-        private ReusableFuture<bool> loader;
+        private ReusableFuture loader;
 
         public event Action<Chunk, bool> OnVisibilityChanged;
         
@@ -58,7 +58,7 @@ namespace Amilious.ProceduralTerrain.Map {
             _meshCollider = gameObject.AddComponent<MeshCollider>();
             _meshRenderer = gameObject.AddComponent<MeshRenderer>();
             //setup loader
-            loader = new ReusableFuture<bool>();
+            loader = new ReusableFuture();
             loader.OnError(error => Debug.Log("Error: "+error));
             loader.OnProcess(ProcessLoadData).OnSuccess(OnDataLoaded);
             //if not in use disable gameObject
@@ -193,7 +193,7 @@ namespace Amilious.ProceduralTerrain.Map {
             }
         }
 
-        private void OnDataLoaded(bool complete) {
+        private void OnDataLoaded() {
             if(_manager.MapPaintingMode != MapPaintingMode.Material) {
                 _previewTexture = _biomeMap.GenerateTexture(_preparedColors,1);
                 _meshRenderer.material.mainTexture = _previewTexture;
