@@ -192,6 +192,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ec7b0cad569747328dbc812cb130f7c1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  useAdvancedSettings: 0
+  maxQueueSize: 1000
+  dontInvokeIfOverMs: 2
+  maxInvokesPerUpdate: 5
+  skippedUpdates: 2
 --- !u!114 &142136127
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -466,6 +471,7 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 1
   m_VolumeTrigger: {fileID: 0}
+  m_VolumeFrameworkUpdateModeOption: 2
   m_RenderPostProcessing: 1
   m_Antialiasing: 1
   m_AntialiasingQuality: 2

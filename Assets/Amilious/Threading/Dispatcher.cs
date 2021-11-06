@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Concurrent;
+using System.Diagnostics;
 using System.Threading;
 using Sirenix.OdinInspector;
 using UnityEngine;
+using Debug = UnityEngine.Debug;
 
 namespace Amilious.Threading {
     
@@ -12,6 +14,18 @@ namespace Amilious.Threading {
     [AddComponentMenu("Amilious/Thread/Dispatcher"), HideMonoScript]
     [InfoBox("This script is responsible for executing code on the main thead.")]
     public class Dispatcher : MonoBehaviour {
+
+        [SerializeField] private bool useAdvancedSettings;
+
+        [SerializeField, ShowIf(nameof(useAdvancedSettings))]
+        [Tooltip("The queue will be emptied if it exceeds this amount.")]
+        private int maxQueueSize = 500;
+        [SerializeField, ShowIf(nameof(useAdvancedSettings))]
+        private int dontInvokeIfOverMs = 2;
+        [SerializeField, ShowIf(nameof(useAdvancedSettings))]
+        private int maxInvokesPerUpdate = 5;
+        [SerializeField, ShowIf(nameof(useAdvancedSettings))]
+        private int skippedUpdates = 2;
         
         private static Dispatcher _instance;
 
@@ -74,7 +88,38 @@ namespace Amilious.Threading {
         }
 
         private void Update() {
+            if(Actions.IsEmpty) return;
+            if(useAdvancedSettings) AdvancedDequeue();
+            else StandardDequeue();
+        }
+
+        private void StandardDequeue() {
             while(!Actions.IsEmpty) { if(Actions.TryDequeue(out var action))action(); }
         }
+
+        private readonly Stopwatch _actionTimer = new Stopwatch();
+        private int _updatesSkipped = 0;
+        
+        private void AdvancedDequeue() {
+            if(skippedUpdates > 0) {
+                _updatesSkipped++;
+                if(_updatesSkipped < skippedUpdates) return;
+                _updatesSkipped = 0;
+            }
+            //empty the queue if it is over the threshold
+            if(maxQueueSize>=0 && Actions.Count > maxQueueSize) {
+                StandardDequeue();
+                return;
+            }
+            _actionTimer.Restart();
+            var x = 0;
+            while(!Actions.IsEmpty&&_actionTimer.ElapsedMilliseconds<dontInvokeIfOverMs&&
+                  (maxInvokesPerUpdate<0||x<maxInvokesPerUpdate)) {
+                if(Actions.TryDequeue(out var action))action();
+                if(maxInvokesPerUpdate> 0) x++;
+            }
+            _actionTimer.Stop();
+        }
+        
     }
 }
