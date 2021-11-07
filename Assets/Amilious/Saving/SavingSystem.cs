@@ -65,20 +65,28 @@ namespace Amilious.Saving {
         
         #endregion
 
+        /// <summary>
+        /// This method is needed for set up so that worker threads can use
+        /// this saving system.
+        /// </summary>
         protected virtual void Awake() {
             //make sure that the saving system has a dispatcher so
             //that we can read and write from a different thread.
             var dispatcher = FindObjectOfType<Dispatcher>();
             if(dispatcher != null) return;
             gameObject.AddComponent<Dispatcher>();
-            //_persistentDataPath = Application.persistentDataPath;
+            _persistentDataPath ??= Application.persistentDataPath;
         }
 
-        private void OnValidate() { /*_persistentDataPath = Application.persistentDataPath;*/ }
-
+        /// <summary>
+        /// This property is used to get the Application.persistentDataPath in a safe way.  It will
+        /// get and cache the path using the main thread.
+        /// </summary>
         public static string PersistentDataPath {
             get {
-                if(_persistentDataPath == null) return Application.persistentDataPath;
+                if(_persistentDataPath == null) {
+                    Dispatcher.Invoke(()=>_persistentDataPath = Application.persistentDataPath);
+                }
                 return _persistentDataPath;
             }
         }
