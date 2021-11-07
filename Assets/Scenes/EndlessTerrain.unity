@@ -155,7 +155,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   mapType: 0
-  enableSavingAndLoading: 0
+  enableSavingAndLoading: 1
   generateChunksAtStart: 0
   chunkPoolSize: 500
   chunkUpdateThreshold: 25

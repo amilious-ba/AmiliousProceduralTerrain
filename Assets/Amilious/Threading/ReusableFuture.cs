@@ -142,7 +142,7 @@ namespace Amilious.Threading {
 
         private void FailImpl(Exception error) {
             _state = FutureState.Error;
-            if(_cancelCallback == null) return;
+            if(_errorCallback == null) return;
             if(_errorMain) Dispatcher.InvokeAsync(()=>_errorCallback.Invoke(error));
             else _errorCallback.Invoke(error);
         }
@@ -293,7 +293,7 @@ namespace Amilious.Threading {
 
         private void FailImpl(Exception error) {
             _state = FutureState.Error;
-            if(_cancelCallback == null) return;
+            if(_errorCallback == null) return;
             if(_errorMain) Dispatcher.InvokeAsync(()=>_errorCallback.Invoke(error));
             else _errorCallback.Invoke(error);
         }
@@ -442,7 +442,7 @@ namespace Amilious.Threading {
 
         private void FailImpl(Exception error) {
             _state = FutureState.Error;
-            if(_cancelCallback == null) return;
+            if(_errorCallback == null) return;
             if(_errorMain) Dispatcher.InvokeAsync(()=>_errorCallback.Invoke(error));
             else _errorCallback.Invoke(error);
         }
@@ -595,7 +595,7 @@ namespace Amilious.Threading {
 
         private void FailImpl(Exception error) {
             _state = FutureState.Error;
-            if(_cancelCallback == null) return;
+            if(_errorCallback == null) return;
             if(_errorMain) Dispatcher.InvokeAsync(()=>_errorCallback.Invoke(error));
             else _errorCallback.Invoke(error);
         }
@@ -752,7 +752,7 @@ namespace Amilious.Threading {
 
         private void FailImpl(Exception error) {
             _state = FutureState.Error;
-            if(_cancelCallback == null) return;
+            if(_errorCallback == null) return;
             if(_errorMain) Dispatcher.InvokeAsync(()=>_errorCallback.Invoke(error));
             else _errorCallback.Invoke(error);
         }

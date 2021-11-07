@@ -57,7 +57,7 @@ namespace Amilious.ProceduralTerrain.Map {
             _meshRenderer = gameObject.AddComponent<MeshRenderer>();
             //setup loader
             loader = new ReusableFuture();
-            loader.OnError(error => Debug.Log("Error: "+error));
+            loader.OnError(Debug.LogError);
             loader.OnProcess(ProcessLoadData).OnSuccess(OnDataLoaded);
             //if not in use disable gameObject
             if(!IsInUse) gameObject.SetActive(false);
@@ -203,9 +203,12 @@ namespace Amilious.ProceduralTerrain.Map {
         }
 
         private bool ProcessLoadData(CancellationToken token) {
+            //try to load or generate biome data
             if(_manager.SaveEnabled && _manager.MapSaver.LoadData(Coordinate, out var saveData)) {
+                Debug.Log("Reached");
                 _biomeMap.Load(saveData);
             }else _biomeMap.Generate(_sampleCenter, token);
+            //geneate texture
             _biomeMap.GenerateTextureColors(_preparedColors, _manager.MapPaintingMode, 1);
             return true;
         }
