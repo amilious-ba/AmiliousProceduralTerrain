@@ -12,15 +12,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 63ae18e63da840ff8e4d0342e57cbcc2, type: 3}
   m_Name: MeshSettings
   m_EditorClassIdentifier: 
-  meshScale: 1
-  useFlatShading: 0
   chunkBaseSize: 64
   regionSize: 8
+  paintingMode: 2
+  colliderLOD: 1
   material: {fileID: 2100000, guid: f605b618f9b22b94e82de92114f88b75, type: 2}
-  chunkLevelsOfDetail:
-  - lod: 0
-    visibleDistance: 300
-  - lod: 2
-    visibleDistance: 600
-  colliderLOD: 0
+  meshScale: 1
   chunkUnloadDistance: 800
+  useFlatShading: 0
+  bakeCollisionMeshes: 0
+  chunkLevelsOfDetail:
+  - levelOfDetail: 1
+    visibleDistance: 300
+  - levelOfDetail: 4
+    visibleDistance: 600

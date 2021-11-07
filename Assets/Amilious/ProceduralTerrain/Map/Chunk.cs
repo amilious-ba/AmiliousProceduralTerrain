@@ -34,6 +34,7 @@ namespace Amilious.ProceduralTerrain.Map {
         private Color[] _preparedColors;
         private bool _startedToRelease;
         private bool _updated;
+        private bool _appliedMeshMaterial;
         private ChunkPool _chunkPool;
         private ReusableFuture _loader;
         private ReusableFuture<bool, bool> _saver;
@@ -266,6 +267,10 @@ namespace Amilious.ProceduralTerrain.Map {
         /// successfully.
         /// </summary>
         private void OnLoadComplete() {
+            if(!_appliedMeshMaterial) {
+                _meshRenderer.material = _meshSettings.Material;
+                _appliedMeshMaterial = true;
+            }
             if(_meshSettings.PaintingMode != TerrainPaintingMode.Material) {
                 _previewTexture = _biomeMap.GenerateTexture(_preparedColors,1);
                 _meshRenderer.material.mainTexture = _previewTexture;

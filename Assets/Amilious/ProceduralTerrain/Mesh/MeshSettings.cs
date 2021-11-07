@@ -8,7 +8,9 @@ namespace Amilious.ProceduralTerrain.Mesh {
     
     [CreateAssetMenu(menuName = "Amilious/Procedural Terrain/Mesh Settings", order = 0), HideMonoScript]
     public class MeshSettings : UpdateableData {
-
+        
+        #region Inspector Values
+        
         [SerializeField]
         private ChunkBaseSize chunkBaseSize = ChunkBaseSize.Base64X64;
         [SerializeField] private RegionSize regionSize = RegionSize.Chunks8X8;
@@ -21,29 +23,33 @@ namespace Amilious.ProceduralTerrain.Mesh {
         [SerializeField, Tooltip("This distance should be greater than the max lod distance.")]
         private float chunkUnloadDistance = 600;
         [SerializeField,Tooltip("If ture the mesh will use more vertices so that it can be flat shaded.")]
-        private bool useFlatShading = false;
+        private bool useFlatShading;
         [SerializeField] 
-        private bool bakeCollisionMeshes = false;
+        private bool bakeCollisionMeshes;
         [SerializeField, Required, TableList(AlwaysExpanded = true)]
-         [ValidateInput(nameof(UniqueLod), "Each Lod must have a unique level of detail and visible distance.")]
+        [ValidateInput(nameof(UniqueLod), "Each Lod must have a unique level of detail and visible distance.")]
         [ValidateInput(nameof(ContainsValues),"You must have at least one level of detail.")]
         private LODInfo[] chunkLevelsOfDetail;
-        private float? _meshWorldSize = null;
-        private float? _maxViewDistance = null;
-        private float? _maxViewDistanceSq = null;
-        private float? _chunkUnloadDistanceSq = null;
-        private int? _chunksVisibleInViewDistance = null;
-        private int? _colliderLODIndex = null;
         
+        #endregion
+        
+        #region Instance Variables
+        
+        private float? _meshWorldSize;
+        private float? _maxViewDistance;
+        private float? _maxViewDistanceSq;
+        private float? _chunkUnloadDistanceSq;
+        private int? _chunksVisibleInViewDistance;
+        private int? _colliderLODIndex;
+
+        #endregion
         
         public float MeshScale { get => meshScale; }
-        //public int ChunkSize => useFlatShading ? flatShadedChunkSize : standardChunkSize;
         public ChunkBaseSize ChunkBaseSize { get => chunkBaseSize; }
         public RegionSize RegionSize { get => regionSize; }
         public bool UseFlatShading { get => useFlatShading; }
         public bool BakeCollisionMeshes { get => bakeCollisionMeshes; }
         public IEnumerable<LODInfo> LevelsOfDetail { get => chunkLevelsOfDetail; }
-        //public int VertsPerLine => ChunkSize + 5;
         public int VertsPerLine => (int)ChunkBaseSize + 5;
         public float MeshWorldSize {
             get {
