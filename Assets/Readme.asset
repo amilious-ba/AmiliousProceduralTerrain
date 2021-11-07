@@ -15,15 +15,28 @@ MonoBehaviour:
   icon: {fileID: 2800000, guid: 67c3f9c881059294285010ba5fc5b579, type: 3}
   title: Amilious Procedural Terrain
   sections:
-  - heading: 
+  - alignment: 1
+    heading: Git Hub
     text: 
     linkText: GitHub
     url: https://github.com/amilious-ba/AmiliousProceduralTerrain
-  - heading: 
+    icon: {fileID: 2800000, guid: 823ba047c0b98344b857d4b2af31e4b7, type: 3}
+    iconWidth: 125
+    inLine: 1
+    spaceBefore: 0
+    spaceAfter: 5
+  - alignment: 1
+    heading: Trello
     text: 
     linkText: Trello
     url: https://trello.com/b/84JhSN14
-  - heading: About
+    icon: {fileID: 2800000, guid: 483599d963a33d642b0589da1058479f, type: 3}
+    iconWidth: 125
+    inLine: 1
+    spaceBefore: 0
+    spaceAfter: 5
+  - alignment: 0
+    heading: About
     text: Amilious Procedural Terrain is a side project produced for use in the game
       Eidreven.  We needed a flexible generated and chunked terrain which led to
       the production of Amilious Procedural Terrain.  This library is unique, but
@@ -31,4 +44,9 @@ MonoBehaviour:
       the features that we felt were most useful.
     linkText: 
     url: 
+    icon: {fileID: 0}
+    iconWidth: -1
+    inLine: 0
+    spaceBefore: 20
+    spaceAfter: 5
   loadedLayout: 1
