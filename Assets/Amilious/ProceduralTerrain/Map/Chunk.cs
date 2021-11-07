@@ -249,7 +249,7 @@ namespace Amilious.ProceduralTerrain.Map {
                 lodMesh.AssignTo(_meshFilter);
                 onLodChanged?.Invoke(ChunkId,oldLod,lodIndex);
             }else if(!lodMesh.HasRequestedMesh) {
-                lodMesh.RequestMesh(_biomeMap.HeightMap, _meshSettings, _manager.ApplyHeight);
+                lodMesh.RequestMesh(_biomeMap.HeightMap, _manager.ApplyHeight);
             }
         }
 
@@ -292,7 +292,7 @@ namespace Amilious.ProceduralTerrain.Map {
             var sqrDistanceFromViewer = _bounds.SqrDistance(ViewerPosition);
             if(sqrDistanceFromViewer < _detailLevels[_meshSettings.ColliderLODIndex].SqrVisibleDistanceThreshold)
                 if(!_lodMeshes[_meshSettings.ColliderLODIndex].HasRequestedMesh)
-                    _lodMeshes[_meshSettings.ColliderLODIndex].RequestMesh(_biomeMap.HeightMap, _meshSettings, _manager.ApplyHeight);
+                    _lodMeshes[_meshSettings.ColliderLODIndex].RequestMesh(_biomeMap.HeightMap, _manager.ApplyHeight);
             if(sqrDistanceFromViewer > _manager.SqrColliderGenerationThreshold) return;
             if(!_lodMeshes[_meshSettings.ColliderLODIndex].HasMesh) return;
             _lodMeshes[_meshSettings.ColliderLODIndex].AssignTo(_meshCollider);
@@ -320,9 +320,8 @@ namespace Amilious.ProceduralTerrain.Map {
             chunk._lodMeshes = new ChunkMesh[chunk._detailLevels.Length];
             chunk._chunkPool = chunkPool;
             for(var i = 0; i < chunk._detailLevels.Length; i++) {
-                chunk._lodMeshes[i] = new ChunkMesh(chunk._meshSettings.VertsPerLine,
-                    chunk._detailLevels[i].SkipStep, chunk._meshSettings.UseFlatShading ,
-                    chunk._detailLevels[i].LOD);
+                chunk._lodMeshes[i] = new ChunkMesh(chunk._meshSettings, 
+                    chunk._detailLevels[i].SkipStep, chunk._detailLevels[i].LOD);
                 chunk._lodMeshes[i].UpdateCallback += chunk.UpdateChunk;
                 if(i == chunk._meshSettings.ColliderLODIndex)
                     chunk._lodMeshes[i].UpdateCallback += chunk.UpdateCollisionMesh;

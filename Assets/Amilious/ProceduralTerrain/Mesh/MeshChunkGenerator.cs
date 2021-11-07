@@ -9,13 +9,13 @@ namespace Amilious.ProceduralTerrain.Mesh {
     public static void Generate(NoiseMap heightMap, MeshSettings meshSettings, int levelOfDetail,
         ChunkMesh chunkMesh, CancellationToken token, bool applyHeight = true) {
 
-        var skipIncrement = levelOfDetail == 0 ? 1 : levelOfDetail * 2;
+        var skipStep = levelOfDetail == 0 ? 1 : levelOfDetail * 2;
         var numVertsPerLine = meshSettings.VertsPerLine;
         var triangleIndex=0;
         var outOfMeshTriangleIndex=0;
         var edgeConnectionVertexIndex=0;
         var topLeft = new Vector2 (-1, 1) * meshSettings.MeshWorldSize / 2f;
-        chunkMesh??= new ChunkMesh (numVertsPerLine, skipIncrement, meshSettings.UseFlatShading, levelOfDetail);
+        chunkMesh??= new ChunkMesh (meshSettings, skipStep, levelOfDetail);
         var vertexIndicesMap = new int[numVertsPerLine, numVertsPerLine];
         var meshVertexIndex = 0;
         var outOfMeshVertexIndex = -1;
@@ -25,7 +25,7 @@ namespace Amilious.ProceduralTerrain.Mesh {
                 token.ThrowIfCancellationRequested();
                 var isOutOfMeshVertex = y == 0 || y == numVertsPerLine - 1 || x == 0 || x == numVertsPerLine - 1;
                 var isSkippedVertex = x > 2 && x < numVertsPerLine - 3 && y > 2 && y < numVertsPerLine - 3 && 
-                                      ((x - 2) % skipIncrement != 0 || (y - 2) % skipIncrement != 0);
+                                      ((x - 2) % skipStep != 0 || (y - 2) % skipStep != 0);
                 if (isOutOfMeshVertex) {
                     vertexIndicesMap [x, y] = outOfMeshVertexIndex;
                     outOfMeshVertexIndex--;
@@ -40,12 +40,12 @@ namespace Amilious.ProceduralTerrain.Mesh {
             for (var x = 0; x < numVertsPerLine; x++) {
                 token.ThrowIfCancellationRequested();
                 var isSkippedVertex = x > 2 && x < numVertsPerLine - 3 && y > 2 && y < numVertsPerLine - 3 && 
-                                      ((x - 2) % skipIncrement != 0 || (y - 2) % skipIncrement != 0);
+                                      ((x - 2) % skipStep != 0 || (y - 2) % skipStep != 0);
                 if(isSkippedVertex) continue;
                 var isOutOfMeshVertex = y == 0 || y == numVertsPerLine - 1 || x == 0 || x == numVertsPerLine - 1;
                 var isMeshEdgeVertex = (y == 1 || y == numVertsPerLine - 2 || x == 1 || x == numVertsPerLine - 2) && 
                                        !isOutOfMeshVertex;
-                var isMainVertex = (x - 2) % skipIncrement == 0 && (y - 2) % skipIncrement == 0 && 
+                var isMainVertex = (x - 2) % skipStep == 0 && (y - 2) % skipStep == 0 && 
                                    !isOutOfMeshVertex && !isMeshEdgeVertex;
                 var isEdgeConnectionVertex = (y == 2 || y == numVertsPerLine - 3 || x == 2 || x == numVertsPerLine - 3) 
                                              && !isOutOfMeshVertex && !isMeshEdgeVertex && !isMainVertex;
@@ -56,9 +56,9 @@ namespace Amilious.ProceduralTerrain.Mesh {
  
                 if (isEdgeConnectionVertex) {
                     var isVertical = x == 2 || x == numVertsPerLine - 3;
-                    var dstToMainVertexA = ((isVertical) ? y - 2 : x - 2) % skipIncrement;
-                    var dstToMainVertexB = skipIncrement - dstToMainVertexA;
-                    var dstPercentFromAToB = dstToMainVertexA / (float)skipIncrement;
+                    var dstToMainVertexA = ((isVertical) ? y - 2 : x - 2) % skipStep;
+                    var dstToMainVertexB = skipStep - dstToMainVertexA;
+                    var dstPercentFromAToB = dstToMainVertexA / (float)skipStep;
  
                     var coordA = new Vector2Int (isVertical ? x : x - dstToMainVertexA, isVertical ? y - dstToMainVertexA : y);
                     var coordB = new Vector2Int (isVertical ? x : x + dstToMainVertexB, isVertical ? y + dstToMainVertexB : y);
@@ -78,7 +78,7 @@ namespace Amilious.ProceduralTerrain.Mesh {
                 var createTriangle = x < numVertsPerLine - 1 && y < numVertsPerLine - 1 && (!isEdgeConnectionVertex || (x != 2 && y != 2));
 
                 if(!createTriangle) continue;
-                var currentIncrement = (isMainVertex && x != numVertsPerLine - 3 && y != numVertsPerLine - 3) ? skipIncrement : 1;
+                var currentIncrement = (isMainVertex && x != numVertsPerLine - 3 && y != numVertsPerLine - 3) ? skipStep : 1;
  
                 var a = vertexIndicesMap [x, y];
                 var b = vertexIndicesMap [x + currentIncrement, y];

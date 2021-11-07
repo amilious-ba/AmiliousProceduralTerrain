@@ -24,13 +24,21 @@ namespace Amilious.ProceduralTerrain.Mesh {
         public readonly EdgeConnectionVertexData[] edgeConnectionVertices;
         #endregion
 
+        public struct BakeData {
+            public MeshCollider collider;
+        }
+
 
         #region Private Instance Variables
         private UnityEngine.Mesh _mesh;
+        private int _meshId;
         private readonly Vector3[] _flatShadedVertices;
         private readonly Vector2[] _flatShadedUvs;
         private readonly Vector2[] _flatShadedUvs2;
-        private ReusableFuture<bool,NoiseMap,MeshSettings,bool> _meshRequester;
+        private bool _bakedCollisionMesh;
+        private MeshSettings _meshSettings;
+        private readonly ReusableFuture<bool,NoiseMap,bool> _meshRequester;
+        private readonly ReusableFuture<BakeData,BakeData> _collisionBaker;
         #endregion
         
         
@@ -91,13 +99,20 @@ namespace Amilious.ProceduralTerrain.Mesh {
         /// <param name="skipStep">The number of skipped vertices between each main vertex.</param>
         /// <param name="useFlatShading">Indicates whether the mesh will be flat shaded.</param>
         /// <param name="levelOfDetail">The meshes level of detail.</param>
-        public ChunkMesh(int numVertsPerLine, int skipStep, bool useFlatShading, int levelOfDetail) {
-            _meshRequester = new ReusableFuture<bool, NoiseMap, MeshSettings,bool>();
+        public ChunkMesh(MeshSettings meshSettings, int skipStep, int levelOfDetail) {
+            _meshSettings = meshSettings;
+            //setup the mesh requester
+            _meshRequester = new ReusableFuture<bool, NoiseMap, bool>();
             _meshRequester.OnError(Debug.LogError);
             _meshRequester.OnSuccess(MeshReceived);
             _meshRequester.OnProcess(MeshRequest);
-            UseFlatShading = useFlatShading;
+            //setup the collision baker
+            _collisionBaker = new ReusableFuture<BakeData,BakeData>();
+            _collisionBaker.OnError(Debug.LogError);
+            _collisionBaker.OnProcess(BakeCollisionMesh).OnSuccess(CollisionMeshBaked);
+            UseFlatShading = meshSettings.UseFlatShading;
             LevelOfDetail = levelOfDetail;
+            var numVertsPerLine = meshSettings.VertsPerLine;
             var numMeshEdgeVertices = (numVertsPerLine - 2) * 4 - 4;
             var numEdgeConnectionVertices = (skipStep - 1) * (numVertsPerLine - 5) / skipStep * 4;
             var numMainVerticesPerLine = (numVertsPerLine - 5) / skipStep + 1;
@@ -116,7 +131,18 @@ namespace Amilious.ProceduralTerrain.Mesh {
             _flatShadedUvs = new Vector2[triangles.Length];
             _flatShadedUvs2 = new Vector2[triangles.Length];
         }
-        
+
+        private void CollisionMeshBaked(BakeData bakeData) {
+            _bakedCollisionMesh = true;
+            AssignTo(bakeData.collider);
+        }
+
+        private BakeData BakeCollisionMesh(BakeData bakeData, CancellationToken token) {
+            if(_bakedCollisionMesh) return bakeData;
+            Physics.BakeMesh(_meshId,false);
+            return bakeData;
+        }
+
         #endregion
 
 
@@ -130,32 +156,33 @@ namespace Amilious.ProceduralTerrain.Mesh {
             _meshRequester.Cancel();
             HasRequestedMesh = false;
             HasMesh = false;
+            _bakedCollisionMesh = false;
         }
 
         /// <summary>
         /// This method is used to request the chunks mesh.
         /// </summary>
         /// <param name="heightMap">The height map that you want to use to generate the mesh.</param>
-        /// <param name="meshSettings">The mesh settings.</param>
         /// <param name="applyHeight">If true the height map's height values will be applied,
         /// otherwise the heights will be set to zero.</param>
-        public void RequestMesh(NoiseMap heightMap, MeshSettings meshSettings, bool applyHeight = true) {
+        public void RequestMesh(NoiseMap heightMap, bool applyHeight = true) {
             HasRequestedMesh = true;
-            _meshRequester.Process(heightMap,meshSettings,applyHeight);
+            _meshRequester.Process(heightMap,applyHeight);
         }
 
         /// <summary>
         /// This method is executed by the mesh requester to generate the mesh.
         /// </summary>
         /// <returns>true</returns>
-        private bool MeshRequest(NoiseMap heightMap, MeshSettings meshSettings, bool applyHeight, CancellationToken token) {
-            MeshChunkGenerator.Generate(heightMap, meshSettings, LevelOfDetail, this, token, applyHeight);
+        private bool MeshRequest(NoiseMap heightMap, bool applyHeight, CancellationToken token) {
+            MeshChunkGenerator.Generate(heightMap, _meshSettings, LevelOfDetail, this, token, applyHeight);
             return true;
         }
 
         private void MeshReceived(bool success) {
             //if the mesh does not exist we need to create it.
             _mesh ??= new UnityEngine.Mesh();
+            _meshId = _mesh.GetInstanceID();
             //apply the changes to the mesh
             ApplyChanges(true);
             HasMesh = true;
@@ -177,11 +204,13 @@ namespace Amilious.ProceduralTerrain.Mesh {
         /// This method is used to assign the mesh to a give mesh collider.
         /// </summary>
         /// <param name="meshCollider">The mesh collider that you want to apply the mesh to.</param>
-        /// <returns>True if the mesh is valid and was applied to the give mesh collider.</returns>
-        public bool AssignTo(MeshCollider meshCollider) {
-            if(InvalidMesh) return false;
+        public void AssignTo(MeshCollider meshCollider) {
+            if(InvalidMesh) return;
+            if(!_bakedCollisionMesh) {
+                _collisionBaker.Process(new BakeData{collider = meshCollider});
+                return;
+            }
             meshCollider.sharedMesh = _mesh;
-            return true;
         }
         
         /// <summary>
