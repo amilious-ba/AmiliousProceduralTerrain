@@ -29,7 +29,11 @@ namespace Amilious.ProceduralTerrain.Saving {
             return rawData.Keys.Count != 0;
         }
 
-        public bool Save(Vector2Int chunkId, SaveData saveData) {
+        public SaveData NewChunkSaveData(Vector2Int chunkId) {
+            return new SaveData(GetSaveFile(chunkId));
+        }
+
+        public bool SaveData(Vector2Int chunkId, SaveData saveData) {
             return SavingSystem.SaveFile(GetSaveFile(chunkId), saveData.DataDictionary);
         }
 
@@ -39,6 +43,7 @@ namespace Amilious.ProceduralTerrain.Saving {
             saveData = new SaveData(saveFile, rawData);
             return rawData.Keys.Count != 0;
         }
+        
         private string GetSaveFile(Vector2Int chunkId) {
             return Path.Combine(saveFolder,$"{chunkId.x}_{chunkId.y}");
         }

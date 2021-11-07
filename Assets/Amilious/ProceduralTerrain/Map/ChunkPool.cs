@@ -133,7 +133,7 @@ namespace Amilious.ProceduralTerrain.Map {
         public bool ReturnToPool(Chunk chunk) {
              if(chunk == null) return false;
              if(!chunk.HasProcessedRelease) return chunk.ReleaseToPool();
-             var removed = _loadedChunks.TryRemove(chunk.Coordinate, out _);
+             var removed = _loadedChunks.TryRemove(chunk.ChunkId, out _);
              _chunkQueue.Enqueue(chunk);
              return removed;
          }

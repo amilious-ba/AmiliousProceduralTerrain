@@ -23,7 +23,6 @@ namespace Amilious.ProceduralTerrain.Map {
          * Load and unload chunks based on distance from viewer.  Move the generator
          * when the player moved to far away from the origin.
          */
-
         [SerializeField] private MapType mapType = MapType.PreGenerated;
         [SerializeField] private bool enableSavingAndLoading = false;
         [SerializeField] private bool generateChunksAtStart;
