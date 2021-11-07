@@ -1,15 +1,17 @@
 using System.Threading;
 using Amilious.ProceduralTerrain.Noise;
 using UnityEngine;
-
 namespace Amilious.ProceduralTerrain.Mesh {
     
+    /// <summary>
+    /// This class is used to generate a chunk.
+    /// </summary>
     public static class MeshChunkGenerator {
 
-    public static void Generate(NoiseMap heightMap, MeshSettings meshSettings, int levelOfDetail,
+    public static void Generate(NoiseMap heightMap, MeshSettings meshSettings, LevelsOfDetail levelOfDetail,
         ChunkMesh chunkMesh, CancellationToken token, bool applyHeight = true) {
 
-        var skipStep = levelOfDetail == 0 ? 1 : levelOfDetail * 2;
+        var skipStep = (int)levelOfDetail;
         var numVertsPerLine = meshSettings.VertsPerLine;
         var triangleIndex=0;
         var outOfMeshTriangleIndex=0;
@@ -130,8 +132,7 @@ namespace Amilious.ProceduralTerrain.Mesh {
         public readonly int mainVertexBIndex;
         public readonly float dstPercentFromAToB;
  
-        public EdgeConnectionVertexData (int vertexIndex, int mainVertexAIndex, int mainVertexBIndex, float dstPercentFromAToB)
-        {
+        public EdgeConnectionVertexData (int vertexIndex, int mainVertexAIndex, int mainVertexBIndex, float dstPercentFromAToB) {
             this.vertexIndex = vertexIndex;
             this.mainVertexAIndex = mainVertexAIndex;
             this.mainVertexBIndex = mainVertexBIndex;

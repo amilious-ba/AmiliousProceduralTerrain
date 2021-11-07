@@ -1,6 +1,6 @@
 using System;
-using System.Threading;
 using UnityEngine;
+using System.Threading;
 using Amilious.Threading;
 using Amilious.ProceduralTerrain.Noise;
 
@@ -24,11 +24,6 @@ namespace Amilious.ProceduralTerrain.Mesh {
         public readonly EdgeConnectionVertexData[] edgeConnectionVertices;
         #endregion
 
-        public struct BakeData {
-            public MeshCollider collider;
-        }
-
-
         #region Private Instance Variables
         private UnityEngine.Mesh _mesh;
         private int _meshId;
@@ -36,12 +31,11 @@ namespace Amilious.ProceduralTerrain.Mesh {
         private readonly Vector2[] _flatShadedUvs;
         private readonly Vector2[] _flatShadedUvs2;
         private bool _bakedCollisionMesh;
-        private MeshSettings _meshSettings;
+        private readonly MeshSettings _meshSettings;
         private readonly ReusableFuture<bool,NoiseMap,bool> _meshRequester;
-        private readonly ReusableFuture<BakeData,BakeData> _collisionBaker;
+        private readonly ReusableFuture<MeshCollider,MeshCollider> _collisionBaker;
         #endregion
-        
-        
+
         #region Public Properties
         
         /// <summary>
@@ -52,7 +46,7 @@ namespace Amilious.ProceduralTerrain.Mesh {
         /// <summary>
         /// This property is used to get the meshes level of detail.
         /// </summary>
-        public int LevelOfDetail { get; }
+        public LevelsOfDetail LevelOfDetail { get; }
         
         /// <summary>
         /// This property is used to check if the mesh has been requested yet.
@@ -65,8 +59,7 @@ namespace Amilious.ProceduralTerrain.Mesh {
         public bool HasMesh { get; private set; }
         
         #endregion
-        
-        
+
         #region Private Properties
         
         /// <summary>
@@ -89,26 +82,21 @@ namespace Amilious.ProceduralTerrain.Mesh {
         
         #endregion
 
-        
         #region Constructors
-        
+
         /// <summary>
         /// This constructor is used to create a new chunk mesh.
         /// </summary>
-        /// <param name="numVertsPerLine">The number of vertices per line. </param>
+        /// <param name="meshSettings">The <see cref="MeshSettings"/> that will be used for the mesh.</param>
         /// <param name="skipStep">The number of skipped vertices between each main vertex.</param>
-        /// <param name="useFlatShading">Indicates whether the mesh will be flat shaded.</param>
         /// <param name="levelOfDetail">The meshes level of detail.</param>
-        public ChunkMesh(MeshSettings meshSettings, int skipStep, int levelOfDetail) {
+        public ChunkMesh(MeshSettings meshSettings, int skipStep, LevelsOfDetail levelOfDetail) {
             _meshSettings = meshSettings;
             //setup the mesh requester
             _meshRequester = new ReusableFuture<bool, NoiseMap, bool>();
-            _meshRequester.OnError(Debug.LogError);
-            _meshRequester.OnSuccess(MeshReceived);
-            _meshRequester.OnProcess(MeshRequest);
+            _meshRequester.OnSuccess(MeshReceived).OnProcess(MeshRequest);
             //setup the collision baker
-            _collisionBaker = new ReusableFuture<BakeData,BakeData>();
-            _collisionBaker.OnError(Debug.LogError);
+            _collisionBaker = new ReusableFuture<MeshCollider,MeshCollider>();
             _collisionBaker.OnProcess(BakeCollisionMesh).OnSuccess(CollisionMeshBaked);
             UseFlatShading = meshSettings.UseFlatShading;
             LevelOfDetail = levelOfDetail;
@@ -132,19 +120,28 @@ namespace Amilious.ProceduralTerrain.Mesh {
             _flatShadedUvs2 = new Vector2[triangles.Length];
         }
 
-        private void CollisionMeshBaked(BakeData bakeData) {
+        /// <summary>
+        /// This method is called when the collision mesh has completed baking.
+        /// </summary>
+        /// <param name="meshCollider">The mesh collider that requested the baked collision mesh.</param>
+        private void CollisionMeshBaked(MeshCollider meshCollider) {
             _bakedCollisionMesh = true;
-            AssignTo(bakeData.collider);
+            AssignTo(meshCollider);
         }
 
-        private BakeData BakeCollisionMesh(BakeData bakeData, CancellationToken token) {
-            if(_bakedCollisionMesh) return bakeData;
+        /// <summary>
+        /// This method is used by the collision baker to make the collision mesh.
+        /// </summary>
+        /// <param name="meshCollider">The mesh collider that wants the collision mesh.</param>
+        /// <param name="token">A cancellation token that can be used to cancel the baking.</param>
+        /// <returns>The mesh collider that is requesting the collision mesh.</returns>
+        private MeshCollider BakeCollisionMesh(MeshCollider meshCollider, CancellationToken token) {
+            if(_bakedCollisionMesh) return meshCollider;
             Physics.BakeMesh(_meshId,false);
-            return bakeData;
+            return meshCollider;
         }
 
         #endregion
-
 
         #region Public Methods
 
@@ -153,6 +150,7 @@ namespace Amilious.ProceduralTerrain.Mesh {
         /// so that the mesh can be used for a new chunk.
         /// </summary>
         public void Reset() {
+            _collisionBaker.Cancel();
             _meshRequester.Cancel();
             HasRequestedMesh = false;
             HasMesh = false;
@@ -193,11 +191,9 @@ namespace Amilious.ProceduralTerrain.Mesh {
         /// This method is used to assign the mesh to a given mesh filter.
         /// </summary>
         /// <param name="meshFilter">The mesh filter that you want to apply the mesh to.</param>
-        /// <returns>True if the mesh is valid and was applied to the given mesh filter.</returns>
-        public bool AssignTo(MeshFilter meshFilter) {
-            if(InvalidMesh) return false;
+        public void AssignTo(MeshFilter meshFilter) {
+            if(InvalidMesh) return;
             meshFilter.sharedMesh = _mesh;
-            return true;
         }
 
         /// <summary>
@@ -207,7 +203,7 @@ namespace Amilious.ProceduralTerrain.Mesh {
         public void AssignTo(MeshCollider meshCollider) {
             if(InvalidMesh) return;
             if(!_bakedCollisionMesh) {
-                _collisionBaker.Process(new BakeData{collider = meshCollider});
+                _collisionBaker.Process(meshCollider);
                 return;
             }
             meshCollider.sharedMesh = _mesh;
@@ -249,8 +245,7 @@ namespace Amilious.ProceduralTerrain.Mesh {
         }
         
         #endregion
-        
-        
+
         #region Private Methods
         
         /// <summary>
@@ -324,7 +319,7 @@ namespace Amilious.ProceduralTerrain.Mesh {
         }
 
         /// <summary>
-        /// This method is used to apply flat shadding.
+        /// This method is used to apply flat shading.
         /// </summary>
         private void FlatShading() {
             var flatShadedVertices = new Vector3[triangles.Length];

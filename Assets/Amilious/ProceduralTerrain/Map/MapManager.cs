@@ -7,6 +7,7 @@ using Amilious.Random;
 using Amilious.Threading;
 using Sirenix.OdinInspector;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace Amilious.ProceduralTerrain.Map {
     
@@ -31,7 +32,6 @@ namespace Amilious.ProceduralTerrain.Map {
         private float chunkUpdateThreshold = 25f;
         [SerializeField] private float colliderGenerationThreshold = 5;
         [SerializeField, Required] private string seed;
-        [SerializeField] private MapPaintingMode mapPaintingMode;
         [SerializeField] private bool applyHeight = true;
         [SerializeField, Required] private MeshSettings meshSettings;
         [SerializeField, Required] private BiomeSettings biomeSettings;
@@ -65,8 +65,6 @@ namespace Amilious.ProceduralTerrain.Map {
 
         public Vector2 ViewerPositionXZ => new Vector2(viewer.position.x, viewer.position.z);
         
-        public MapPaintingMode MapPaintingMode { get => mapPaintingMode; }
-
         public float SqrColliderGenerationThreshold {
             get {
                 _sqrColliderGenerationThreshold??= colliderGenerationThreshold * colliderGenerationThreshold;

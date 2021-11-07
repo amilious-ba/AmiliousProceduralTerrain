@@ -62,7 +62,15 @@ namespace Amilious.ProceduralTerrain.Map {
         /// ReSharper disable once UnassignedField.Global
         public static Delegates.OnChunkSavedDelegate onChunkSaved;
         
+        /// <summary>
+        /// This property contains true if the chunk is being used,
+        /// otherwise contains false.
+        /// </summary>
         public bool IsInUse { get; private set; }
+        
+        /// <summary>
+        /// This property contains the chunk id.
+        /// </summary>
         public Vector2Int ChunkId { get; private set; }
         
         public bool HasProcessedRelease { get; private set; }
@@ -258,7 +266,7 @@ namespace Amilious.ProceduralTerrain.Map {
         /// successfully.
         /// </summary>
         private void OnLoadComplete() {
-            if(_manager.MapPaintingMode != MapPaintingMode.Material) {
+            if(_meshSettings.PaintingMode != TerrainPaintingMode.Material) {
                 _previewTexture = _biomeMap.GenerateTexture(_preparedColors,1);
                 _meshRenderer.material.mainTexture = _previewTexture;
             }
@@ -280,7 +288,7 @@ namespace Amilious.ProceduralTerrain.Map {
                 _biomeMap.Load(saveData);
             }else _biomeMap.Generate(_sampleCenter, token);
             //generate texture
-            _biomeMap.GenerateTextureColors(_preparedColors, _manager.MapPaintingMode, 1);
+            _biomeMap.GenerateTextureColors(_preparedColors, _meshSettings.PaintingMode, 1);
             return true;
         }
 
@@ -321,7 +329,7 @@ namespace Amilious.ProceduralTerrain.Map {
             chunk._chunkPool = chunkPool;
             for(var i = 0; i < chunk._detailLevels.Length; i++) {
                 chunk._lodMeshes[i] = new ChunkMesh(chunk._meshSettings, 
-                    chunk._detailLevels[i].SkipStep, chunk._detailLevels[i].LOD);
+                    chunk._detailLevels[i].SkipStep, chunk._detailLevels[i].LevelsOfDetail);
                 chunk._lodMeshes[i].UpdateCallback += chunk.UpdateChunk;
                 if(i == chunk._meshSettings.ColliderLODIndex)
                     chunk._lodMeshes[i].UpdateCallback += chunk.UpdateCollisionMesh;

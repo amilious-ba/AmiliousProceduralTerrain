@@ -1,5 +1,6 @@
 using System;
 using System.Threading;
+using UnityEngine;
 
 namespace Amilious.Threading {
     
@@ -15,8 +16,8 @@ namespace Amilious.Threading {
         private volatile FutureState _state;
         private Action _successCallback;
         private bool _successMain;
-        private Action<Exception> _errorCallback;
-        private bool _errorMain;
+        private Action<Exception> _errorCallback = Debug.LogError;
+        private bool _errorMain = true;
         private Action _cancelCallback;
         private bool _cancelMain;
         private Func<CancellationToken, bool> _processMethod;
@@ -168,8 +169,8 @@ namespace Amilious.Threading {
         private volatile FutureState _state;
         private Action<T> _successCallback;
         private bool _successMain;
-        private Action<Exception> _errorCallback;
-        private bool _errorMain;
+        private Action<Exception> _errorCallback = Debug.LogError;
+        private bool _errorMain = true;
         private Action _cancelCallback;
         private bool _cancelMain;
         private Func<CancellationToken,T> _processMethod;
@@ -320,8 +321,8 @@ namespace Amilious.Threading {
         private volatile FutureState _state;
         private Action<T> _successCallback;
         private bool _successMain;
-        private Action<Exception> _errorCallback;
-        private bool _errorMain;
+        private Action<Exception> _errorCallback = Debug.LogError;
+        private bool _errorMain = true;
         private Action _cancelCallback;
         private bool _cancelMain;
         private Func<T2,CancellationToken,T> _processMethod;
@@ -470,8 +471,8 @@ namespace Amilious.Threading {
         private volatile FutureState _state;
         private Action<T> _successCallback;
         private bool _successMain;
-        private Action<Exception> _errorCallback;
-        private bool _errorMain;
+        private Action<Exception> _errorCallback = Debug.LogError;
+        private bool _errorMain = true;
         private Action _cancelCallback;
         private bool _cancelMain;
         private Func<T2,T3,CancellationToken,T> _processMethod;
@@ -624,8 +625,8 @@ namespace Amilious.Threading {
         private volatile FutureState _state;
         private Action<T> _successCallback;
         private bool _successMain;
-        private Action<Exception> _errorCallback;
-        private bool _errorMain;
+        private Action<Exception> _errorCallback = Debug.LogError;
+        private bool _errorMain = true;
         private Action _cancelCallback;
         private bool _cancelMain;
         private Func<T2,T3,T4,CancellationToken,T> _processMethod;

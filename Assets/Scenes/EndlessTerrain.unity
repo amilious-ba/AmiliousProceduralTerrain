@@ -658,6 +658,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: MapGeneratorDebugCanvas
       objectReference: {fileID: 0}
+    - target: {fileID: 3460896470161609074, guid: 1c55d2c43da6fac4ab52b8cefdfc4405, type: 3}
+      propertyPath: m_AdditionalShaderChannelsFlag
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 3460896470161609075, guid: 1c55d2c43da6fac4ab52b8cefdfc4405, type: 3}
       propertyPath: m_Pivot.x
       value: 0

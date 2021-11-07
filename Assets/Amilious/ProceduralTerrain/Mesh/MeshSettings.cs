@@ -17,6 +17,7 @@ namespace Amilious.ProceduralTerrain.Mesh {
         [SerializeField]
         private ChunkBaseSize chunkBaseSize = ChunkBaseSize.Base64X64;
         [SerializeField] private RegionSize regionSize = RegionSize.Chunks8X8;
+        [SerializeField] private TerrainPaintingMode paintingMode = TerrainPaintingMode.Material;
         [SerializeField] private Material material;
         [SerializeField, Required, ValidateInput(nameof(UniqueLod),
              "Each Lod must have a unique level of detail and visible distance.")]
@@ -24,7 +25,7 @@ namespace Amilious.ProceduralTerrain.Mesh {
         private LODInfo[] chunkLevelsOfDetail;
         [SerializeField, ValidateInput(nameof(ValidateColliderLOD),
              "The collider level of detail must be one of your chunk's lods.")]
-        private int colliderLOD;
+        private LevelsOfDetail colliderLOD = Mesh.LevelsOfDetail.Max;
 
         [SerializeField, Tooltip("This distance should be greater than the max lod distance.")]
         private float chunkUnloadDistance = 600;
@@ -57,7 +58,9 @@ namespace Amilious.ProceduralTerrain.Mesh {
                 return _maxViewDistance.Value;
             }
         }
-
+        
+        public TerrainPaintingMode PaintingMode { get => paintingMode; }
+        
         public float MaxViewDistanceSq {
             get {
                 _maxViewDistanceSq ??= MaxViewDistance * MaxViewDistance;
@@ -85,7 +88,7 @@ namespace Amilious.ProceduralTerrain.Mesh {
             get {
                 if(_colliderLODIndex.HasValue) return _colliderLODIndex ?? -1;
                 for(var i = 0; i < chunkLevelsOfDetail.Length; i++) {
-                    if(chunkLevelsOfDetail[i].LOD != colliderLOD) continue;
+                    if(chunkLevelsOfDetail[i].LevelsOfDetail != colliderLOD) continue;
                     _colliderLODIndex = i; break;
                 }
                 return _colliderLODIndex ?? -1;
@@ -101,7 +104,7 @@ namespace Amilious.ProceduralTerrain.Mesh {
             base.OnValidate();
             //make sure that the lod's are in order.
             if(chunkLevelsOfDetail == null) return;
-            chunkLevelsOfDetail = chunkLevelsOfDetail.OrderBy(x => x.LOD).ToArray();
+            chunkLevelsOfDetail = chunkLevelsOfDetail.OrderBy(x => x.LevelsOfDetail).ToArray();
         }
 
         /// <summary>
@@ -111,7 +114,7 @@ namespace Amilious.ProceduralTerrain.Mesh {
         /// <returns>True if the lods are unique.</returns>
         private bool UniqueLod(LODInfo[] lods) {
             if(lods == null) return true;
-            var uniqueLods = lods.Select(x => x.LOD).Distinct().Count() == lods.Length;
+            var uniqueLods = lods.Select(x => x.LevelsOfDetail).Distinct().Count() == lods.Length;
             var uniqueDistances = lods.Select(x => x.VisibleDistanceThreshold).Distinct().Count() == lods.Length;
             return uniqueLods && uniqueDistances;
         }
@@ -128,9 +131,9 @@ namespace Amilious.ProceduralTerrain.Mesh {
         /// </summary>
         /// <param name="lod">The lod that you want to use for the collider.</param>
         /// <returns>True if the lods contain the collider lod, otherwise false.</returns>
-        private bool ValidateColliderLOD(int lod) {
+        private bool ValidateColliderLOD(LevelsOfDetail lod) {
             if(chunkLevelsOfDetail == null) return false;
-            return chunkLevelsOfDetail.Select(x => x.LOD).Contains(lod);
+            return chunkLevelsOfDetail.Select(x => x.LevelsOfDetail).Contains(lod);
         }
         
         #endregion
