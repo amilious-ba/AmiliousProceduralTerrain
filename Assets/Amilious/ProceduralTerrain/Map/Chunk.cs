@@ -224,8 +224,8 @@ namespace Amilious.ProceduralTerrain.Map {
         /// </summary>
         public void ValidateNonUpdatedChunk() {
             if(!IsInUse||_updated||_startedToRelease) return;
-            _startedToRelease = true;
             if(_bounds.SqrDistance(ViewerPosition) < _meshSettings.ChunkUnloadDistanceSq) return;
+            _startedToRelease = true;
             _saver.Process(true);
         }
         
@@ -277,7 +277,6 @@ namespace Amilious.ProceduralTerrain.Map {
         private bool ProcessLoad(CancellationToken token) {
             //try to load or generate biome data
             if(_manager.SaveEnabled && _manager.MapSaver.LoadData(ChunkId, out var saveData)) {
-                Debug.Log("Reached");
                 _biomeMap.Load(saveData);
             }else _biomeMap.Generate(_sampleCenter, token);
             //generate texture

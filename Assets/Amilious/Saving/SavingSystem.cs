@@ -85,7 +85,7 @@ namespace Amilious.Saving {
         public static string PersistentDataPath {
             get {
                 if(_persistentDataPath == null) {
-                    Dispatcher.Invoke(()=>_persistentDataPath = Application.persistentDataPath);
+                    Dispatcher.Invoke(() => _persistentDataPath = Application.persistentDataPath);
                 }
                 return _persistentDataPath;
             }
@@ -278,9 +278,12 @@ namespace Amilious.Saving {
         /// save file.</param>
         public static bool SaveFile(string saveFile, Dictionary<string,object> state) {
             var path = GetSaveFilePath(saveFile);
-            var tmpPath = Path.GetTempPath();
+            var tmpPath = GetSaveFilePath(Path.GetRandomFileName());
+            var dir = new FileInfo(path).DirectoryName;
             lock(GetLock(path)) { //lock the file only allowing one instance to read or write at a single time.
                 try {
+                    //make sure the directory exists
+                    if(!Directory.Exists(dir)) Directory.CreateDirectory(dir);
                     //write to a temp file then copy the file to the correct path
                     using var fileStream = File.Open(tmpPath, FileMode.Create);
                     var formatter = new BinaryFormatter();

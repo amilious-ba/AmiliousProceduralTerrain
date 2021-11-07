@@ -1,7 +1,10 @@
+using System;
+using System.Diagnostics;
 using System.IO;
 using Amilious.Saving;
 using Sirenix.OdinInspector;
 using UnityEngine;
+using Debug = UnityEngine.Debug;
 
 namespace Amilious.ProceduralTerrain.Saving {
     
@@ -13,9 +16,18 @@ namespace Amilious.ProceduralTerrain.Saving {
 
         [SerializeField] private string saveFolder;
 
-        [Button("ClearSaveData")]
+        [Button("Clear Save Data")]
         public void DeleteSave() {
-            Directory.Delete(SavingSystem.GetSaveDirectory(saveFolder), true);
+            var path = Path.Combine(Application.persistentDataPath, saveFolder);
+            if(Directory.Exists(path))Directory.Delete(path, true);
+            Debug.Log(Directory.Exists(path) ? "Unable to clear the save data!" : "Cleared the save data!");
+        }
+
+        [Button("Open Save Directory")]
+        public void OpenSaveDirectory() {
+            var path = Path.Combine(Application.persistentDataPath, saveFolder);
+            if(!Directory.Exists(path)) path = Application.persistentDataPath;
+            Process.Start(path);
         }
 
         public bool SaveWorldSettings(SaveData saveData) {
