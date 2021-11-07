@@ -19,7 +19,6 @@ namespace Amilious.Core {
             return srcAngles;
         }
         
-        
     }
     
 }

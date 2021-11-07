@@ -9,9 +9,6 @@ namespace Amilious.ProceduralTerrain.Mesh {
     [CreateAssetMenu(menuName = "Amilious/Procedural Terrain/Mesh Settings", order = 0), HideMonoScript]
     public class MeshSettings : UpdateableData {
 
-        
-        
-        
         [SerializeField]
         private ChunkBaseSize chunkBaseSize = ChunkBaseSize.Base64X64;
         [SerializeField] private RegionSize regionSize = RegionSize.Chunks8X8;
@@ -27,8 +24,8 @@ namespace Amilious.ProceduralTerrain.Mesh {
         private bool useFlatShading = false;
         [SerializeField] 
         private bool bakeCollisionMeshes = false;
-        [SerializeField, Required, ValidateInput(nameof(UniqueLod),
-             "Each Lod must have a unique level of detail and visible distance.")]
+        [SerializeField, Required, TableList(AlwaysExpanded = true)]
+         [ValidateInput(nameof(UniqueLod), "Each Lod must have a unique level of detail and visible distance.")]
         [ValidateInput(nameof(ContainsValues),"You must have at least one level of detail.")]
         private LODInfo[] chunkLevelsOfDetail;
         private float? _meshWorldSize = null;
