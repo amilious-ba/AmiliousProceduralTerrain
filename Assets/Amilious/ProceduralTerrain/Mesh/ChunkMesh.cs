@@ -202,7 +202,7 @@ namespace Amilious.ProceduralTerrain.Mesh {
         /// <param name="meshCollider">The mesh collider that you want to apply the mesh to.</param>
         public void AssignTo(MeshCollider meshCollider) {
             if(InvalidMesh) return;
-            if(!_bakedCollisionMesh) {
+            if(!_bakedCollisionMesh && _meshSettings.BakeCollisionMeshes) {
                 _collisionBaker.Process(meshCollider);
                 return;
             }

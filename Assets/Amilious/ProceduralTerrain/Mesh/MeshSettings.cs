@@ -10,26 +10,27 @@ namespace Amilious.ProceduralTerrain.Mesh {
     public class MeshSettings : UpdateableData {
 
         
-        [SerializeField]
-        private float meshScale = 1f;
-        [SerializeField,Tooltip("If ture the mesh will use more vertices so that it can be flat shaded.")]
-        private bool useFlatShading = false;
+        
+        
         [SerializeField]
         private ChunkBaseSize chunkBaseSize = ChunkBaseSize.Base64X64;
         [SerializeField] private RegionSize regionSize = RegionSize.Chunks8X8;
         [SerializeField] private TerrainPaintingMode paintingMode = TerrainPaintingMode.Material;
-        [SerializeField] private Material material;
+        [SerializeField, ValidateInput(nameof(ValidateColliderLOD),
+             "The collider level of detail must be one of your chunk's lods.")]
+        private LevelsOfDetail colliderLOD = Mesh.LevelsOfDetail.Max;
+        [SerializeField] private Material material;[SerializeField]
+        private float meshScale = 1f;
+        [SerializeField, Tooltip("This distance should be greater than the max lod distance.")]
+        private float chunkUnloadDistance = 600;
+        [SerializeField,Tooltip("If ture the mesh will use more vertices so that it can be flat shaded.")]
+        private bool useFlatShading = false;
+        [SerializeField] 
+        private bool bakeCollisionMeshes = false;
         [SerializeField, Required, ValidateInput(nameof(UniqueLod),
              "Each Lod must have a unique level of detail and visible distance.")]
         [ValidateInput(nameof(ContainsValues),"You must have at least one level of detail.")]
         private LODInfo[] chunkLevelsOfDetail;
-        [SerializeField, ValidateInput(nameof(ValidateColliderLOD),
-             "The collider level of detail must be one of your chunk's lods.")]
-        private LevelsOfDetail colliderLOD = Mesh.LevelsOfDetail.Max;
-
-        [SerializeField, Tooltip("This distance should be greater than the max lod distance.")]
-        private float chunkUnloadDistance = 600;
-
         private float? _meshWorldSize = null;
         private float? _maxViewDistance = null;
         private float? _maxViewDistanceSq = null;
@@ -43,6 +44,7 @@ namespace Amilious.ProceduralTerrain.Mesh {
         public ChunkBaseSize ChunkBaseSize { get => chunkBaseSize; }
         public RegionSize RegionSize { get => regionSize; }
         public bool UseFlatShading { get => useFlatShading; }
+        public bool BakeCollisionMeshes { get => bakeCollisionMeshes; }
         public IEnumerable<LODInfo> LevelsOfDetail { get => chunkLevelsOfDetail; }
         //public int VertsPerLine => ChunkSize + 5;
         public int VertsPerLine => (int)ChunkBaseSize + 5;
