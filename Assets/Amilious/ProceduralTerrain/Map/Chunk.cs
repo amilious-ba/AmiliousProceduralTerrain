@@ -75,7 +75,7 @@ namespace Amilious.ProceduralTerrain.Map {
         public Vector2Int ChunkId { get; private set; }
         
         /// <summary>
-        /// This property contains true it the chunks has been processed to be released.
+        /// This property contains true it the chunks has been processed to be released.Updated
         /// </summary>
         public bool HasProcessedRelease { get; private set; }
 
