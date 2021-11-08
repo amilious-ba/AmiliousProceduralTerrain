@@ -43,7 +43,7 @@ This project is being created for use in my game Eidreven.
 
 ## Credits
 
-This project was build using several other pojects for noise generation or as insperation:
+This project was build using several other projects for noise generation or as insperation:
 
 - [KdotJPG - Scattered Biome Blender](https://github.com/KdotJPG/Scattered-Biome-Blender)
 - [Auburn - Fast Noise Lite](https://github.com/Auburn/FastNoiseLite)
