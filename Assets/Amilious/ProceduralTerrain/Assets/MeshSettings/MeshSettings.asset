@@ -20,7 +20,7 @@ MonoBehaviour:
   meshScale: 1
   chunkUnloadDistance: 800
   useFlatShading: 0
-  bakeCollisionMeshes: 0
+  bakeCollisionMeshes: 1
   chunkLevelsOfDetail:
   - levelOfDetail: 1
     visibleDistance: 300
