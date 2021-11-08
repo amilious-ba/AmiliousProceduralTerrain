@@ -35,8 +35,7 @@
 
 ## How To Use
 
-This repository is a complete unity project.  In the future, I may make this public and uploaded as an
-asset instead of an entire project.
+This repository is a complete unity project.  In the future, I will release this as a free asset on the asset store.  This project is built using the odin inspector asset.  The asset should be added to the project in order for it to work properly.
 
 ## What Is This For
 
