@@ -1,7 +1,7 @@
 
-<h1 align="center">
+<h1 style="text-align: center">
   <br>
-  <a href="http://www.amilious.com"><img src="https://github.com/amilious-ba/AmiliousProceduralTerrain/blob/master/Assets/Amilious/Core/Assets/Icons/logo.png" alt="Markdownify" width="200"></a>
+  <a href="https://www.amilious.com"><img src="https://github.com/amilious-ba/AmiliousProceduralTerrain/blob/master/Assets/Amilious/Core/Assets/Icons/logo.png" alt="Amilious" width="200"></a>
   <br>
   Amilious Procedural Terrain
   <br>
@@ -9,14 +9,17 @@
 
 <h4 align="center">Amilious Procedural Terrain is built for <a href="http://unity.com" target="_blank">Unity</a>.</h4>
 
-<p align="center">  
+<p style="text-align: center">  
   <img alt="GitHub" src="https://img.shields.io/github/license/amilious-ba/AmiliousProceduralTerrain">
   <a href="https://discord.gg/m3BhGJ6BAf">
     <img alt="Discord" src="https://img.shields.io/discord/907228288735408158?label=discord&logo=discord">
   </a>
+  <img alt="GitHub contributors" src="https://img.shields.io/github/contributors/amilious-ba/AmiliousProceduralTerrain">
+  <img alt="GitHub last commit" src="https://img.shields.io/github/last-commit/amilious-ba/AmiliousProceduralTerrain">
+  <img alt="GitHub commit activity" src="https://img.shields.io/github/commit-activity/m/amilious-ba/AmiliousProceduralTerrain">
 </p>
 
-<p align="center">
+<p style="text-align: center">
   <a href="#key-features">Key Features</a> •
   <a href="#how-to-use">How To Use</a> •
   <a href="#what-is-this-for">What Is This For</a> •
