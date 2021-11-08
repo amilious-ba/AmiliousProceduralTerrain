@@ -74,6 +74,9 @@ namespace Amilious.ProceduralTerrain.Map {
         /// </summary>
         public Vector2Int ChunkId { get; private set; }
         
+        /// <summary>
+        /// This property contains true it the chunks has been processed to be released.
+        /// </summary>
         public bool HasProcessedRelease { get; private set; }
 
         private Vector2 ViewerPosition => new Vector2 (_viewer.position.x, _viewer.position.z);
