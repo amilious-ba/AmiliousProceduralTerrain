@@ -227,6 +227,12 @@ namespace Amilious.ProceduralTerrain.Biomes {
             return new Color(red, green, blue, 1f);
         }
 
+        /// <summary>
+        /// This method is used to get the biome preview color.
+        /// </summary>
+        /// <param name="biomeId">The biome id.</param>
+        /// <param name="height">The height value.</param>
+        /// <returns>The preview color of the given biome with the given height.</returns>
         private Color BiomePreviewColor(int biomeId, float height) {
             var info = BiomeSettings.GetBiomeInfo(biomeId);
             height = Mathf.InverseLerp(-info.maxHeight, info.maxHeight, height) * 2 - 1;
