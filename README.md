@@ -11,8 +11,8 @@
 
 <p align="center">  
   <img alt="GitHub" src="https://img.shields.io/github/license/amilious-ba/AmiliousProceduralTerrain">
-  <a href="https://discord.gg/SNqyDWu">
-    <img alt="Discord" src="https://img.shields.io/discord/744298801585455125?label=discord&logo=discord">
+  <a href="https://discord.gg/m3BhGJ6BAf">
+    <img alt="Discord" src="https://img.shields.io/discord/907228288735408158?label=discord&logo=discord">
   </a>
 </p>
 
