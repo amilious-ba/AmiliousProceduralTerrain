@@ -1,5 +1,5 @@
 
-<h1 style="text-align: center">
+<h1 align="center" style="text-align: center">
   <br>
   <a href="https://www.amilious.com"><img src="https://github.com/amilious-ba/AmiliousProceduralTerrain/blob/master/Assets/Amilious/Core/Assets/Icons/logo.png" alt="Amilious" width="200"></a>
   <br>
@@ -9,7 +9,7 @@
 
 <h4 align="center">Amilious Procedural Terrain is built for <a href="http://unity.com" target="_blank">Unity</a>.</h4>
 
-<p style="text-align: center">  
+<p align="center" style="text-align: center">  
   <img alt="GitHub" src="https://img.shields.io/github/license/amilious-ba/AmiliousProceduralTerrain">
   <a href="https://discord.gg/m3BhGJ6BAf">
     <img alt="Discord" src="https://img.shields.io/discord/907228288735408158?label=discord&logo=discord">
@@ -19,7 +19,7 @@
   <img alt="GitHub commit activity" src="https://img.shields.io/github/commit-activity/m/amilious-ba/AmiliousProceduralTerrain">
 </p>
 
-<p style="text-align: center">
+<p align="center" style="text-align: center">
   <a href="#key-features">Key Features</a> •
   <a href="#how-to-use">How To Use</a> •
   <a href="#what-is-this-for">What Is This For</a> •
