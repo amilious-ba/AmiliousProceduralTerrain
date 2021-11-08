@@ -10,7 +10,6 @@
 <h4 align="center">Amilious Procedural Terrain is built for <a href="http://unity.com" target="_blank">Unity</a>.</h4>
 
 <p align="center" style="text-align: center">  
-  <img alt="GitHub" src="https://img.shields.io/github/license/amilious-ba/AmiliousProceduralTerrain">
   <a href="https://discord.gg/m3BhGJ6BAf">
     <img alt="Discord" src="https://img.shields.io/discord/907228288735408158?label=discord&logo=discord">
   </a>
