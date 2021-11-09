@@ -20,7 +20,6 @@ namespace Amilious.ProceduralTerrain.Map {
         #region Inspector Values
         
         [SerializeField] private MapType mapType = MapType.PreGenerated;
-        [SerializeField] private bool enableSavingAndLoading = false;
         [SerializeField] private bool generateChunksAtStart;
         [SerializeField, ShowIf(nameof(generateChunksAtStart))] private int chunkPoolSize = 100;
         [SerializeField, Tooltip("This is the distance the player needs to move before the chunk will update.")]
@@ -134,11 +133,6 @@ namespace Amilious.ProceduralTerrain.Map {
         /// This property is used to get the map's <see cref="MapType"/>.
         /// </summary>
         public MapType MapType { get => mapType; }
-        
-        /// <summary>
-        /// This property is used to check if saving is enabled for the map.
-        /// </summary>
-        public bool SaveEnabled { get => enableSavingAndLoading; }
         
         /// <summary>
         /// This property is used to get the map's viewer.

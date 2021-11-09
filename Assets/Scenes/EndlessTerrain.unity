@@ -155,7 +155,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   mapType: 0
-  enableSavingAndLoading: 1
   generateChunksAtStart: 1
   chunkPoolSize: 500
   chunkUpdateThreshold: 25
@@ -208,6 +207,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f533b4ab04f24df7b7e0b66386f1b85b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  enableSaving: 1
+  saveTextureData: 0
   saveFolder: testSave
 --- !u!1 &653260035
 GameObject:

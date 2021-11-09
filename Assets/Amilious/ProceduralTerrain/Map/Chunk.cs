@@ -5,6 +5,7 @@ using Amilious.Threading;
 using Sirenix.OdinInspector;
 using Amilious.ProceduralTerrain.Mesh;
 using Amilious.ProceduralTerrain.Biomes;
+using Amilious.ProceduralTerrain.Saving;
 using Amilious.ProceduralTerrain.Textures;
 
 namespace Amilious.ProceduralTerrain.Map {
@@ -28,6 +29,7 @@ namespace Amilious.ProceduralTerrain.Map {
         private readonly Transform _viewer;
         private readonly BiomeMap _biomeMap;
         private readonly Color[] _preparedColors;
+        private readonly MapSaver _mapSaver;
         private readonly ChunkPool _chunkPool;
         private readonly ReusableFuture _loader;
         private readonly ReusableFuture<bool, bool> _saver;
@@ -161,6 +163,7 @@ namespace Amilious.ProceduralTerrain.Map {
             _detailLevels = _meshSettings.LevelsOfDetail.ToArray();
             _lodMeshes = new ChunkMesh[_detailLevels.Length];
             _chunkPool = chunkPool;
+            _mapSaver = manager.MapSaver;
             for(var i = 0; i < _detailLevels.Length; i++) {
                 _lodMeshes[i] = new ChunkMesh(_meshSettings, 
                     _detailLevels[i].SkipStep, _detailLevels[i].LevelsOfDetail);
@@ -233,7 +236,7 @@ namespace Amilious.ProceduralTerrain.Map {
         /// <returns>True if the chunk should be released to the pool, otherwise
         /// false.</returns>
         private bool ProcessSave(bool releaseFromPool, CancellationToken token) {
-            if((!_manager.SaveEnabled && releaseFromPool) || !_heightMapReceived) 
+            if((!_mapSaver.SavingEnabled && releaseFromPool) || !_heightMapReceived) 
                 return releaseFromPool;
             var saveData = _manager.MapSaver.NewChunkSaveData(ChunkId);
             _biomeMap.Save(saveData);
@@ -256,7 +259,7 @@ namespace Amilious.ProceduralTerrain.Map {
             //cancel current actions
             _loader.Cancel();
             //save if saving is enabled
-            if(_manager.SaveEnabled) {
+            if(_mapSaver.SavingEnabled) {
                 _saver.Process(true);
                 return;
             }
@@ -378,7 +381,7 @@ namespace Amilious.ProceduralTerrain.Map {
         /// will be thrown if false.</returns>
         private bool ProcessLoad(CancellationToken token) {
             //try to load or generate biome data
-            if(_manager.SaveEnabled && _manager.MapSaver.LoadData(ChunkId, out var saveData)) {
+            if(_mapSaver.SavingEnabled && _manager.MapSaver.LoadData(ChunkId, out var saveData)) {
                 _biomeMap.Load(saveData);
             }else _biomeMap.Generate(_sampleCenter, token);
             //generate texture

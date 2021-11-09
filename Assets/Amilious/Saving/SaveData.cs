@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using Amilious.Core.Extensions;
 using Amilious.Core.Serializable;
 using UnityEngine;
@@ -74,6 +75,46 @@ namespace Amilious.Saving {
                     if(!(sv3.Quaternion is T value1)) return false;
                     data = value1; return true;
                 }
+                case Vector2[] _ when DataDictionary.TryGetCastValue(key,
+                        out SerializableVector2[] serializableVector2Array): {
+                    var result = new Vector2[serializableVector2Array.Length];
+                    for(var i = 0; i <= serializableVector2Array.Length; i++)
+                        result[i] = serializableVector2Array[i].Vector2;
+                    data = (T)(object)result;
+                    return true;
+                }
+                case Vector2Int[] _ when DataDictionary.TryGetCastValue(key,
+                    out SerializableVector2Int[] serializableVector2IntArray): {
+                    var result = new Vector2[serializableVector2IntArray.Length];
+                    for(var i = 0; i <= serializableVector2IntArray.Length; i++)
+                        result[i] = serializableVector2IntArray[i].Vector2Int;
+                    data = (T)(object)result;
+                    return true;
+                }
+                case Vector3[] _ when DataDictionary.TryGetCastValue(key,
+                    out SerializableVector3[] serializableVector3Array): {
+                    var result = new Vector3[serializableVector3Array.Length];
+                    for(var i = 0; i <= serializableVector3Array.Length; i++)
+                        result[i] = serializableVector3Array[i].Vector3;
+                    data = (T)(object)result;
+                    return true;
+                }
+                case Vector3Int[] _ when DataDictionary.TryGetCastValue(key,
+                    out SerializableVector3Int[] serializableVector3IntArray): {
+                    var result = new Vector3Int[serializableVector3IntArray.Length];
+                    for(var i = 0; i <= serializableVector3IntArray.Length; i++)
+                        result[i] = serializableVector3IntArray[i].Vector3Int;
+                    data = (T)(object)result;
+                    return true;
+                }
+                case Quaternion[] _ when DataDictionary.TryGetCastValue(key,
+                    out SerializableQuaternion[] serializableQuaternionArray): {
+                    var result = new Quaternion[serializableQuaternionArray.Length];
+                    for(var i = 0; i <= serializableQuaternionArray.Length; i++)
+                        result[i] = serializableQuaternionArray[i].Quaternion;
+                    data = (T)(object)result;
+                    return true;
+                }
             }
             if(data is Transform) {
                 Debug.LogWarning("Do not use the TryFetchData for retrieving Transforms.  " +
@@ -132,6 +173,36 @@ namespace Amilious.Saving {
                     return true;
                 case Transform t: //convert Transform to serializable
                     DataDictionary[key] = t.ToSerializable();
+                    return true;
+                case Vector2[] vector2Array: //convert vector2 array
+                    var serializedVector2Array = new SerializableVector2[vector2Array.Length];
+                    for(var i = 0; i <= vector2Array.Length; i++) 
+                        serializedVector2Array[i] = vector2Array[i].ToSerializable();
+                    DataDictionary[key] = serializedVector2Array;
+                    return true;
+                case Vector2Int[] vector2IntArray: //convert vector2Int array
+                    var serializedVector2IntArray = new SerializableVector2Int[vector2IntArray.Length];
+                    for(var i = 0; i <= vector2IntArray.Length; i++) 
+                        serializedVector2IntArray[i] = vector2IntArray[i].ToSerializable();
+                    DataDictionary[key] = serializedVector2IntArray;
+                    return true;
+                case Vector3[] vector3Array: //convert vector3 array
+                    var serializedVector3Array = new SerializableVector3[vector3Array.Length];
+                    for(var i = 0; i <= vector3Array.Length; i++) 
+                        serializedVector3Array[i] = vector3Array[i].ToSerializable();
+                    DataDictionary[key] = serializedVector3Array;
+                    return true;
+                case Vector3Int[] vector3IntArray: //convert vector3Int array
+                    var serializedVector3IntArray = new SerializableVector3Int[vector3IntArray.Length];
+                    for(var i = 0; i <= vector3IntArray.Length; i++) 
+                        serializedVector3IntArray[i] = vector3IntArray[i].ToSerializable();
+                    DataDictionary[key] = serializedVector3IntArray;
+                    return true;
+                case Quaternion[] quaternionArray: //convert quaternionArray
+                    var serializedQuaternionArray = new SerializableQuaternion[quaternionArray.Length];
+                    for(var i = 0; i <= quaternionArray.Length; i++) 
+                        serializedQuaternionArray[i] = quaternionArray[i].ToSerializable();
+                    DataDictionary[key] = serializedQuaternionArray;
                     return true;
             }
             if(!typeof(T).IsSerializable) {

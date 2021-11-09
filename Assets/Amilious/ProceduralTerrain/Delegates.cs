@@ -49,6 +49,6 @@ namespace Amilious.ProceduralTerrain {
         /// <param name="ms">The time the update took in milliseconds.</param>
         /// </summary>
         public delegate void OnChunksUpdatedDelegate(ChunkPool chunkPool, long ms);
-        
+
     }
 }

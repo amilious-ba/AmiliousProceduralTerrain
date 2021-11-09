@@ -125,11 +125,12 @@ namespace Amilious.ProceduralTerrain.Mesh {
         }
     }
     
-    public readonly struct EdgeConnectionVertexData {
-        public readonly int vertexIndex;
-        public readonly int mainVertexAIndex;
-        public readonly int mainVertexBIndex;
-        public readonly float dstPercentFromAToB;
+    [System.Serializable]
+    public struct EdgeConnectionVertexData {
+        public int vertexIndex;
+        public int mainVertexAIndex;
+        public int mainVertexBIndex;
+        public float dstPercentFromAToB;
  
         public EdgeConnectionVertexData (int vertexIndex, int mainVertexAIndex, int mainVertexBIndex, float dstPercentFromAToB) {
             this.vertexIndex = vertexIndex;

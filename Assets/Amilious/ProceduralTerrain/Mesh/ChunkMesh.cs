@@ -22,14 +22,14 @@ namespace Amilious.ProceduralTerrain.Mesh {
         public readonly Vector3[] outOfMeshVertices;
         public readonly int[] outOfMeshTriangles;
         public readonly EdgeConnectionVertexData[] edgeConnectionVertices;
+        private readonly Vector3[] _flatShadedVertices;
+        private readonly Vector2[] _flatShadedUvs;
+        private readonly Vector2[] _flatShadedUvs2;
         #endregion
 
         #region Private Instance Variables
         private UnityEngine.Mesh _mesh;
         private int _meshId;
-        private readonly Vector3[] _flatShadedVertices;
-        private readonly Vector2[] _flatShadedUvs;
-        private readonly Vector2[] _flatShadedUvs2;
         private bool _bakedCollisionMesh;
         private readonly MeshSettings _meshSettings;
         private readonly ReusableFuture<bool,NoiseMap,bool> _meshRequester;
@@ -150,8 +150,7 @@ namespace Amilious.ProceduralTerrain.Mesh {
         /// so that the mesh can be used for a new chunk.
         /// </summary>
         public void Reset() {
-            _collisionBaker.Cancel();
-            _meshRequester.Cancel();
+            CancelProcessing();
             HasRequestedMesh = false;
             HasMesh = false;
             _bakedCollisionMesh = false;
@@ -166,6 +165,11 @@ namespace Amilious.ProceduralTerrain.Mesh {
         public void RequestMesh(NoiseMap heightMap, bool applyHeight = true) {
             HasRequestedMesh = true;
             _meshRequester.Process(heightMap,applyHeight);
+        }
+
+        public void CancelProcessing() {
+            _meshRequester.Cancel();
+            _collisionBaker.Cancel();
         }
 
         /// <summary>

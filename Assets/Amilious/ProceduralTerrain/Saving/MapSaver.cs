@@ -14,7 +14,13 @@ namespace Amilious.ProceduralTerrain.Saving {
         private const int SAVE_DATA_VERSION = 0;
         private const string WORLD_SETTINGS = "world";
 
-        [SerializeField] private string saveFolder;
+        [SerializeField] private bool enableSaving;
+        [SerializeField, ShowIf(nameof(enableSaving))]
+        private bool saveTextureData;
+        [SerializeField, ShowIf(nameof(enableSaving))] 
+        private string saveFolder;
+
+        public bool SavingEnabled { get => enableSaving; }
 
         [Button("Clear Save Data")]
         public void DeleteSave() {
@@ -56,10 +62,10 @@ namespace Amilious.ProceduralTerrain.Saving {
             return rawData.Keys.Count != 0;
         }
         
-        private string GetSaveFile(Vector2Int chunkId) {
+        protected virtual string GetSaveFile(Vector2Int chunkId) {
             return Path.Combine(saveFolder,$"{chunkId.x}_{chunkId.y}");
         }
-        private string GetSaveFile(string fileName) {
+        protected virtual string GetSaveFile(string fileName) {
             return Path.Combine(saveFolder,fileName);
         }
 
