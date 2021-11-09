@@ -13,31 +13,37 @@ namespace Amilious.ProceduralTerrain.Map {
     /// This class will represent a chunk
     /// </summary>
     [HideMonoScript]
-    public class Chunk : MonoBehaviour {
-        
-        private MapManager _manager;
+    public class Chunk {
+
+        private GameObject _gameObject;
+        private Transform _transform;
+        private readonly MapManager _manager;
         private MeshRenderer _meshRenderer;
         private MeshFilter _meshFilter;
         private MeshCollider _meshCollider;
-        private MeshSettings _meshSettings;
-        private ChunkMesh[] _lodMeshes;
-        private LODInfo[] _detailLevels;
+        private readonly MeshSettings _meshSettings;
+        private readonly ChunkMesh[] _lodMeshes;
+        private readonly LODInfo[] _detailLevels;
+        private readonly Transform _viewer;
+        private readonly BiomeMap _biomeMap;
+        private readonly Color[] _preparedColors;
+        private readonly ChunkPool _chunkPool;
+        private readonly ReusableFuture _loader;
+        private readonly ReusableFuture<bool, bool> _saver;
+        
         private int _previousLODIndex = -1;
         private bool _heightMapReceived;
         private Vector2 _sampleCenter;
         private Vector2 _position;
         private Bounds _bounds;
         private bool _hasSetCollider;
-        private Transform _viewer;
-        private BiomeMap _biomeMap;
         private Texture2D _previewTexture;
-        private Color[] _preparedColors;
         private bool _startedToRelease;
         private bool _updated;
+        private bool _isActive = true;
+        private Vector3 _transformPosition = Vector3.zero;
+        private string _name;
         private bool _appliedMeshMaterial;
-        private ChunkPool _chunkPool;
-        private ReusableFuture _loader;
-        private ReusableFuture<bool, bool> _saver;
 
         /// <summary>
         /// This event is triggered when a chunks visibility changes.
@@ -68,6 +74,48 @@ namespace Amilious.ProceduralTerrain.Map {
         /// otherwise contains false.
         /// </summary>
         public bool IsInUse { get; private set; }
+
+        /// <summary>
+        /// This property is used to check if the chunk's gameObject is active.  It
+        /// can also be used to protected set if the chunk's gameObject is active.
+        /// </summary>
+        public bool Active {
+            get => _isActive;
+            protected set {
+                Dispatcher.InvokeAsync(()=> {
+                    _gameObject.SetActive(value);
+                    _isActive = value;
+                });
+            }
+        }
+
+        /// <summary>
+        /// This property is used to get the chunk's gameObject's name.  It can
+        /// also be used to protected set the gameObject's name.
+        /// </summary>
+        public string Name {
+            get => _name;
+            protected set {
+                Dispatcher.InvokeAsync(()=> {
+                    _gameObject.name = value;
+                    _name = value;
+                });
+            }
+        }
+
+        /// <summary>
+        /// This property is used to get the chunk's transform position.  It can also
+        /// be used to protected set the transforms position.
+        /// </summary>
+        public Vector3 TransformPosition {
+            get => _transformPosition;
+            set {
+                Dispatcher.InvokeAsync(() => {
+                    _gameObject.transform.position = value;
+                    _transformPosition = value;
+                });
+            }
+        }
         
         /// <summary>
         /// This property contains the chunk id.
@@ -79,16 +127,44 @@ namespace Amilious.ProceduralTerrain.Map {
         /// </summary>
         public bool HasProcessedRelease { get; private set; }
 
+        /// <summary>
+        /// This property is used to get the player's position as a <see cref="Vector2"/>.
+        /// </summary>
         private Vector2 ViewerPosition => new Vector2 (_viewer.position.x, _viewer.position.z);
 
-        private void Awake() {
+        
+        public Chunk(MapManager manager, ChunkPool chunkPool) {
+            //make sure the chunk gameObject and components get
+            //created on the main thead
+            Dispatcher.Invoke(() => {
+                _gameObject = new GameObject() {
+                    transform = { parent = manager.transform }
+                };
+                _meshFilter = _gameObject.AddComponent<MeshFilter>();
+                _meshCollider = _gameObject.AddComponent<MeshCollider>();
+                _meshRenderer = _gameObject.AddComponent<MeshRenderer>();
+                _transformPosition = _gameObject.transform.position;
+                _transform = _gameObject.transform;
+            });
+            
+            Name = $"Chunk (pooled)";
+            _meshSettings = manager.MeshSettings;
+            _viewer = manager.Viewer;
+            _biomeMap = new BiomeMap(manager.HashedSeed,manager.MeshSettings.VertsPerLine, manager.BiomeSettings);
+            _preparedColors = new Color[_biomeMap.GetBorderCulledValuesCount(1)];
+            //create meshes
+            _detailLevels = _meshSettings.LevelsOfDetail.ToArray();
+            _lodMeshes = new ChunkMesh[_detailLevels.Length];
+            _chunkPool = chunkPool;
+            for(var i = 0; i < _detailLevels.Length; i++) {
+                _lodMeshes[i] = new ChunkMesh(_meshSettings, 
+                    _detailLevels[i].SkipStep, _detailLevels[i].LevelsOfDetail);
+                _lodMeshes[i].UpdateCallback += UpdateChunk;
+                if(i == _meshSettings.ColliderLODIndex)
+                    _lodMeshes[i].UpdateCallback += UpdateCollisionMesh;
+            }
             //get the manager
-            _manager = GetComponentInParent<MapManager>();
-            if(_manager==null) Debug.LogWarning("The chunk is unable to find it's parent.");
-            //create the required components
-            _meshFilter = gameObject.AddComponent<MeshFilter>();
-            _meshCollider = gameObject.AddComponent<MeshCollider>();
-            _meshRenderer = gameObject.AddComponent<MeshRenderer>();
+            _manager = manager;
             //setup loader
             _loader = new ReusableFuture();
             _loader.OnError(Debug.LogError);
@@ -98,9 +174,9 @@ namespace Amilious.ProceduralTerrain.Map {
             _saver.OnError(Debug.LogError);
             _saver.OnProcess(ProcessSave).OnSuccess(SaveComplete);
             //if not in use disable gameObject
-            if(!IsInUse) gameObject.SetActive(false);
+            if(!IsInUse) Active = false;
         }
-
+        
         private void OnDestroy() {
             _manager.OnStartUpdate -= StartUpdateCycle;
             _manager.OnUpdateVisible -= UpdateChunk;
@@ -123,10 +199,9 @@ namespace Amilious.ProceduralTerrain.Map {
             _sampleCenter = floatCoord * _meshSettings.MeshWorldSize / _meshSettings.MeshScale;
             _position = floatCoord * _meshSettings.MeshWorldSize;
             _bounds = new Bounds(_position, Vector3.one * _meshSettings.MeshWorldSize);
-            gameObject.name = $"Chunk ({ChunkId.x},{ChunkId.y})";
-            transform.position = new Vector3(_position.x, 0, _position.y);
+            Name = $"Chunk ({ChunkId.x},{ChunkId.y})";
+            TransformPosition = new Vector3(_position.x, 0, _position.y);
             HasProcessedRelease = false;
-            //Load();
             _loader.Process();
         }
 
@@ -141,7 +216,7 @@ namespace Amilious.ProceduralTerrain.Map {
             _manager.OnUpdateVisible += UpdateChunk;
             _manager.OnEndUpdate += ValidateNonUpdatedChunk;
             _manager.OnUpdateCollisionMesh += UpdateCollisionMesh;
-            if(setActive) gameObject.SetActive(true);
+            //Active = true;
         }
 
         /// <summary>
@@ -183,13 +258,13 @@ namespace Amilious.ProceduralTerrain.Map {
             _manager.OnUpdateVisible -= UpdateChunk;
             _manager.OnEndUpdate -= ValidateNonUpdatedChunk;
             _manager.OnUpdateCollisionMesh -= UpdateCollisionMesh;
-            gameObject.SetActive(false);
+            Active = false;
+            Name = $"Chunk (pooled)";
             //reset the mesh values
             foreach(var mesh in _lodMeshes) mesh.Reset();
             _previousLODIndex = -1;
             _hasSetCollider = false;
             _heightMapReceived = false;
-            gameObject.name = $"Chunk (pooled)";
             //return to pool
             IsInUse = false;
             _startedToRelease = false;
@@ -216,18 +291,18 @@ namespace Amilious.ProceduralTerrain.Map {
             if(!_heightMapReceived|| !IsInUse) return;
             if(ChunkId.x < xMin || ChunkId.x > xMax || ChunkId.y < yMin || ChunkId.y > yMax) {
                 //out of range so make sure it is disabled
-                if(!gameObject.activeSelf) return;
-                gameObject.SetActive(false);
+                if(!Active) return;
+                Active = false;
                 onVisibilityChanged?.Invoke(ChunkId,false);
                 return;
             }
             _updated = true;
             var distanceFromViewerSq = _bounds.SqrDistance(ViewerPosition);
-            var wasVisible =  gameObject.activeSelf;
+            var wasVisible =  Active;
             var visible = distanceFromViewerSq <= _meshSettings.MaxViewDistanceSq;
             if(visible) UpdateLOD(distanceFromViewerSq);
             if(wasVisible == visible) return;
-            gameObject.SetActive(visible);
+            Active = visible;
             onVisibilityChanged?.Invoke(ChunkId,visible);
         }
 
@@ -304,7 +379,7 @@ namespace Amilious.ProceduralTerrain.Map {
         /// This method is used to handle the collision mesh.
         /// </summary>
         public void UpdateCollisionMesh() {
-            if(!IsInUse || !gameObject.activeSelf || _hasSetCollider) return;
+            if(!IsInUse || !Active || _hasSetCollider) return;
             var sqrDistanceFromViewer = _bounds.SqrDistance(ViewerPosition);
             if(sqrDistanceFromViewer < _detailLevels[_meshSettings.ColliderLODIndex].SqrVisibleDistanceThreshold)
                 if(!_lodMeshes[_meshSettings.ColliderLODIndex].HasRequestedMesh)
@@ -314,35 +389,6 @@ namespace Amilious.ProceduralTerrain.Map {
             _lodMeshes[_meshSettings.ColliderLODIndex].AssignTo(_meshCollider);
             _hasSetCollider = true;
         }
-
-        /// <summary>
-        /// This method is used to create and setup a new chunk.
-        /// </summary>
-        /// <param name="manager">The map manager that will be used
-        /// for the chunk.</param>
-        /// <param name="chunkPool">This chunks parent <see cref="ChunkPool"/>.</param>
-        /// <returns>The newly generated chunk.</returns>
-        public static Chunk CreateNew(MapManager manager, ChunkPool chunkPool) {
-            var gameObject = new GameObject($"Chunk (pooled)") {
-                transform = { parent = manager.transform }
-            };
-            var chunk = gameObject.AddComponent<Chunk>();
-            chunk._meshSettings = manager.MeshSettings;
-            chunk._viewer = manager.Viewer;
-            chunk._biomeMap = new BiomeMap(manager.HashedSeed,manager.MeshSettings.VertsPerLine, manager.BiomeSettings);
-            chunk._preparedColors = new Color[chunk._biomeMap.GetBorderCulledValuesCount(1)];
-            //create meshes
-            chunk._detailLevels = chunk._meshSettings.LevelsOfDetail.ToArray();
-            chunk._lodMeshes = new ChunkMesh[chunk._detailLevels.Length];
-            chunk._chunkPool = chunkPool;
-            for(var i = 0; i < chunk._detailLevels.Length; i++) {
-                chunk._lodMeshes[i] = new ChunkMesh(chunk._meshSettings, 
-                    chunk._detailLevels[i].SkipStep, chunk._detailLevels[i].LevelsOfDetail);
-                chunk._lodMeshes[i].UpdateCallback += chunk.UpdateChunk;
-                if(i == chunk._meshSettings.ColliderLODIndex)
-                    chunk._lodMeshes[i].UpdateCallback += chunk.UpdateCollisionMesh;
-            }
-            return chunk;
-        }
+        
     }
 }

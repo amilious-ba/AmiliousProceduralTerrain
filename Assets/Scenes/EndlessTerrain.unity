@@ -161,7 +161,6 @@ MonoBehaviour:
   chunkUpdateThreshold: 25
   colliderGenerationThreshold: 5
   seed: seedless3
-  mapPaintingMode: 2
   applyHeight: 1
   meshSettings: {fileID: 11400000, guid: c85bb7093536c6143ab491a4846c8ebc, type: 2}
   biomeSettings: {fileID: 11400000, guid: d73a9940739c7184abef7790a4f2521b, type: 2}
@@ -192,7 +191,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ec7b0cad569747328dbc812cb130f7c1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  useAdvancedSettings: 1
+  useAdvancedSettings: 0
   maxQueueSize: 1000
   dontInvokeIfOverMs: 2
   maxInvokesPerUpdate: 5
@@ -660,7 +659,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3460896470161609074, guid: 1c55d2c43da6fac4ab52b8cefdfc4405, type: 3}
       propertyPath: m_AdditionalShaderChannelsFlag
-      value: 1
+      value: 25
       objectReference: {fileID: 0}
     - target: {fileID: 3460896470161609075, guid: 1c55d2c43da6fac4ab52b8cefdfc4405, type: 3}
       propertyPath: m_Pivot.x

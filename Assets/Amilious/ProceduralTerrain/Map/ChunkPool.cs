@@ -9,7 +9,6 @@ namespace Amilious.ProceduralTerrain.Map {
         #region Private Instance Variables
         
         private readonly MapManager _manager;
-        private readonly object _poolLock = new object();
         private readonly ConcurrentDictionary<Vector2Int, Chunk> _loadedChunks = 
             new ConcurrentDictionary<Vector2Int, Chunk>();
         private readonly ConcurrentQueue<Chunk> _chunkQueue;
@@ -57,7 +56,7 @@ namespace Amilious.ProceduralTerrain.Map {
         /// <param name="chunkId">The id of the <see cref="Chunk"/> that you want to check.</param>
         /// <returns>True if the <see cref="Chunk"/> with the given id is loaded and visible.</returns>
         public bool IsVisible(Vector2Int chunkId) => 
-            _loadedChunks.TryGetValue(chunkId, out var chunk) && chunk != null && chunk.gameObject.activeSelf;
+            _loadedChunks.TryGetValue(chunkId, out var chunk) && chunk is { Active: true };
         
         #endregion
 
@@ -76,7 +75,7 @@ namespace Amilious.ProceduralTerrain.Map {
             _chunkQueue = new ConcurrentQueue<Chunk>();
             if(!preloadSize.HasValue) return;
             for(var i=0;i<preloadSize.Value;i++)
-                _chunkQueue.Enqueue(Chunk.CreateNew(_manager, this));
+                _chunkQueue.Enqueue(new Chunk(_manager, this));
         }
 
         #endregion
@@ -95,7 +94,7 @@ namespace Amilious.ProceduralTerrain.Map {
             if(_loadedChunks.TryGetValue(chunkId, out chunk)) return false;
              if(!_chunkQueue.TryDequeue(out chunk)){
                  //no available chunk so create new chunk
-                 chunk = Chunk.CreateNew(_manager,this);
+                 chunk = new Chunk(_manager,this);
              }
             if(chunk == null) return false;
              chunk.PullFromPool();
@@ -115,7 +114,7 @@ namespace Amilious.ProceduralTerrain.Map {
             if(_loadedChunks.TryGetValue(chunkId, out _)) return false;
             if(!_chunkQueue.TryDequeue(out var chunk)){
                 //no available chunk so create new chunk
-                chunk = Chunk.CreateNew(_manager,this);
+                chunk = new Chunk(_manager,this);
             }
             if(chunk == null) return false;
             chunk.PullFromPool();
@@ -149,7 +148,6 @@ namespace Amilious.ProceduralTerrain.Map {
          }
         
         #endregion
-        
 
     }
 }
