@@ -15,8 +15,9 @@ namespace Amilious.ProceduralTerrain.Map {
     [HideMonoScript]
     public class Chunk {
 
+        #region Instance Variables
+        
         private GameObject _gameObject;
-        private Transform _transform;
         private readonly MapManager _manager;
         private MeshRenderer _meshRenderer;
         private MeshFilter _meshFilter;
@@ -30,7 +31,6 @@ namespace Amilious.ProceduralTerrain.Map {
         private readonly ChunkPool _chunkPool;
         private readonly ReusableFuture _loader;
         private readonly ReusableFuture<bool, bool> _saver;
-        
         private int _previousLODIndex = -1;
         private bool _heightMapReceived;
         private Vector2 _sampleCenter;
@@ -44,6 +44,8 @@ namespace Amilious.ProceduralTerrain.Map {
         private Vector3 _transformPosition = Vector3.zero;
         private string _name;
         private bool _appliedMeshMaterial;
+        
+        #endregion
 
         /// <summary>
         /// This event is triggered when a chunks visibility changes.
@@ -132,6 +134,11 @@ namespace Amilious.ProceduralTerrain.Map {
         /// </summary>
         private Vector2 ViewerPosition => new Vector2 (_viewer.position.x, _viewer.position.z);
         
+        /// <summary>
+        /// This constructor is used to create a new reusable chunk.
+        /// </summary>
+        /// <param name="manager">The map manager that will use this chunk.</param>
+        /// <param name="chunkPool">The chunk pool that contains this chunk.</param>
         public Chunk(MapManager manager, ChunkPool chunkPool) {
             //make sure the chunk gameObject and components get
             //created on the main thead
@@ -143,7 +150,6 @@ namespace Amilious.ProceduralTerrain.Map {
                 _meshCollider = _gameObject.AddComponent<MeshCollider>();
                 _meshRenderer = _gameObject.AddComponent<MeshRenderer>();
                 _transformPosition = _gameObject.transform.position;
-                _transform = _gameObject.transform;
             });
             
             Name = $"Chunk (pooled)";
@@ -174,17 +180,6 @@ namespace Amilious.ProceduralTerrain.Map {
             _saver.OnProcess(ProcessSave).OnSuccess(SaveComplete);
             //if not in use disable gameObject
             if(!IsInUse) Active = false;
-        }
-        
-        private void OnDestroy() {
-            _manager.OnStartUpdate -= StartUpdateCycle;
-            _manager.OnUpdateVisible -= UpdateChunk;
-            _manager.OnEndUpdate -= ValidateNonUpdatedChunk;
-            _manager.OnUpdateCollisionMesh -= UpdateCollisionMesh;
-            foreach(var mesh in _lodMeshes) {
-                mesh.UpdateCallback -= UpdateChunk;
-                mesh.UpdateCallback -= UpdateCollisionMesh;
-            }
         }
 
         /// <summary>
