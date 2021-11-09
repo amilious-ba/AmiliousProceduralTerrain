@@ -220,7 +220,7 @@ namespace Amilious.ProceduralTerrain.Map {
         /// released to the pool, otherwise false.</param>
         private void SaveComplete(bool releaseFromPool) {
             onChunkSaved?.Invoke(ChunkId);
-            if(releaseFromPool) ReleaseToPool();
+            if(releaseFromPool) SendToPool();
         }
 
         /// <summary>
@@ -233,8 +233,8 @@ namespace Amilious.ProceduralTerrain.Map {
         /// <returns>True if the chunk should be released to the pool, otherwise
         /// false.</returns>
         private bool ProcessSave(bool releaseFromPool, CancellationToken token) {
-            if(!_manager.SaveEnabled && releaseFromPool) return true;
-            if(!_manager.SaveEnabled || !_heightMapReceived) return releaseFromPool;
+            if((!_manager.SaveEnabled && releaseFromPool) || !_heightMapReceived) 
+                return releaseFromPool;
             var saveData = _manager.MapSaver.NewChunkSaveData(ChunkId);
             _biomeMap.Save(saveData);
             _manager.MapSaver.SaveData(ChunkId, saveData);
@@ -245,12 +245,31 @@ namespace Amilious.ProceduralTerrain.Map {
         /// This method is used to dispose of a chunk and add it back
         /// to the chunk pool.
         /// </summary>
-        public bool ReleaseToPool() {
-            _loader.Cancel();
+        public void ReleaseToPool() {
+            if(_startedToRelease) return;
+            _startedToRelease = true;
+            //unsubscribe from events
             _manager.OnStartUpdate -= StartUpdateCycle;
             _manager.OnUpdateVisible -= UpdateChunk;
             _manager.OnEndUpdate -= ValidateNonUpdatedChunk;
             _manager.OnUpdateCollisionMesh -= UpdateCollisionMesh;
+            //cancel current actions
+            _loader.Cancel();
+            //save if saving is enabled
+            if(_manager.SaveEnabled) {
+                _saver.Process(true);
+                return;
+            }
+            //if not saving
+            SendToPool();
+        }
+
+        /// <summary>
+        /// This method should only be called from <see cref="ReleaseToPool"/> or
+        /// <see cref="SaveComplete"/>.  If you want to return the object to the
+        /// <see cref="ChunkPool"/> see <see cref="ReleaseToPool"/>.
+        /// </summary>
+        private void SendToPool() {
             Active = false;
             Name = $"Chunk (pooled)";
             //reset the mesh values
@@ -262,7 +281,7 @@ namespace Amilious.ProceduralTerrain.Map {
             IsInUse = false;
             _startedToRelease = false;
             HasProcessedRelease = true;
-            return _chunkPool.ReturnToPool(this);
+            _chunkPool.AddToAvailableChunkQueue(this);
         }
 
         /// <summary>
@@ -305,8 +324,7 @@ namespace Amilious.ProceduralTerrain.Map {
         public void ValidateNonUpdatedChunk() {
             if(!IsInUse||_updated||_startedToRelease) return;
             if(_bounds.SqrDistance(ViewerPosition) < _meshSettings.ChunkUnloadDistanceSq) return;
-            _startedToRelease = true;
-            _saver.Process(true);
+            if(!_startedToRelease) ReleaseToPool();
         }
         
         /// <summary>

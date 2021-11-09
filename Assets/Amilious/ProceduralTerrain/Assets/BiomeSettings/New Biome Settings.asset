@@ -13,23 +13,62 @@ MonoBehaviour:
   m_Name: New Biome Settings
   m_EditorClassIdentifier: 
   serializationData:
-    SerializedFormat: 0
-    SerializedBytes: 01010a000000620069006f006d0065005400610062006c0065002f000000000119000000530079007300740065006d002e0049006e007400330032005b002c005d002c0020006d00730063006f0072006c006900620000000000060800000000000000270105000000720061006e006b007300010300000032007c00340018b514aea618b514aea6186a9d9a05186a9d9a0518a73a4bc818a73a4bc818ced6023018ced602300705
+    SerializedFormat: 2
+    SerializedBytes: 
     ReferencedUnityObjects: []
     SerializedBytesString: 
     Prefab: {fileID: 0}
     PrefabModificationsReferencedUnityObjects: []
     PrefabModifications: []
-    SerializationNodes: []
-  seed: seedless
-  size: 64
-  pixelMultiplier: 4
-  offset: {x: 0, y: 0}
-  previewType: 4
-  minHeatColor: {r: 1, g: 1, b: 1, a: 1}
-  maxHeatColor: {r: 1, g: 0, b: 0, a: 1}
-  minMoistureColor: {r: 1, g: 1, b: 1, a: 1}
-  maxMoistureColor: {r: 0, g: 0, b: 1, a: 1}
+    SerializationNodes:
+    - Name: biomeTable
+      Entry: 7
+      Data: 0|System.Int32[,], mscorlib
+    - Name: 
+      Entry: 12
+      Data: 8
+    - Name: ranks
+      Entry: 1
+      Data: 2|4
+    - Name: 
+      Entry: 3
+      Data: -1498540875
+    - Name: 
+      Entry: 3
+      Data: -1498540875
+    - Name: 
+      Entry: 3
+      Data: 94018922
+    - Name: 
+      Entry: 3
+      Data: 94018922
+    - Name: 
+      Entry: 3
+      Data: -934593881
+    - Name: 
+      Entry: 3
+      Data: -934593881
+    - Name: 
+      Entry: 3
+      Data: 805492430
+    - Name: 
+      Entry: 3
+      Data: 805492430
+    - Name: 
+      Entry: 13
+      Data: 
+    - Name: 
+      Entry: 8
+      Data: 
+  pvSeed: seedless
+  pvSize: 64
+  pvPixelMultiplier: 4
+  pvOffset: {x: 0, y: 0}
+  previewType: 3
+  pvMinHeatColor: {r: 1, g: 1, b: 1, a: 1}
+  pvMaxHeatColor: {r: 1, g: 0, b: 0, a: 1}
+  pvMinMoistureColor: {r: 1, g: 1, b: 1, a: 1}
+  pvMaxMoistureColor: {r: 0, g: 0, b: 1, a: 1}
   heatMapSettings: {fileID: 11400000, guid: a4cb21b497075d3498e1f1155ac076d0, type: 2}
   moistureMapSettings: {fileID: 11400000, guid: 9d25ea652f8d7fc4c9ddabfd7d0cb63b, type: 2}
   useOceanMap: 1

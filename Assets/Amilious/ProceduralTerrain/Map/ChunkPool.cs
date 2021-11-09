@@ -126,25 +126,15 @@ namespace Amilious.ProceduralTerrain.Map {
         /// This method is used to return a chunk to the pool.
         /// </summary>
         /// <param name="chunk">The chunk that you want to return to the pool.</param>
-        /// <returns>True if the chunk was removed from the loaded chunks, otherwise
-        /// returns false.</returns>
-        public bool ReturnToPool(Chunk chunk) {
-             if(chunk == null) return false;
-             if(!chunk.HasProcessedRelease) return chunk.ReleaseToPool();
-             var removed = _loadedChunks.TryRemove(chunk.ChunkId, out _);
-             _chunkQueue.Enqueue(chunk);
-             return removed;
-         }
-         
-        /// <summary>
-        /// This method is used to return a chunk to the pool.
-        /// </summary>
-        /// <param name="chunkId">The id of the chunk that you want to return to the pool.</param>
-        /// <returns>True if the chunk was removed from the loaded chunks, otherwise
-        /// returns false.</returns>
-        public bool ReturnToPool(Vector2Int chunkId) {
-             return _loadedChunks.TryGetValue(chunkId, out var chunk) && ReturnToPool(chunk);
-         }
+        public void AddToAvailableChunkQueue(Chunk chunk) {
+            if(chunk == null) return;
+            if(!chunk.HasProcessedRelease) {
+                chunk.ReleaseToPool();
+                return;
+            }
+            _loadedChunks.TryRemove(chunk.ChunkId, out _);
+            _chunkQueue.Enqueue(chunk);
+        }
         
         #endregion
 
