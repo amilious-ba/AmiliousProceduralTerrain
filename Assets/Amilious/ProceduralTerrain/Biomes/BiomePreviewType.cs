@@ -18,18 +18,16 @@ namespace Amilious.ProceduralTerrain.Biomes {
         MoistureMap = 1, 
         
         /// <summary>
-        /// This preview type will be used to see the base map
-        /// that will be used to generate the biome map.
-        /// </summary>
-        /*OceanMap = 2,*/
-        
-        /// <summary>
         /// This preview type will be used to see the biome map
         /// that will be generated from the other maps.
         /// </summary>
-        BiomeMap = 3,
+        BiomeMap = 2,
         
-        BlendedBiomeMap = 4
+        /// <summary>
+        /// This preview type is used to see the blended biome map
+        /// that will be generated from the other maps.
+        /// </summary>
+        BlendedBiomeMap = 3
 
     }
     

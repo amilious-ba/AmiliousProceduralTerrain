@@ -14,7 +14,6 @@ namespace Amilious.ProceduralTerrain.Biomes.Blending {
 
         private static readonly float ChunkRadiusRatio = Mathf.Sqrt(1.0f / 2.0f);
         private readonly float _halfChunkWidth;
-        private readonly int _chunkSize;
         private readonly float _maxPointContributionRadius;
         private readonly float _maxPointContributionRadiusSq;
         private readonly UnfilteredPointGatherer _unfilteredPointGatherer;
@@ -27,7 +26,6 @@ namespace Amilious.ProceduralTerrain.Biomes.Blending {
         /// <param name="chunkSize">This value should be both the width and the height
         /// of a chunk.</param>
         public ChunkPointGatherer(float frequency, float maxPointContributionRadius, int chunkSize) {
-            _chunkSize = chunkSize;
             _halfChunkWidth = chunkSize / 2f;
             _maxPointContributionRadius = maxPointContributionRadius;
             _maxPointContributionRadiusSq = maxPointContributionRadius * maxPointContributionRadius;

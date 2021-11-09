@@ -123,7 +123,6 @@ namespace Amilious.ProceduralTerrain.Mesh {
         chunkMesh.ProcessMesh ();
 
         }
-        
     }
     
     public readonly struct EdgeConnectionVertexData {

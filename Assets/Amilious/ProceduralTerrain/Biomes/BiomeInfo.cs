@@ -2,7 +2,6 @@ using System;
 using UnityEngine;
 using Sirenix.OdinInspector;
 using Amilious.ProceduralTerrain.Noise;
-using Amilious.ProceduralTerrain.Erosion;
 
 namespace Amilious.ProceduralTerrain.Biomes {
     
