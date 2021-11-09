@@ -34,7 +34,7 @@ namespace Amilious.ProceduralTerrain.Noise {
 
         public abstract ColorMap PreviewColors { get; }
 
-        public abstract void SetComputeShaderValues(ComputeShader computeShader, char prefix, int seed);
+        public abstract void SetComputeShaderValues(ComputeShader computeShader, char prefix, Seed seed);
 
     }
 }

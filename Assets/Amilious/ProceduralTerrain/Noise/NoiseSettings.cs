@@ -45,7 +45,7 @@ namespace Amilious.ProceduralTerrain.Noise {
         private ColorMap colorMap;
         [BoxGroup(PREVIEW), SerializeField, ShowIf("noisePreviewType", NoisePreviewType.CrossSection)]
         [PropertyRange(1,nameof(size))]
-        private int crossSectionDepth = 0;
+        private int crossSectionDepth;
 
         [TabGroup(TAB_GROUP, TAB_A), SerializeField]
         private FastNoiseLite.NoiseType noiseType = FastNoiseLite.NoiseType.OpenSimplex2;
@@ -106,8 +106,8 @@ namespace Amilious.ProceduralTerrain.Noise {
         private void GeneratePreviewTexture() {
             _stopwatch.Reset();
             _stopwatch.Start();
-            var seed = new Seed(this.seed);
-            var noiseMap = Generate(size, seed, offset);
+            var seedStruct = new Seed(this.seed);
+            var noiseMap = Generate(size, seedStruct, offset);
             _stopwatch.Stop();
             _generateHeightTime = $"  Noise Map: min {_stopwatch.Elapsed.Minutes} sec {_stopwatch.Elapsed.Seconds} ms {_stopwatch.Elapsed.Milliseconds}";
             _stopwatch.Reset();
@@ -125,10 +125,7 @@ namespace Amilious.ProceduralTerrain.Noise {
 
         
         private void DrawPreview() {
-            if(_timerGUI == null) {
-                _timerGUI = new GUIStyle();
-                _timerGUI.normal.textColor = Color.red;
-            }
+            _timerGUI ??= new GUIStyle { normal = { textColor = Color.red } };
             GUILayout.BeginVertical(GUI.skin.box);
             GUILayout.BeginHorizontal();
             GUILayout.FlexibleSpace();
@@ -165,8 +162,8 @@ namespace Amilious.ProceduralTerrain.Noise {
             _noise.SetCellularJitter(cellularJitter);
         }
 
-        public override void SetComputeShaderValues(ComputeShader computeShader, char prefix, int seed) {
-            computeShader.SetInt($"{prefix}_seed",seed);
+        public override void SetComputeShaderValues(ComputeShader computeShader, char prefix, Seed seed) {
+            computeShader.SetInt($"{prefix}_seed",seed.Value);
             computeShader.SetInt($"{prefix}_noise_type",(int)noiseType);
             computeShader.SetFloat($"{prefix}_frequency",frequency);
             computeShader.SetInt($"{prefix}_fractal_type",(int)fractalType);
