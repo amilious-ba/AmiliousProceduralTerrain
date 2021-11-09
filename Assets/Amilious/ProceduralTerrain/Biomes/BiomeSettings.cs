@@ -138,7 +138,7 @@ namespace Amilious.ProceduralTerrain.Biomes {
         /// <param name="token">A cancellation token that can be used to
         /// cancel the blending.</param>
         /// <returns>A dictionary of the biomes and their weights.</returns>
-        public Dictionary<int, float[,]> BlendChunk(int size, int seed, Vector2 position, CancellationToken token) {
+        public Dictionary<int, float[,]> BlendChunk(int size, Seed seed, Vector2 position, CancellationToken token) {
             //try to get biomeBlender from cache
             var found = _biomeBlenderCache.TryGetValue(size, out var biomeBlender);
             //if the biome blender is not cached create it and cache it.
@@ -181,10 +181,11 @@ namespace Amilious.ProceduralTerrain.Biomes {
         private void GeneratePreviewTexture() {
             _stopwatch.Reset();
             _stopwatch.Start();
-            var heatMap = heatMapSettings.Generate(size,SeedGenerator.GetSeedInt(seed),offset);
-            var moistureMap = moistureMapSettings.Generate(size,SeedGenerator.GetSeedInt(seed),offset);
+            var seed = new Seed(this.seed);
+            var heatMap = heatMapSettings.Generate(size,seed,offset);
+            var moistureMap = moistureMapSettings.Generate(size,seed,offset);
             //var baseMap = baseMapSettings.Generate(size, SeedGenerator.GetSeedInt(seed), offset);
-            var biomeMap = new BiomeMap(SeedGenerator.GetSeedInt(seed), size, this);
+            var biomeMap = new BiomeMap(seed, size, this);
             biomeMap.Generate(offset);
             _stopwatch.Stop();
             _generateHeightTime = $"  Biome Map: min {_stopwatch.Elapsed.Minutes} sec {_stopwatch.Elapsed.Seconds} ms {_stopwatch.Elapsed.Milliseconds}";
@@ -298,9 +299,9 @@ namespace Amilious.ProceduralTerrain.Biomes {
         /// <param name="hashedSeed">The hashed or int generation seed.</param>
         /// <param name="position">The center position of the generated map.</param>
         /// <returns>The generated biome map.</returns>
-        public BiomeMap GenerateBiomeMap(int size, int hashedSeed, Vector2? position = null) {
+        public BiomeMap GenerateBiomeMap(int size, Seed seed, Vector2? position = null) {
             position??=Vector2.zero;
-            var map = new BiomeMap(hashedSeed, size, this);
+            var map = new BiomeMap(seed, size, this);
             map.Generate(position.Value);
             return map;
         }
@@ -311,19 +312,19 @@ namespace Amilious.ProceduralTerrain.Biomes {
         /// </summary>
         /// <param name="x">The x position.</param>
         /// <param name="z">The y position.</param>
-        /// <param name="hashedSeed">The hashed seed.</param>
+        /// <param name="seed">The seed.</param>
         /// <returns>The id for the biome at that position.</returns>
-        public int GetBiomeAt(float x, float z, int hashedSeed) {
-            var heat = heatMapSettings.NoiseAtPoint(x, z, hashedSeed);
-            var moisture = moistureMapSettings.NoiseAtPoint(x, z, hashedSeed);
+        public int GetBiomeAt(float x, float z, Seed seed) {
+            var heat = heatMapSettings.NoiseAtPoint(x, z, seed);
+            var moisture = moistureMapSettings.NoiseAtPoint(x, z, seed);
             if(!useOceanMap) return GetBiomeId(heat, moisture);
-            var baseVal = oceanMapSettings.NoiseAtPoint(x, z, hashedSeed);
+            var baseVal = oceanMapSettings.NoiseAtPoint(x, z, seed);
             return GetBiomeId(heat, moisture, baseVal);
         }
 
         public bool UsingComputeShader { get=>useComputeShader; }
         
-        public List<int> GetBiomesFromComputeShader(List<SamplePoint<int>> samplePoints, int seed) {
+        public List<int> GetBiomesFromComputeShader(List<SamplePoint<int>> samplePoints, Seed seed) {
             var result = new List<int>();
             
             //create the buffer

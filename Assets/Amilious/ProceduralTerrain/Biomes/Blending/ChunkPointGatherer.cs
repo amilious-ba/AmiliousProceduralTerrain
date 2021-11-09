@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Threading;
 using Amilious.ProceduralTerrain.Sampling;
+using Amilious.Random;
 using UnityEngine;
 
 namespace Amilious.ProceduralTerrain.Biomes.Blending {
@@ -43,7 +44,7 @@ namespace Amilious.ProceduralTerrain.Biomes.Blending {
         /// <param name="token">A cancellation token that can be used to cancel the process.</param>
         /// <returns>The <see cref="SamplePoint{T}"/>s that will be used in the
         /// <see cref="BiomeBlender"/>.</returns>
-        public List<SamplePoint<int>> GetPointsFromChunkBase(long seed, Vector2 topLeftPosition,
+        public List<SamplePoint<int>> GetPointsFromChunkBase(Seed seed, Vector2 topLeftPosition,
             CancellationToken token) {
             var centerPosition = topLeftPosition;
             centerPosition.x+= _halfChunkWidth;
@@ -60,7 +61,7 @@ namespace Amilious.ProceduralTerrain.Biomes.Blending {
         /// <param name="token">A cancellation token that can be used to cancel the process.</param>
         /// <returns>The <see cref="SamplePoint{T}"/>s that will be used in the
         /// <see cref="BiomeBlender"/>.</returns>
-        public List<SamplePoint<int>> GetPointsFromChunkCenter(long seed, Vector2 centerPosition,
+        public List<SamplePoint<int>> GetPointsFromChunkCenter(Seed seed, Vector2 centerPosition,
             CancellationToken token) {
             var worldPoints =
                     _unfilteredPointGatherer.GetPoints<int>(seed, centerPosition.x, centerPosition.y,token);

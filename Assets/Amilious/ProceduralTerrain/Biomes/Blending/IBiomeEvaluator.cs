@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using Amilious.ProceduralTerrain.Sampling;
+using Amilious.Random;
 
 namespace Amilious.ProceduralTerrain.Biomes.Blending {
     
@@ -18,15 +19,15 @@ namespace Amilious.ProceduralTerrain.Biomes.Blending {
         /// want to check.</param>
         /// <param name="z">The z position that you
         /// want to check.</param>
-        /// <param name="hashedSeed">The hashed seed
+        /// <param name="seed">The seed
         /// that you want to use to get the biome at
         /// the given position.</param>
         /// <returns>The biome id at the given position
         /// using the given hashed seed.</returns>
-        int GetBiomeAt(float x, float z, int hashedSeed);
+        int GetBiomeAt(float x, float z, Seed seed);
 
         bool UsingComputeShader { get; }
 
-        List<int> GetBiomesFromComputeShader(List<SamplePoint<int>> samplePoints, int seed);
+        List<int> GetBiomesFromComputeShader(List<SamplePoint<int>> samplePoints, Seed seed);
     }
 }

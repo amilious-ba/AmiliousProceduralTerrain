@@ -1,5 +1,6 @@
 using Amilious.ProceduralTerrain.Map;
 using Amilious.ProceduralTerrain.Textures;
+using Amilious.Random;
 using UnityEngine;
 
 namespace Amilious.ProceduralTerrain.Noise {
@@ -14,24 +15,22 @@ namespace Amilious.ProceduralTerrain.Noise {
         /// </summary>
         /// <param name="size">The length and with of the map that is
         /// being requested.</param>
-        /// <param name="hashedSeed">A unique int or hashed string seed used
-        /// for the generation.</param>
+        /// <param name="seed">The seed you want to use for the generation.</param>
         /// <param name="position">The center position of the noise that you
         /// want to generate.</param>
         /// <returns>A generated noise map  with the values between negative
         /// one and one.</returns>
-        public abstract NoiseMap Generate(int size, int hashedSeed, Vector2? position = null);
+        public abstract NoiseMap Generate(int size, Seed seed, Vector2? position = null);
         
         /// <summary>
         /// This method is used to get a single noise value at the given position.
         /// </summary>
         /// <param name="x">The x value that you want to evaluate.</param>
         /// <param name="z">The z value that you want to evaluate.</param>
-        /// <param name="hashedSeed">A unique int or hashed string seed used
-        /// for the generation.</param>
+        /// <param name="seed">The seed used for the generation.</param>
         /// <returns>The value at the given a and z position. This should be
         /// a value between one and zero.</returns>
-        public abstract float NoiseAtPoint(float x, float z, int hashedSeed);
+        public abstract float NoiseAtPoint(float x, float z, Seed seed);
 
         public abstract ColorMap PreviewColors { get; }
 

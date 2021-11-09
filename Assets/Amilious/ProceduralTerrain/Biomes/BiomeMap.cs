@@ -3,6 +3,7 @@ using UnityEngine;
 using System.Threading;
 using System.Collections.Generic;
 using Amilious.ProceduralTerrain.Noise;
+using Amilious.Random;
 using Amilious.Saving;
 
 namespace Amilious.ProceduralTerrain.Biomes {
@@ -21,7 +22,7 @@ namespace Amilious.ProceduralTerrain.Biomes {
         
         private Dictionary<int, float[,]> _weights = new Dictionary<int, float[,]>();
         public BiomeSettings BiomeSettings { get;}
-        public int HashedSeed { get;}
+        public Seed Seed { get;}
 
         /// <summary>
         /// This property is used to get the height map of this biome map.
@@ -29,11 +30,11 @@ namespace Amilious.ProceduralTerrain.Biomes {
         public NoiseMap HeightMap { get; private set; }
 
         
-        public BiomeMap(int hashedSeed, int size, BiomeSettings settings, 
+        public BiomeMap(Seed seed, int size, BiomeSettings settings, 
             bool isPositionCentered = true) : base(size,Vector2.zero, isPositionCentered) {
             //set the values
             BiomeSettings = settings;
-            HashedSeed = hashedSeed;
+            Seed = seed;
             HeightMap = new NoiseMap(Size, Position, new Vector2(-1, 1), IsPositionCentered);
         }
 
@@ -99,10 +100,10 @@ namespace Amilious.ProceduralTerrain.Biomes {
         /// </summary>
         private void GenerateNonBlendedMap(CancellationToken token) {
             //create maps
-            var heatMap = BiomeSettings.HeatMapSettings.Generate(Size, HashedSeed, Position);
-            var moistureMap = BiomeSettings.MoistureMapSettings.Generate(Size, HashedSeed, Position);
+            var heatMap = BiomeSettings.HeatMapSettings.Generate(Size, Seed, Position);
+            var moistureMap = BiomeSettings.MoistureMapSettings.Generate(Size, Seed, Position);
             if(BiomeSettings.UsingOceanMap) {
-                var oceanMap = BiomeSettings.OceanMapSettings.Generate(Size, HashedSeed, Position);
+                var oceanMap = BiomeSettings.OceanMapSettings.Generate(Size, Seed, Position);
                 foreach(var key in heatMap) {
                     token.ThrowIfCancellationRequested();
                     this[key] = BiomeSettings.GetBiomeId(
@@ -133,7 +134,7 @@ namespace Amilious.ProceduralTerrain.Biomes {
         /// </summary>
         private void GenerateBlendedMap(CancellationToken token) {
             //generate the blend weights
-            _weights = BiomeSettings.BlendChunk(Size,HashedSeed,Position, token);
+            _weights = BiomeSettings.BlendChunk(Size,Seed,Position, token);
             //set the biome to the greatest weight
             foreach(var key in this) {
                 var currentBiome = 0;
@@ -276,7 +277,7 @@ namespace Amilious.ProceduralTerrain.Biomes {
                 foreach(var biome in _weights.Keys) {
                     if(_weights[biome][key.x, key.y] == 0) continue;
                     var info = BiomeSettings.GetBiomeInfo(biome);
-                    var rawHeight = info.noiseSettings.NoiseAtPoint(key.x + centerX, key.y + centerY, HashedSeed);
+                    var rawHeight = info.noiseSettings.NoiseAtPoint(key.x + centerX, key.y + centerY, Seed);
                     var lerp = Mathf.InverseLerp(-1, 1, rawHeight);
                     heightValue += Mathf.Lerp(info.minHeight,info.maxHeight,lerp) * _weights[biome][key.x,key.y];
                 }

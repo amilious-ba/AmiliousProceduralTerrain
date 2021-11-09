@@ -155,7 +155,7 @@ namespace Amilious.ProceduralTerrain.Map {
             Name = $"Chunk (pooled)";
             _meshSettings = manager.MeshSettings;
             _viewer = manager.Viewer;
-            _biomeMap = new BiomeMap(manager.HashedSeed,manager.MeshSettings.VertsPerLine, manager.BiomeSettings);
+            _biomeMap = new BiomeMap(manager.Seed,manager.MeshSettings.VertsPerLine, manager.BiomeSettings);
             _preparedColors = new Color[_biomeMap.GetBorderCulledValuesCount(1)];
             //create meshes
             _detailLevels = _meshSettings.LevelsOfDetail.ToArray();

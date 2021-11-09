@@ -75,7 +75,7 @@ namespace Amilious.ProceduralTerrain.Map {
         private Vector2Int _viewerChunk;
         private Vector2 _oldViewerPosition;
         private float? _sqrColliderGenerationThreshold;
-        private int? _hashedSeed;
+        private Seed? _seedStruct;
         private ChunkPool _chunkPool;
         private readonly Stopwatch _updateSW = new Stopwatch();
 
@@ -95,12 +95,12 @@ namespace Amilious.ProceduralTerrain.Map {
         }
 
         /// <summary>
-        /// This property contains the hashed seed for the world.
+        /// This property is used to get the seed struct.
         /// </summary>
-        public int HashedSeed {
+        public Seed Seed {
             get {
-                _hashedSeed ??= SeedGenerator.GetSeedInt(seed);
-                return _hashedSeed.Value;
+                _seedStruct ??= new Seed(seed);
+                return _seedStruct.Value;
             }
         }
         
@@ -145,11 +145,6 @@ namespace Amilious.ProceduralTerrain.Map {
         /// </summary>
         public Transform Viewer { get => viewer; }
         
-        /// <summary>
-        /// This property is used to get the string representation of the seed.
-        /// </summary>
-        public string Seed { get => seed; }
-
         #endregion
 
         #region Public Methods

@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Threading;
 using Amilious.ProceduralTerrain.Sampling;
+using Amilious.Random;
 using UnityEngine;
 
 namespace Amilious.ProceduralTerrain.Biomes.Blending {
@@ -134,9 +135,10 @@ namespace Amilious.ProceduralTerrain.Biomes.Blending {
             _pointsToSearch = pointsToSearchList.ToArray();
         }
         
-        public List<SamplePoint<T>> GetPoints<T>(long seed, float x, float z, CancellationToken cancellationToken) {
+        public List<SamplePoint<T>> GetPoints<T>(Seed seedValue, float x, float z, CancellationToken cancellationToken) {
             x *= _frequency;
             z *= _frequency;
+            var seed = seedValue.LongValue;
 
             // Simplex 2D Skew.
             var s = (x + z) * 0.366025403784439f;

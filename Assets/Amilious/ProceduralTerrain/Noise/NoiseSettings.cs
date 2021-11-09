@@ -106,7 +106,8 @@ namespace Amilious.ProceduralTerrain.Noise {
         private void GeneratePreviewTexture() {
             _stopwatch.Reset();
             _stopwatch.Start();
-            var noiseMap = Generate(size, SeedGenerator.GetSeedInt(seed), offset);
+            var seed = new Seed(this.seed);
+            var noiseMap = Generate(size, seed, offset);
             _stopwatch.Stop();
             _generateHeightTime = $"  Noise Map: min {_stopwatch.Elapsed.Minutes} sec {_stopwatch.Elapsed.Seconds} ms {_stopwatch.Elapsed.Milliseconds}";
             _stopwatch.Reset();
@@ -182,12 +183,12 @@ namespace Amilious.ProceduralTerrain.Noise {
         }
 
         //TODO: cache the seed value as an int
-        public override NoiseMap Generate(int size, int hashedSeed, Vector2? position = null) {
+        public override NoiseMap Generate(int size, Seed seed, Vector2? position = null) {
             SetUpNoise();
             //get things set up
             position ??= Vector2Int.zero;
             var noiseMap = new NoiseMap(size, position.Value, new Vector2(-1,1));
-            _noise.SetSeed(hashedSeed);
+            _noise.SetSeed(seed.Value);
             var centerX = noiseMap.Position.x - noiseMap.HalfSize;
             var centerY = -noiseMap.Position.y - noiseMap.HalfSize;
             var curve = new AnimationCurve(noiseCurve.keys);
@@ -208,11 +209,11 @@ namespace Amilious.ProceduralTerrain.Noise {
         /// </summary>
         /// <param name="x"></param>
         /// <param name="z"></param>
-        /// <param name="hashedSeed"></param>
+        /// <param name="seed"></param>
         /// <returns></returns>
-        public override float NoiseAtPoint(float x, float z, int hashedSeed) {
+        public override float NoiseAtPoint(float x, float z, Seed seed) {
             SetUpNoise();
-            _noise.SetSeed(hashedSeed);
+            _noise.SetSeed(seed.Value);
             var value = _noise.GetNoise(x, z);
             if(useNoiseCurve) {
                 var curve = new AnimationCurve(noiseCurve.keys);

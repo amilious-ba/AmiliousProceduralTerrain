@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
+using Amilious.Random;
 using UnityEngine;
 
 //https://github.com/KdotJPG/Scattered-Biome-Blender
@@ -55,7 +56,7 @@ namespace Amilious.ProceduralTerrain.Biomes.Blending {
         /// <param name="positionIsCenter">This value should be true if the chunk's position
         /// is centered, otherwise false.</param>
         /// <returns>A dictionary of this chunk's biome weights.</returns>
-        public Dictionary<int, float[,]> GetChunkBiomeWeights(int seed, Vector2 position,
+        public Dictionary<int, float[,]> GetChunkBiomeWeights(Seed seed, Vector2 position,
             IBiomeEvaluator evaluator, CancellationToken token,  bool positionIsCenter = true) {
             //we need to negate the z because the unfilteredPointGather
             //does not correctly apply the position offset

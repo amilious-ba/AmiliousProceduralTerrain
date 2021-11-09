@@ -4,30 +4,27 @@ namespace Amilious.Random {
 
     public class SeededRandom {
 
-        private System.Random random;
-
-        public string Seed { get; }
-
-        public int SeedValue { get; }
+        private readonly System.Random _random;
+        
+        public Seed Seed { get; }
 
 
         public SeededRandom(string seed = "seedless") {
-            Seed = seed;
-            SeedValue = SeedGenerator.GetSeedInt(seed);
-            random = new System.Random(SeedValue);
+            Seed = new Seed(seed);
+            _random = new System.Random(Seed.Value);
         }
 
         public float NextFloat01() {
-            return (float)random.NextDouble();
+            return (float)_random.NextDouble();
         }
 
         public float Range(float min, float max) {
-            var val = random.NextDouble() * (min - max) + min;
+            var val = _random.NextDouble() * (min - max) + min;
             return (float)val;
         }
 
         public int IntRange(int min, int max) {
-            return random.Next(min, max);
+            return _random.Next(min, max);
         }
         
         static float NextFloat(System.Random random) {
