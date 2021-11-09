@@ -26,8 +26,19 @@ namespace Amilious.ProceduralTerrain.Biomes.Blending {
         /// using the given hashed seed.</returns>
         int GetBiomeAt(float x, float z, Seed seed);
 
+        /// <summary>
+        /// This property is used to check if the biome evaluator should use
+        /// a compute shader or not.
+        /// </summary>
         bool UsingComputeShader { get; }
 
+        /// <summary>
+        /// This method is used to get the biomes at the given positions using a
+        /// compute shader.
+        /// </summary>
+        /// <param name="samplePoints">The points that you want to get the biomes for.</param>
+        /// <param name="seed">The seed you are using for generation.</param>
+        /// <returns>The biomes at the given sample points.</returns>
         List<int> GetBiomesFromComputeShader(List<SamplePoint<int>> samplePoints, Seed seed);
     }
 }

@@ -1,10 +1,10 @@
 using System;
 using UnityEngine;
+using Amilious.Random;
+using Amilious.Saving;
 using System.Threading;
 using System.Collections.Generic;
 using Amilious.ProceduralTerrain.Noise;
-using Amilious.Random;
-using Amilious.Saving;
 
 namespace Amilious.ProceduralTerrain.Biomes {
     
@@ -14,29 +14,87 @@ namespace Amilious.ProceduralTerrain.Biomes {
     /// </summary>
     public class BiomeMap : MapData<int> {
 
-
-        private const string PREFIX = "biomeMapData";
-        private const string BIOME_VALUES = "biomeValue";
-        private const string BIOME_WEIGHTS = "biomeWeights";
-        private const string POSITION = "position";
+        protected const string PREFIX = "biomeMapData";
+        protected const string BIOME_VALUES = "biomeValue";
+        protected const string BIOME_WEIGHTS = "biomeWeights";
+        protected const string POSITION = "position";
         
-        private Dictionary<int, float[,]> _weights = new Dictionary<int, float[,]>();
-        public BiomeSettings BiomeSettings { get;}
-        public Seed Seed { get;}
+        #region Instance Variables
+        
+        protected Dictionary<int, float[,]> weights = new Dictionary<int, float[,]>();
+        
+        #endregion
+        
+        #region Properties
+        
+        protected virtual BiomeSettings BiomeSettings { get;}
+        
+        /// <summary>
+        /// This property contains the seed that is used for this biome map.
+        /// </summary>
+        protected virtual Seed Seed { get;}
 
         /// <summary>
         /// This property is used to get the height map of this biome map.
         /// </summary>
-        public NoiseMap HeightMap { get; private set; }
-
+        public virtual NoiseMap HeightMap { get; private set; }
         
-        public BiomeMap(Seed seed, int size, BiomeSettings settings, 
-            bool isPositionCentered = true) : base(size,Vector2.zero, isPositionCentered) {
+        /// <summary>
+        /// This property is used to get the weight of the given biome.
+        /// </summary>
+        /// <param name="biomeId">The biome id that you want to get
+        /// the weight for.</param>
+        /// <param name="x">The x map data position that you want to get
+        /// the biome weight for.</param>
+        /// <param name="z">The z map data position that you want to get
+        /// the biome weight for.</param>
+        /// <exception cref="ArgumentOutOfRangeException">This is thrown
+        /// if the provided map data x or z positions are invalid.</exception>
+        /// ReSharper disable once MemberCanBeProtected.Global
+        public virtual float this[int biomeId, int x, int z] {
+            get {
+                if(!IsValidX(x)) throw new ArgumentOutOfRangeException(nameof(x), x, 
+                    "The given x map position is not valid.");
+                if(!IsValidX(z)) throw new ArgumentOutOfRangeException(nameof(z), z, 
+                    "The given z map position is not valid.");
+                if(!weights.ContainsKey(biomeId)) return 0;
+                return weights[biomeId][x, z];
+            }
+        }
+
+        /// <summary>
+        /// This property is used to get the weight of the given biome.
+        /// </summary>
+        /// <param name="biomeId">The biome id that you want to get
+        /// the weight for.</param>
+        /// <param name="key">The key that you want to use to get the
+        /// biome weight.  The x value will be used as the x map data
+        /// position and the y value will be used as the z map data position.</param>
+        /// <exception cref="ArgumentOutOfRangeException">This is thrown
+        /// if the provided map data key is invalid.</exception>
+        public virtual float this[int biomeId, Vector2Int key] {
+            get {
+                if(!ContainsKey(key)) throw new ArgumentOutOfRangeException(nameof(key), key,
+                    "The provided map data key is invalid.");
+                return this[biomeId, key.x, key.y];
+            }
+        }
+
+        #endregion
+        
+        #region Constructors
+        
+        public BiomeMap(Seed seed, int size, BiomeSettings settings, bool isPositionCentered = true) : 
+            base(size,Vector2.zero, isPositionCentered) {
             //set the values
             BiomeSettings = settings;
             Seed = seed;
             HeightMap = new NoiseMap(Size, Position, new Vector2(-1, 1), IsPositionCentered);
         }
+        
+        #endregion
+        
+        #region Public Methods
 
         /// <summary>
         /// This method is used to generate the biome map.
@@ -44,7 +102,7 @@ namespace Amilious.ProceduralTerrain.Biomes {
         /// <param name="position">The position the generated map is for.</param>
         /// <param name="token">A cancellation token that can be used to cancel the generation.</param>
         /// <seealso cref="Generate(UnityEngine.Vector2)"/>
-        public void Generate(Vector2 position, CancellationToken token) {
+        public virtual void Generate(Vector2 position, CancellationToken token) {
             Position = position;
             HeightMap.ResetPosition(position);
             //generate the map
@@ -58,7 +116,7 @@ namespace Amilious.ProceduralTerrain.Biomes {
         /// </summary>
         /// <param name="position">The position the generated map is for.</param>
         /// <seealso cref="Generate(UnityEngine.Vector2,System.Threading.CancellationToken)"/>
-        public void Generate(Vector2 position) {
+        public virtual void Generate(Vector2 position) {
             Position = position;
             HeightMap.ResetPosition(position);
             //generate the map
@@ -73,10 +131,10 @@ namespace Amilious.ProceduralTerrain.Biomes {
         /// This method is used to save the <see cref="BiomeMap"/>.
         /// </summary>
         /// <param name="saveData">The <see cref="SaveData"/> that is being used to save the data.</param>
-        public void Save(SaveData saveData) {
+        public virtual void Save(SaveData saveData) {
             saveData.SetPrefix(PREFIX);
             saveData.StoreData(BIOME_VALUES, values);
-            saveData.StoreData(BIOME_WEIGHTS, _weights);
+            saveData.StoreData(BIOME_WEIGHTS, weights);
             saveData.StoreData(POSITION, Position);
             saveData.ClearPrefix();
             HeightMap.Save(saveData);
@@ -86,108 +144,13 @@ namespace Amilious.ProceduralTerrain.Biomes {
         /// This method is used to load the <see cref="BiomeMap"/>.
         /// </summary>
         /// <param name="saveData">The <see cref="SaveData"/> that is being used to load the data.</param>
-        public void Load(SaveData saveData) {
+        public virtual void Load(SaveData saveData) {
             saveData.SetPrefix(PREFIX);
             Position = saveData.FetchData<Vector2>(POSITION);
             values = saveData.FetchData<int[,]>(BIOME_VALUES);
-            _weights = saveData.FetchData<Dictionary<int, float[,]>>(BIOME_WEIGHTS);
+            weights = saveData.FetchData<Dictionary<int, float[,]>>(BIOME_WEIGHTS);
             saveData.ClearPrefix();
             HeightMap.Load(saveData);
-        }
-
-        /// <summary>
-        /// This method is used to generate a <see cref="BiomeMap"/> without blending the biomes.
-        /// </summary>
-        private void GenerateNonBlendedMap(CancellationToken token) {
-            //create maps
-            var heatMap = BiomeSettings.HeatMapSettings.Generate(Size, Seed, Position);
-            var moistureMap = BiomeSettings.MoistureMapSettings.Generate(Size, Seed, Position);
-            if(BiomeSettings.UsingOceanMap) {
-                var oceanMap = BiomeSettings.OceanMapSettings.Generate(Size, Seed, Position);
-                foreach(var key in heatMap) {
-                    token.ThrowIfCancellationRequested();
-                    this[key] = BiomeSettings.GetBiomeId(
-                        heatMap[key], moistureMap[key], oceanMap[key]);
-                    //add biome type
-                    if(!_weights.ContainsKey(this[key])) {
-                        _weights.Add(this[key],new float[Size,Size]);
-                    }
-                    //set the weight
-                    _weights[this[key]][key.x, key.y] = 1f;
-                }
-            }else {
-                foreach(var key in heatMap) {
-                    token.ThrowIfCancellationRequested();
-                    this[key] = BiomeSettings.GetBiomeId(heatMap[key], moistureMap[key]);
-                    //add biome type
-                    if(!_weights.ContainsKey(this[key])) {
-                        _weights.Add(this[key],new float[Size,Size]);
-                    }
-                    //set the weight
-                    _weights[this[key]][key.x, key.y] = 1f;
-                }
-            }
-        }
-
-        /// <summary>
-        /// This method is used to generate a <see cref="BiomeMap"/> with biome blending.
-        /// </summary>
-        private void GenerateBlendedMap(CancellationToken token) {
-            //generate the blend weights
-            _weights = BiomeSettings.BlendChunk(Size,Seed,Position, token);
-            //set the biome to the greatest weight
-            foreach(var key in this) {
-                var currentBiome = 0;
-                var currentWeight = 0f;
-                foreach(var biome in _weights.Keys) {
-                    token.ThrowIfCancellationRequested();
-                    var value = _weights[biome][key.x,key.y];
-                    if(!(value > currentWeight)) continue;
-                    currentWeight = value;
-                    currentBiome = biome;
-                }
-                this[key] = currentBiome;
-            }
-        }
-
-        /// <summary>
-        /// This property is used to get the weight of the given biome.
-        /// </summary>
-        /// <param name="biomeId">The biome id that you want to get
-        /// the weight for.</param>
-        /// <param name="x">The x map data position that you want to get
-        /// the biome weight for.</param>
-        /// <param name="z">The z map data position that you want to get
-        /// the biome weight for.</param>
-        /// <exception cref="ArgumentOutOfRangeException">This is thrown
-        /// if the provided map data x or z positions are invalid.</exception>
-        public float this[int biomeId, int x, int z] {
-            get {
-                if(!IsValidX(x)) throw new ArgumentOutOfRangeException(nameof(x), x, 
-                "The given x map position is not valid.");
-                if(!IsValidX(z)) throw new ArgumentOutOfRangeException(nameof(z), z, 
-                    "The given z map position is not valid.");
-                if(!_weights.ContainsKey(biomeId)) return 0;
-                return _weights[biomeId][x, z];
-            }
-        }
-
-        /// <summary>
-        /// This property is used to get the weight of the given biome.
-        /// </summary>
-        /// <param name="biomeId">The biome id that you want to get
-        /// the weight for.</param>
-        /// <param name="key">The key that you want to use to get the
-        /// biome weight.  The x value will be used as the x map data
-        /// position and the y value will be used as the z map data position.</param>
-        /// <exception cref="ArgumentOutOfRangeException">This is thrown
-        /// if the provided map data key is invalid.</exception>
-        public float this[int biomeId, Vector2Int key] {
-            get {
-                if(!ContainsKey(key)) throw new ArgumentOutOfRangeException(nameof(key), key,
-                "The provided map data key is invalid.");
-                return this[biomeId, key.x, key.y];
-            }
         }
 
         /// <summary>
@@ -200,7 +163,7 @@ namespace Amilious.ProceduralTerrain.Biomes {
         /// <returns>The color for the biome at the given map data position.</returns>
         /// <exception cref="ArgumentOutOfRangeException">This is thrown if
         /// the provided map data key is invalid.</exception>
-        public Color GetBiomeColor(Vector2Int key) {
+        public virtual Color GetBiomeColor(Vector2Int key) {
             if(!ContainsKey(key)) throw new ArgumentOutOfRangeException(nameof(key), key, 
         "The provided map data key is invalid.");
             return BiomeSettings.GetBiomeInfo(this[key]).biomeMapColor;
@@ -215,56 +178,84 @@ namespace Amilious.ProceduralTerrain.Biomes {
         /// <returns>The blended biome color at the given map data position.</returns>
         /// <exception cref="ArgumentOutOfRangeException">This is thrown if
         /// the provided map data key is invalid.</exception>
-        public Color GetBlendedBiomeColor(Vector2Int key) {
+        public virtual Color GetBlendedBiomeColor(Vector2Int key) {
             if(!ContainsKey(key)) throw new ArgumentOutOfRangeException(nameof(key), key, 
         "The provided map data key is invalid.");
             float red = 0f, blue = 0f, green=0f;
-            foreach(var biome in _weights.Keys) {
+            foreach(var biome in weights.Keys) {
                 var color = BiomeSettings.GetBiomeInfo(biome).biomeMapColor;
-                red += color.r * _weights[biome][key.x, key.y];
-                green += color.g * _weights[biome][key.x, key.y];
-                blue += color.b * _weights[biome][key.x, key.y];
+                red += color.r * weights[biome][key.x, key.y];
+                green += color.g * weights[biome][key.x, key.y];
+                blue += color.b * weights[biome][key.x, key.y];
             }
             return new Color(red, green, blue, 1f);
         }
+        
+        /// <summary>
+        /// This method is used to get the preview color based on the
+        /// provided key.
+        /// </summary>
+        /// <param name="key">The location within the map.</param>
+        /// <returns>The preview color based on the given key.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">Thrown if the key
+        /// is invalid.</exception>
+        public virtual Color PreviewColor(Vector2Int key) {
+            if(!ContainsKey(key)) throw new ArgumentOutOfRangeException(nameof(key), key, 
+                "The provided map data key is invalid.");
+            return BiomePreviewColor(this[key], HeightMap[key]);
+        }
 
+        /// <summary>
+        /// This method is used to get the blended preview color for the given key.
+        /// </summary>
+        /// <param name="key">The location you want to get the blended biome color of.</param>
+        /// <returns>The blended biome color at the given key position.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">Thrown if the key
+        /// is invalid.</exception>
+        public virtual Color BlendedPreviewColor(Vector2Int key) {
+            if(!ContainsKey(key)) throw new ArgumentOutOfRangeException(nameof(key), key, 
+                "The provided map data key is invalid.");
+            float red = 0f, blue = 0f, green=0f;
+            foreach(var biome in weights.Keys) {
+                var color = BiomePreviewColor(biome,HeightMap[key]);
+                red += color.r * weights[biome][key.x, key.y];
+                green += color.g * weights[biome][key.x, key.y];
+                blue += color.b * weights[biome][key.x, key.y];
+            }
+            return new Color(red, green, blue, 1f);
+        }
+        
+        /// <summary>
+        /// This method is used to get the biome info for the main biome at
+        /// the given key position.
+        /// </summary>
+        /// <param name="key">The position you want to get the biome info for.</param>
+        /// <returns>The biome info at the given key position.</returns>
+        public virtual BiomeInfo GetBiomeInfo(Vector2Int key) {
+            return BiomeSettings.GetBiomeInfo(this[key]);
+        }
+
+        #endregion
+        
+        #region Protected Methods
+        
         /// <summary>
         /// This method is used to get the biome preview color.
         /// </summary>
         /// <param name="biomeId">The biome id.</param>
         /// <param name="height">The height value.</param>
         /// <returns>The preview color of the given biome with the given height.</returns>
-        private Color BiomePreviewColor(int biomeId, float height) {
+        protected virtual Color BiomePreviewColor(int biomeId, float height) {
             var info = BiomeSettings.GetBiomeInfo(biomeId);
             height = Mathf.InverseLerp(-info.maxHeight, info.maxHeight, height) * 2 - 1;
             return info.noiseSettings.PreviewColors.GetColor(height);
 
         }
-        
-        public Color PreviewColor(Vector2Int key, float height) {
-            if(!ContainsKey(key)) throw new ArgumentOutOfRangeException(nameof(key), key, 
-                "The provided map data key is invalid.");
-            return BiomePreviewColor(this[key], height);
-        }
 
-        public Color BlendedPreviewColor(Vector2Int key, float height) {
-            if(!ContainsKey(key)) throw new ArgumentOutOfRangeException(nameof(key), key, 
-                "The provided map data key is invalid.");
-            float red = 0f, blue = 0f, green=0f;
-            foreach(var biome in _weights.Keys) {
-                var color = BiomePreviewColor(biome,height);
-                red += color.r * _weights[biome][key.x, key.y];
-                green += color.g * _weights[biome][key.x, key.y];
-                blue += color.b * _weights[biome][key.x, key.y];
-            }
-            return new Color(red, green, blue, 1f);
-        }
-        
-        public BiomeInfo GetBiomeInfo(Vector2Int key) {
-            return BiomeSettings.GetBiomeInfo(this[key]);
-        }
-
-        private void GenerateHeightMap() {
+        /// <summary>
+        /// This method is used to generate a height map using this biome map.
+        /// </summary>
+        protected virtual  void GenerateHeightMap() {
             var centerX = HeightMap.Position.x;
             var centerY = -HeightMap.Position.y;
             if(IsPositionCentered) {
@@ -274,16 +265,73 @@ namespace Amilious.ProceduralTerrain.Biomes {
             //generate noise
             foreach(var key in HeightMap) {
                 var heightValue = 0f;
-                foreach(var biome in _weights.Keys) {
-                    if(_weights[biome][key.x, key.y] == 0) continue;
+                foreach(var biome in weights.Keys) {
+                    if(weights[biome][key.x, key.y] == 0) continue;
                     var info = BiomeSettings.GetBiomeInfo(biome);
                     var rawHeight = info.noiseSettings.NoiseAtPoint(key.x + centerX, key.y + centerY, Seed);
                     var lerp = Mathf.InverseLerp(-1, 1, rawHeight);
-                    heightValue += Mathf.Lerp(info.minHeight,info.maxHeight,lerp) * _weights[biome][key.x,key.y];
+                    heightValue += Mathf.Lerp(info.minHeight,info.maxHeight,lerp) * weights[biome][key.x,key.y];
                 }
                 HeightMap.TrySetValue(key,heightValue);
             }
         }
+        
+        /// <summary>
+        /// This method is used to generate a <see cref="BiomeMap"/> without blending the biomes.
+        /// </summary>
+        protected virtual  void GenerateNonBlendedMap(CancellationToken token) {
+            //create maps
+            var heatMap = BiomeSettings.HeatMapSettings.Generate(Size, Seed, Position);
+            var moistureMap = BiomeSettings.MoistureMapSettings.Generate(Size, Seed, Position);
+            if(BiomeSettings.UsingOceanMap) {
+                var oceanMap = BiomeSettings.OceanMapSettings.Generate(Size, Seed, Position);
+                foreach(var key in heatMap) {
+                    token.ThrowIfCancellationRequested();
+                    this[key] = BiomeSettings.GetBiomeId(
+                        heatMap[key], moistureMap[key], oceanMap[key]);
+                    //add biome type
+                    if(!weights.ContainsKey(this[key])) {
+                        weights.Add(this[key],new float[Size,Size]);
+                    }
+                    //set the weight
+                    weights[this[key]][key.x, key.y] = 1f;
+                }
+            }else {
+                foreach(var key in heatMap) {
+                    token.ThrowIfCancellationRequested();
+                    this[key] = BiomeSettings.GetBiomeId(heatMap[key], moistureMap[key]);
+                    //add biome type
+                    if(!weights.ContainsKey(this[key])) {
+                        weights.Add(this[key],new float[Size,Size]);
+                    }
+                    //set the weight
+                    weights[this[key]][key.x, key.y] = 1f;
+                }
+            }
+        }
+
+        /// <summary>
+        /// This method is used to generate a <see cref="BiomeMap"/> with biome blending.
+        /// </summary>
+        protected virtual  void GenerateBlendedMap(CancellationToken token) {
+            //generate the blend weights
+            weights = BiomeSettings.BlendChunk(Size,Seed,Position, token);
+            //set the biome to the greatest weight
+            foreach(var key in this) {
+                var currentBiome = 0;
+                var currentWeight = 0f;
+                foreach(var biome in weights.Keys) {
+                    token.ThrowIfCancellationRequested();
+                    var value = weights[biome][key.x,key.y];
+                    if(!(value > currentWeight)) continue;
+                    currentWeight = value;
+                    currentBiome = biome;
+                }
+                this[key] = currentBiome;
+            }
+        }
+        
+        #endregion
         
     }
 }

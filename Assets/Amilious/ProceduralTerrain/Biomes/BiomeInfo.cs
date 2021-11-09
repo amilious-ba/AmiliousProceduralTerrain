@@ -1,8 +1,8 @@
 using System;
-using Amilious.ProceduralTerrain.Erosion;
-using Amilious.ProceduralTerrain.Noise;
-using Sirenix.OdinInspector;
 using UnityEngine;
+using Sirenix.OdinInspector;
+using Amilious.ProceduralTerrain.Noise;
+using Amilious.ProceduralTerrain.Erosion;
 
 namespace Amilious.ProceduralTerrain.Biomes {
     
@@ -29,7 +29,9 @@ namespace Amilious.ProceduralTerrain.Biomes {
         public Color biomeMapColor;
         [Tooltip("This object will be used to generate heights for this biome.")]
         public AbstractNoiseProvider noiseSettings;
+        [Tooltip("This value is the min height for this biome.")]
         public float minHeight;
+        [Tooltip("This value is the max height for this biome.")]
         public float maxHeight;
         /*[Tooltip("These terrain modifiers will be applied to the biome.")]
         public MapModifier[] mapModifiers;*/

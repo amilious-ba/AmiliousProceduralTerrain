@@ -23,15 +23,14 @@ namespace Amilious.ProceduralTerrain.Textures {
 
         public static Color[] GenerateTextureColors(this BiomeMap map, TerrainPaintingMode paintMode, int borderCulling=0) {
             var colorMap = new Color[map.GetBorderCulledValuesCount(borderCulling)];
-            var heightMap = map.HeightMap;
             foreach(var key in map.BorderCulledKeys(borderCulling)) {
                 if(paintMode == TerrainPaintingMode.Material) break;
                 var colorKey = (key.y-borderCulling)*map.GetBorderCulledSize(borderCulling)+(key.x-borderCulling);
                 colorMap[colorKey] = paintMode switch {
                     TerrainPaintingMode.BiomeColors => map.GetBiomeColor(key),
                     TerrainPaintingMode.BlendedBiomeColors => map.GetBlendedBiomeColor(key),
-                    TerrainPaintingMode.NoisePreviewColors => map.PreviewColor(key, heightMap[key]),
-                    TerrainPaintingMode.BlendedNoisePreviewColors => map.BlendedPreviewColor(key, heightMap[key]),
+                    TerrainPaintingMode.NoisePreviewColors => map.PreviewColor(key),
+                    TerrainPaintingMode.BlendedNoisePreviewColors => map.BlendedPreviewColor(key),
                     _ => throw new ArgumentOutOfRangeException(nameof(paintMode), paintMode, null)
                 };
             }
@@ -49,8 +48,8 @@ namespace Amilious.ProceduralTerrain.Textures {
                 colorMap[colorKey] = paintMode switch {
                     TerrainPaintingMode.BiomeColors => map.GetBiomeColor(key),
                     TerrainPaintingMode.BlendedBiomeColors => map.GetBlendedBiomeColor(key),
-                    TerrainPaintingMode.NoisePreviewColors => map.PreviewColor(key, map.HeightMap[key]),
-                    TerrainPaintingMode.BlendedNoisePreviewColors => map.BlendedPreviewColor(key, map.HeightMap[key]),
+                    TerrainPaintingMode.NoisePreviewColors => map.PreviewColor(key),
+                    TerrainPaintingMode.BlendedNoisePreviewColors => map.BlendedPreviewColor(key),
                     _ => throw new ArgumentOutOfRangeException(nameof(paintMode), paintMode, null)
                 };
             }
