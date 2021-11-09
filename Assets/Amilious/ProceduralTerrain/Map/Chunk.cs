@@ -215,7 +215,6 @@ namespace Amilious.ProceduralTerrain.Map {
             _manager.OnUpdateVisible += UpdateChunk;
             _manager.OnEndUpdate += ValidateNonUpdatedChunk;
             _manager.OnUpdateCollisionMesh += UpdateCollisionMesh;
-            //Active = true;
         }
 
         /// <summary>
