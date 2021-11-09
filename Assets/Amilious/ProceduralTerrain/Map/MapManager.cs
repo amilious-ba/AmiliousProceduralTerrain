@@ -1,29 +1,24 @@
 using System;
+using UnityEngine;
+using Amilious.Random;
 using System.Diagnostics;
+using Amilious.Threading;
+using Sirenix.OdinInspector;
 using Amilious.ProceduralTerrain.Biomes;
 using Amilious.ProceduralTerrain.Mesh;
 using Amilious.ProceduralTerrain.Saving;
-using Amilious.Random;
-using Amilious.Threading;
-using Sirenix.OdinInspector;
-using UnityEngine;
-using UnityEngine.Serialization;
 
 namespace Amilious.ProceduralTerrain.Map {
     
     /// <summary>
-    /// This class will be used for generating terrain.  This will be the brain
-    /// that loads and unloads chunks from the world.  It is also the class that
-    /// will generate and hold all of the world.
+    /// This class wid used for generating terrain.  This is the brain
+    /// that loads and unloads chunks from the world.
     /// </summary>
     [RequireComponent(typeof(Dispatcher), typeof(MapSaver)), HideMonoScript]
     public class MapManager : MonoBehaviour {
 
-        /*
-         * Generate chunk batches that will be saved together in the same file
-         * Load and unload chunks based on distance from viewer.  Move the generator
-         * when the player moved to far away from the origin.
-         */
+        #region Inspector Values
+        
         [SerializeField] private MapType mapType = MapType.PreGenerated;
         [SerializeField] private bool enableSavingAndLoading = false;
         [SerializeField] private bool generateChunksAtStart;
@@ -37,34 +32,61 @@ namespace Amilious.ProceduralTerrain.Map {
         [SerializeField, Required] private BiomeSettings biomeSettings;
         [SerializeField] private Transform viewer;
 
-        public event Action OnStartUpdate;
-        public event Action<int,int,int,int> OnUpdateVisible;
-        public event Action OnEndUpdate;
-        public event Action OnUpdateCollisionMesh;
+        #endregion
 
-
-        public delegate void ViewerChangedChunkDelegate(Transform viewer, Vector2Int oldChunkId, Vector2Int newChunkId);
-        public delegate void ChunksUpdatedDelegate(ChunkPool chunkPool, long ms);
-        public event ChunksUpdatedDelegate OnChunksUpdated;
-        public event ViewerChangedChunkDelegate OnViewerChangedChunk;
+        #region Events
         
+        /// <summary>
+        /// This event is triggered when the update cycle starts.
+        /// </summary>
+        public event Action OnStartUpdate;
+        
+        /// <summary>
+        /// This event is triggered to update visible chunks.
+        /// </summary>
+        public event Action<int,int,int,int> OnUpdateVisible;
+        
+        /// <summary>
+        /// This even is triggered at the end of the update cycle.
+        /// </summary>
+        public event Action OnEndUpdate;
+        
+        /// <summary>
+        /// This event is triggered when collision mesh should be udated.
+        /// </summary>
+        public event Action OnUpdateCollisionMesh;
+        
+        /// <summary>
+        /// This event is triggered when an update cycle is complete.
+        /// </summary>
+        public event Delegates.OnChunksUpdatedDelegate OnChunksUpdated;
+        
+        /// <summary>
+        /// This event is called when a viewer enters a new chunk.
+        /// </summary>
+        public event Delegates.OnViewerChangedChunkDelegate OnViewerChangedChunk;
+
+        #endregion
+
+        #region Private Instance Variables
+
         private float _sqrChunkUpdateThreshold;
         private Vector2 _viewerPosition;
         private Vector2Int _viewerChunk;
         private Vector2 _oldViewerPosition;
-        private float? _sqrColliderGenerationThreshold = null;
-        private int? _hashedSeed = null;
+        private float? _sqrColliderGenerationThreshold;
+        private int? _hashedSeed;
         private ChunkPool _chunkPool;
-        
-        public bool ApplyHeight { get => applyHeight; }
-        
-        public MeshSettings MeshSettings { get => meshSettings; }
-        public BiomeSettings BiomeSettings { get => biomeSettings; }
-        
-        public MapSaver MapSaver { get; private set; }
+        private readonly Stopwatch _updateSW = new Stopwatch();
 
-        public Vector2 ViewerPositionXZ => new Vector2(viewer.position.x, viewer.position.z);
+        #endregion
         
+        #region Properties
+        
+        /// <summary>
+        /// This property is used to get the squared distance from the viewer
+        /// where colliders should be generated.
+        /// </summary>
         public float SqrColliderGenerationThreshold {
             get {
                 _sqrColliderGenerationThreshold??= colliderGenerationThreshold * colliderGenerationThreshold;
@@ -72,6 +94,9 @@ namespace Amilious.ProceduralTerrain.Map {
             }
         }
 
+        /// <summary>
+        /// This property contains the hashed seed for the world.
+        /// </summary>
         public int HashedSeed {
             get {
                 _hashedSeed ??= SeedGenerator.GetSeedInt(seed);
@@ -79,29 +104,131 @@ namespace Amilious.ProceduralTerrain.Map {
             }
         }
         
+        /// <summary>
+        /// This property is used to check if height values should be applied to the
+        /// generated map.
+        /// </summary>
+        public bool ApplyHeight { get => applyHeight; }
+        
+        /// <summary>
+        /// This property is used to get the map's <see cref="MeshSettings"/>.
+        /// </summary>
+        public MeshSettings MeshSettings { get => meshSettings; }
+        
+        /// <summary>
+        /// This property is used to get the map's <see cref="BiomeSettings"/>.
+        /// </summary>
+        public BiomeSettings BiomeSettings { get => biomeSettings; }
+        
+        /// <summary>
+        /// This property is used to get the map's <see cref="MapSaver"/>.
+        /// </summary>
+        public MapSaver MapSaver { get; private set; }
+
+        /// <summary>
+        /// This property is used to get the viewer's x and z positions as a <see cref="Vector2"/>.
+        /// </summary>
+        public Vector2 ViewerPositionXZ => new Vector2(viewer.position.x, viewer.position.z);
+        
+        /// <summary>
+        /// This property is used to get the map's <see cref="MapType"/>.
+        /// </summary>
         public MapType MapType { get => mapType; }
         
+        /// <summary>
+        /// This property is used to check if saving is enabled for the map.
+        /// </summary>
         public bool SaveEnabled { get => enableSavingAndLoading; }
         
+        /// <summary>
+        /// This property is used to get the map's viewer.
+        /// </summary>
         public Transform Viewer { get => viewer; }
         
+        /// <summary>
+        /// This property is used to get the string representation of the seed.
+        /// </summary>
         public string Seed { get => seed; }
 
-        private void Awake() {
+        #endregion
+
+        #region Public Methods
+
+        /// <summary>
+        /// This method is used to get the chunk id for the chunk
+        /// at the give <see cref="Vector3"/> position.
+        /// </summary>
+        /// <param name="point">The position you want to get the chunk of.</param>
+        /// <returns>The chunk id or coordinate at the given position.</returns>
+        public Vector2Int ChunkAtPoint(Vector3 point) {
+            return new Vector2Int(
+                Mathf.RoundToInt(point.x / meshSettings.MeshWorldSize),
+                Mathf.RoundToInt(point.z / meshSettings.MeshWorldSize)
+            );
+        }
+
+        /// <summary>
+        /// This method is used to get the chunk id for the chunk
+        /// at the given <see cref="Vector2"/> position.
+        /// </summary>
+        /// <param name="point">The position you want to get the chunk of.</param>
+        /// <returns>The chunk id or coordinate at the given position.</returns>
+        public Vector2Int ChunkAtPoint(Vector2 point) {
+            return new Vector2Int(
+                Mathf.RoundToInt(point.x / meshSettings.MeshWorldSize),
+                Mathf.RoundToInt(point.y / meshSettings.MeshWorldSize)
+            );
+        }
+        
+        #endregion
+
+        #region Protected Methods
+        
+        /// <summary>
+        /// This method is used update visible chunks.
+        /// </summary>
+        protected virtual void UpdateVisibleChunks() {
+            _updateSW.Restart();
+            OnStartUpdate?.Invoke();
+            var chunks = meshSettings.ChunksVisibleInViewDistance;
+            OnUpdateVisible?.Invoke(_viewerChunk.x-chunks,_viewerChunk.x+chunks,
+                _viewerChunk.y-chunks,_viewerChunk.y+chunks);
+            for(var xOff = - chunks; xOff <= chunks; xOff++)
+            for(var yOff = -chunks; yOff <= chunks; yOff++) {
+                var chunkCoord = new Vector2Int(_viewerChunk.x + xOff, _viewerChunk.y + yOff);
+                _chunkPool.LoadChunk(chunkCoord);
+            }
+            OnEndUpdate?.Invoke();
+            OnChunksUpdated?.Invoke(_chunkPool,_updateSW.ElapsedMilliseconds);
+        }
+        
+        /// <summary>
+        /// This method is the first method that is called by unity.  It
+        /// may be called before all components have been created.  This
+        /// will only be called once.
+        /// </summary>
+        protected virtual void Awake() {
             MapSaver = GetComponent<MapSaver>();
+        }
+
+        /// <summary>
+        /// This method is called by unity after the awake method has been
+        /// called by all the loaded components and will only be called once.
+        /// </summary>
+        protected virtual void Start() {
+            //we use a squared threshold because it is cheaper to calculate a squared
+            //distance than a normal distance.
             _chunkPool = generateChunksAtStart?
                 new ChunkPool(this, chunkPoolSize):
                 new ChunkPool(this);
-        }
-
-        private void Start() {
-            //we use a squared threshold because it is cheaper to calculate a squared
-            //distance than a normal distance.
             _sqrChunkUpdateThreshold = chunkUpdateThreshold * chunkUpdateThreshold;
             UpdateVisibleChunks();
         }
 
-        private void Update() {
+        /// <summary>
+        /// This method is called on every game update.
+        /// </summary>
+        protected virtual void Update() {
             
             //get the player position
             _viewerPosition = ViewerPositionXZ;
@@ -122,45 +249,7 @@ namespace Amilious.ProceduralTerrain.Map {
             UpdateVisibleChunks();
         }
 
-        public Vector2Int ChunkAtPoint(Vector3 point) {
-            return new Vector2Int(
-                Mathf.RoundToInt(point.x / meshSettings.MeshWorldSize),
-                Mathf.RoundToInt(point.z / meshSettings.MeshWorldSize)
-            );
-        }
-
-        /// <summary>
-        /// This method is used to get the chunk id for the chunk
-        /// at the given <see cref="Vector2"/> position.
-        /// </summary>
-        /// <param name="point">The position you want to get the chunk of.</param>
-        /// <returns>The chunk id or coordinate at the given position.</returns>
-        public Vector2Int ChunkAtPoint(Vector2 point) {
-            return new Vector2Int(
-                Mathf.RoundToInt(point.x / meshSettings.MeshWorldSize),
-                Mathf.RoundToInt(point.y / meshSettings.MeshWorldSize)
-            );
-        }
-
-        private readonly Stopwatch _updateSW = new Stopwatch();
-        
-        /// <summary>
-        /// This method is used update visible chunks.
-        /// </summary>
-        private void UpdateVisibleChunks() {
-            _updateSW.Restart();
-            OnStartUpdate?.Invoke();
-            var chunks = meshSettings.ChunksVisibleInViewDistance;
-            OnUpdateVisible?.Invoke(_viewerChunk.x-chunks,_viewerChunk.x+chunks,
-                _viewerChunk.y-chunks,_viewerChunk.y+chunks);
-            for(var xOff = - chunks; xOff <= chunks; xOff++)
-            for(var yOff = -chunks; yOff <= chunks; yOff++) {
-                var chunkCoord = new Vector2Int(_viewerChunk.x + xOff, _viewerChunk.y + yOff);
-                _chunkPool.LoadChunk(chunkCoord);
-            }
-            OnEndUpdate?.Invoke();
-            OnChunksUpdated?.Invoke(_chunkPool,_updateSW.ElapsedMilliseconds);
-        }
+        #endregion
         
     }
 }

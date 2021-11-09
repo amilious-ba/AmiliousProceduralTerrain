@@ -1,3 +1,4 @@
+using Amilious.ProceduralTerrain.Map;
 using UnityEngine;
 
 namespace Amilious.ProceduralTerrain {
@@ -33,6 +34,21 @@ namespace Amilious.ProceduralTerrain {
         /// </summary>
         /// <param name="chunkId">This value contains the id of the chunk that was saved.</param>
         public delegate void OnChunkSavedDelegate(Vector2Int chunkId);
+        
+        /// <summary>
+        /// This delegate is used for the onViewerChangedChunk MapManager event.
+        /// <param name="viewer">The viewer that changed chunks.</param>
+        /// <param name="oldChunkId">The chunk the viewer left.</param>
+        /// <param name="newChunkId">The viewer's current chunk.</param>
+        /// </summary>
+        public delegate void OnViewerChangedChunkDelegate(Transform viewer, Vector2Int oldChunkId, Vector2Int newChunkId);
+        
+        /// <summary>
+        /// This delegate is used for the onChunksUpdated MapManager event.
+        /// <param name="chunkPool">The <see cref="ChunkPool"/> that was used for the update.</param>
+        /// <param name="ms">The time the update took in milliseconds.</param>
+        /// </summary>
+        public delegate void OnChunksUpdatedDelegate(ChunkPool chunkPool, long ms);
         
     }
 }
