@@ -131,7 +131,6 @@ namespace Amilious.ProceduralTerrain.Map {
         /// This property is used to get the player's position as a <see cref="Vector2"/>.
         /// </summary>
         private Vector2 ViewerPosition => new Vector2 (_viewer.position.x, _viewer.position.z);
-
         
         public Chunk(MapManager manager, ChunkPool chunkPool) {
             //make sure the chunk gameObject and components get

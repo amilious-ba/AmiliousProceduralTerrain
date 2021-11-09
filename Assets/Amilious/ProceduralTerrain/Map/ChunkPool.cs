@@ -60,7 +60,6 @@ namespace Amilious.ProceduralTerrain.Map {
         
         #endregion
 
-
         #region Constructors
         
         /// <summary>
