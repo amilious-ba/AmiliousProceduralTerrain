@@ -1,4 +1,8 @@
 namespace Amilious.ProceduralTerrain.Map {
+    
+    /// <summary>
+    /// This enum is used to represent the type of map.
+    /// </summary>
     public enum MapType {
         
         /// <summary>

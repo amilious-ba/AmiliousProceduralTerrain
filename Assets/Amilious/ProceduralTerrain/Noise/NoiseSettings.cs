@@ -1,10 +1,9 @@
 using System;
-using System.Diagnostics;
-using Amilious.ProceduralTerrain.Textures;
-using Amilious.Random;
-using Sirenix.OdinInspector;
-using UnityEngine.Serialization;
 using UnityEngine;
+using Amilious.Random;
+using System.Diagnostics;
+using Sirenix.OdinInspector;
+using Amilious.ProceduralTerrain.Textures;
 
 namespace Amilious.ProceduralTerrain.Noise {
 
@@ -19,34 +18,40 @@ namespace Amilious.ProceduralTerrain.Noise {
         public const string TAB_D = "Domain Warp";
         public const string TAB_E = "Domain Warp Fractal";
 
-        private FastNoiseLite _noise;
-
+        #region Inspector Preview
+        
         /// <summary>
         /// Preview Inspector
         /// </summary>
         [Tooltip("This is the seed that is used for random generation.")]
         [BoxGroup(PREVIEW), OnInspectorGUI("DrawPreview", append: false)]
-        [BoxGroup(PREVIEW), SerializeField]
-        private string seed = "seedless";
+        [BoxGroup(PREVIEW), SerializeField, LabelText("Seed")]
+        private string pvSeed = "seedless";
         [Tooltip("This is the size of the generated noise map used for the preview.")]
-        [BoxGroup(PREVIEW), SerializeField]
-        private int size = 100;
-        [Tooltip("This is the pixel multiplier used for the preview.")] [BoxGroup(PREVIEW), SerializeField]
-        private int pixelMultiplier = 2;
-        [Tooltip("This is the offset value used for the preview.")] [BoxGroup(PREVIEW), SerializeField]
-        private Vector2Int offset;
-        [FormerlySerializedAs("previewType")] [BoxGroup(PREVIEW), SerializeField] 
+        [BoxGroup(PREVIEW), SerializeField, LabelText("Size")]
+        private int pvSize = 100;
+        [Tooltip("This is the pixel multiplier used for the preview.")] 
+        [BoxGroup(PREVIEW), SerializeField, LabelText("Pixel Multiplier")]
+        private int pvPixelMultiplier = 2;
+        [Tooltip("This is the offset value used for the preview.")] 
+        [BoxGroup(PREVIEW), SerializeField, LabelText("Offset")]
+        private Vector2Int pvOffset;
+        [BoxGroup(PREVIEW), SerializeField] 
         private NoisePreviewType noisePreviewType = NoisePreviewType.NoiseMap;
-        [BoxGroup(PREVIEW), SerializeField, HideIf("noisePreviewType", NoisePreviewType.ColorMap)]
-        private Color lowColor = Color.white;
-        [BoxGroup(PREVIEW), SerializeField, HideIf("noisePreviewType", NoisePreviewType.ColorMap)]
-        private Color highColor = Color.black;
-        [BoxGroup(PREVIEW), SerializeField, ShowIf("noisePreviewType", NoisePreviewType.ColorMap)]
-        private ColorMap colorMap;
+        [BoxGroup(PREVIEW), LabelText("Low Color"), SerializeField, HideIf("noisePreviewType", NoisePreviewType.ColorMap)]
+        private Color pvLowColor = Color.white;
+        [BoxGroup(PREVIEW), LabelText("High Color"), SerializeField, HideIf("noisePreviewType", NoisePreviewType.ColorMap)]
+        private Color pvHighColor = Color.black;
+        [BoxGroup(PREVIEW), LabelText("Color Nap"), SerializeField, ShowIf("noisePreviewType", NoisePreviewType.ColorMap)]
+        private ColorMap pvColorMap;
         [BoxGroup(PREVIEW), SerializeField, ShowIf("noisePreviewType", NoisePreviewType.CrossSection)]
-        [PropertyRange(1,nameof(size))]
+        [PropertyRange(1,nameof(pvSize))]
         private int crossSectionDepth;
 
+        #endregion
+
+        #region Inspector General Settigns
+        
         [TabGroup(TAB_GROUP, TAB_A), SerializeField]
         private FastNoiseLite.NoiseType noiseType = FastNoiseLite.NoiseType.OpenSimplex2;
         [TabGroup(TAB_GROUP,TAB_A), SerializeField]
@@ -56,6 +61,10 @@ namespace Amilious.ProceduralTerrain.Noise {
         [TabGroup(TAB_GROUP,TAB_A),SerializeField, ShowIf(nameof(useNoiseCurve))] 
         private AnimationCurve noiseCurve = AnimationCurve.Linear(-1f, -1f, 1f, 1f);
 
+        #endregion
+
+        #region Inspector Fractal Settings
+        
         [TabGroup(TAB_GROUP, TAB_B), SerializeField]
         private FastNoiseLite.FractalType fractalType = FastNoiseLite.FractalType.FBm;
         [TabGroup(TAB_GROUP, TAB_B), SerializeField]
@@ -68,7 +77,11 @@ namespace Amilious.ProceduralTerrain.Noise {
         private float waitedStrength = 1;
         [TabGroup(TAB_GROUP, TAB_B), SerializeField]
         private float pingPongStrength = 2;
+        
+        #endregion
 
+        #region Inspector Cellular Settings
+        
         [TabGroup(TAB_GROUP, TAB_C), SerializeField]
         private FastNoiseLite.CellularDistanceFunction distanceFunction = 
             FastNoiseLite.CellularDistanceFunction.Euclidean;
@@ -78,21 +91,34 @@ namespace Amilious.ProceduralTerrain.Noise {
         [TabGroup(TAB_GROUP, TAB_C), SerializeField]
         private float cellularJitter = 1f;
 
+        #endregion
 
-        public override ColorMap PreviewColors { get => colorMap; }
+        #region Instance Variables
 
-        private void Awake() {
-            SetUpNoise();
-            #if UNITY_EDITOR
-            GeneratePreviewTexture();
-            #endif
-        }
+        private FastNoiseLite _noise;
+        
+        #endregion
+        
+        #region Properties
+        
+        /// <summary>
+        /// This property is used to get the preview colors.
+        /// </summary>
+        public override ColorMap PreviewColors { get => pvColorMap; }
+        
+        #endregion
 
-#if UNITY_EDITOR
+        #region Editor Only
+        
+        #if UNITY_EDITOR
 
+        /// <summary>
+        /// This method is called when a <see cref="GameObject"/> is
+        /// changed in the unity editor
+        /// </summary>
         protected void OnValidate() {
             _noise = null;
-            crossSectionDepth = Mathf.Min(crossSectionDepth, size);
+            crossSectionDepth = Mathf.Min(crossSectionDepth, pvSize);
             SetUpNoise();
             GeneratePreviewTexture();
         }
@@ -103,33 +129,39 @@ namespace Amilious.ProceduralTerrain.Noise {
         private string _generateTextureTime;
         private Texture2D _previewTexture;
         
+        /// <summary>
+        /// This method is used to generate the preview texture.
+        /// </summary>
         private void GeneratePreviewTexture() {
             _stopwatch.Reset();
             _stopwatch.Start();
-            var seedStruct = new Seed(this.seed);
-            var noiseMap = Generate(size, seedStruct, offset);
+            var seedStruct = new Seed(this.pvSeed);
+            var noiseMap = Generate(pvSize, seedStruct, pvOffset);
             _stopwatch.Stop();
             _generateHeightTime = $"  Noise Map: min {_stopwatch.Elapsed.Minutes} sec {_stopwatch.Elapsed.Seconds} ms {_stopwatch.Elapsed.Milliseconds}";
             _stopwatch.Reset();
             _stopwatch.Start();
             _previewTexture = noisePreviewType switch {
-                NoisePreviewType.NoiseMap => noiseMap.GenerateGradientTexture(pixelMultiplier: pixelMultiplier,minColor:lowColor,maxColor:highColor),
-                NoisePreviewType.ColorMap => noiseMap.GenerateTexture(colorMap, pixelMultiplier),
-                NoisePreviewType.CrossSection => noiseMap.GenerateCrossSectionTexture(highColor, 
-                    lowColor,crossSectionDepth-1,pixelMultiplier),
+                NoisePreviewType.NoiseMap => noiseMap.GenerateGradientTexture(pixelMultiplier: pvPixelMultiplier,minColor:pvLowColor,maxColor:pvHighColor),
+                NoisePreviewType.ColorMap => noiseMap.GenerateTexture(pvColorMap, pvPixelMultiplier),
+                NoisePreviewType.CrossSection => noiseMap.GenerateCrossSectionTexture(pvHighColor, 
+                    pvLowColor,crossSectionDepth-1,pvPixelMultiplier),
                 _ => throw new ArgumentOutOfRangeException()
             };
             _stopwatch.Stop();
             _generateTextureTime = $"  Texture: min {_stopwatch.Elapsed.Minutes} sec {_stopwatch.Elapsed.Seconds} ms {_stopwatch.Elapsed.Milliseconds}";
         }
 
-        
+        /// <summary>
+        /// This method is used to draw the preview
+        /// </summary>
+        /// ReSharper disable once UnusedMember.Local
         private void DrawPreview() {
             _timerGUI ??= new GUIStyle { normal = { textColor = Color.red } };
             GUILayout.BeginVertical(GUI.skin.box);
             GUILayout.BeginHorizontal();
             GUILayout.FlexibleSpace();
-            GUILayout.Label($"{size}X{size} Noise Sample x {pixelMultiplier}");
+            GUILayout.Label($"{pvSize}X{pvSize} Noise Sample x {pvPixelMultiplier}");
             GUILayout.FlexibleSpace();
             GUILayout.EndHorizontal();
             GUILayout.BeginHorizontal();
@@ -143,8 +175,25 @@ namespace Amilious.ProceduralTerrain.Noise {
         }
         
         #endif
+        
+        #endregion
+        
+        #region Methods
+        
+        /// <summary>
+        /// This is the first method that is called on this object by unity
+        /// </summary>
+        protected virtual void Awake() {
+            SetUpNoise();
+            #if UNITY_EDITOR
+            GeneratePreviewTexture();
+            #endif
+        }
 
-        private void SetUpNoise() {
+        /// <summary>
+        /// This method is used to setup the noise.
+        /// </summary>
+        protected virtual void SetUpNoise() {
             if(_noise != null) return;
             //create noise generator
             _noise ??= new FastNoiseLite();
@@ -162,6 +211,12 @@ namespace Amilious.ProceduralTerrain.Noise {
             _noise.SetCellularJitter(cellularJitter);
         }
 
+        /// <summary>
+        /// This method is used to set the values in the compute shader.
+        /// </summary>
+        /// <param name="computeShader">The compute shader.</param>
+        /// <param name="prefix">The prefix for this noise in the compute shader.</param>
+        /// <param name="seed">The seed that will be used with this noise.</param>
         public override void SetComputeShaderValues(ComputeShader computeShader, char prefix, Seed seed) {
             computeShader.SetInt($"{prefix}_seed",seed.Value);
             computeShader.SetInt($"{prefix}_noise_type",(int)noiseType);
@@ -179,7 +234,13 @@ namespace Amilious.ProceduralTerrain.Noise {
             computeShader.SetFloat($"{prefix}_domain_warp_amplitude", 0f);
         }
 
-        //TODO: cache the seed value as an int
+        /// <summary>
+        /// This method is used to generate a noise map using this <see cref="NoiseSettings"/>.
+        /// </summary>
+        /// <param name="size">The size of the map that should be generated.</param>
+        /// <param name="seed">The seed that should be used to generate the map.</param>
+        /// <param name="position">The position of the map.</param>
+        /// <returns>A noise map generated from the given values.</returns>
         public override NoiseMap Generate(int size, Seed seed, Vector2? position = null) {
             SetUpNoise();
             //get things set up
@@ -204,10 +265,10 @@ namespace Amilious.ProceduralTerrain.Noise {
         /// <summary>
         /// This method is used to get the noise value at the given position using the current settings.
         /// </summary>
-        /// <param name="x"></param>
-        /// <param name="z"></param>
-        /// <param name="seed"></param>
-        /// <returns></returns>
+        /// <param name="x">The x position.</param>
+        /// <param name="z">The z position.</param>
+        /// <param name="seed">The seed.</param>
+        /// <returns>The noise value at the given position with the given seed.</returns>
         public override float NoiseAtPoint(float x, float z, Seed seed) {
             SetUpNoise();
             _noise.SetSeed(seed.Value);
@@ -219,6 +280,7 @@ namespace Amilious.ProceduralTerrain.Noise {
             return value;
         }
 
+        #endregion
         
     }
 }

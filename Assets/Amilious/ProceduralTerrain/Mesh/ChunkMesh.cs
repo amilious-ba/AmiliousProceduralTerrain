@@ -1,7 +1,10 @@
 using System;
+using System.IO;
 using UnityEngine;
+using Amilious.Saving;
 using System.Threading;
 using Amilious.Threading;
+using System.Collections.Generic;
 using Amilious.ProceduralTerrain.Noise;
 
 namespace Amilious.ProceduralTerrain.Mesh {
@@ -12,7 +15,10 @@ namespace Amilious.ProceduralTerrain.Mesh {
     /// </summary>
     public class ChunkMesh {
 
-        # region Public Instance Variables
+        public const string PREFIX = "MeshLod{0}";
+        public const string HAS_DATA = "HasData";
+
+        # region Instance Variables
         public event Action UpdateCallback;
         public readonly Vector3[] vertices;
         public readonly int[] triangles;
@@ -25,9 +31,7 @@ namespace Amilious.ProceduralTerrain.Mesh {
         private readonly Vector3[] _flatShadedVertices;
         private readonly Vector2[] _flatShadedUvs;
         private readonly Vector2[] _flatShadedUvs2;
-        #endregion
 
-        #region Private Instance Variables
         private UnityEngine.Mesh _mesh;
         private int _meshId;
         private bool _bakedCollisionMesh;
@@ -52,6 +56,8 @@ namespace Amilious.ProceduralTerrain.Mesh {
         /// This property is used to check if the mesh has been requested yet.
         /// </summary>
         public bool HasRequestedMesh { get; private set; }
+        
+        public bool HasMeshData { get; private set; }
         
         /// <summary>
         /// This property is used to check if the mesh has been generated.
@@ -152,6 +158,7 @@ namespace Amilious.ProceduralTerrain.Mesh {
         public void Reset() {
             CancelProcessing();
             HasRequestedMesh = false;
+            HasMeshData = false;
             HasMesh = false;
             _bakedCollisionMesh = false;
         }
@@ -171,26 +178,7 @@ namespace Amilious.ProceduralTerrain.Mesh {
             _meshRequester.Cancel();
             _collisionBaker.Cancel();
         }
-
-        /// <summary>
-        /// This method is executed by the mesh requester to generate the mesh.
-        /// </summary>
-        /// <returns>true</returns>
-        private bool MeshRequest(NoiseMap heightMap, bool applyHeight, CancellationToken token) {
-            MeshChunkGenerator.Generate(heightMap, _meshSettings, LevelOfDetail, this, token, applyHeight);
-            return true;
-        }
-
-        private void MeshReceived(bool success) {
-            //if the mesh does not exist we need to create it.
-            _mesh ??= new UnityEngine.Mesh();
-            _meshId = _mesh.GetInstanceID();
-            //apply the changes to the mesh
-            ApplyChanges(true);
-            HasMesh = true;
-            UpdateCallback?.Invoke();
-        }
-
+        
         /// <summary>
         /// This method is used to assign the mesh to a given mesh filter.
         /// </summary>
@@ -247,10 +235,109 @@ namespace Amilious.ProceduralTerrain.Mesh {
                 ProcessEdgeConnectionVertices();
             }
         }
+
+        /// <summary>
+        /// This method is used to save the mesh data.
+        /// </summary>
+        /// <param name="saveData">The save data you want to add the mesh data to.</param>
+        public void Save(SaveData saveData) {
+            saveData.SetPrefix(PREFIX,LevelOfDetail);
+            saveData.SetPrefix(HAS_DATA,HasMesh);
+            if(!HasMesh) {
+                saveData.ClearPrefix();
+                return;
+            }
+            saveData.StoreData(nameof(vertices),vertices);
+            saveData.StoreData(nameof(triangles),triangles);
+            saveData.StoreData(nameof(uvs),uvs);
+            saveData.StoreData(nameof(uvs2),uvs2);
+            saveData.StoreData(nameof(bakedNormals),bakedNormals);
+            saveData.StoreData(nameof(outOfMeshVertices), outOfMeshVertices);
+            saveData.StoreData(nameof(outOfMeshTriangles), outOfMeshTriangles);
+            saveData.StoreData(nameof(edgeConnectionVertices),edgeConnectionVertices);
+            if(UseFlatShading) {
+                saveData.StoreData(nameof(_flatShadedVertices),_flatShadedVertices);
+                saveData.StoreData(nameof(_flatShadedUvs),_flatShadedUvs);
+                saveData.StoreData(nameof(_flatShadedUvs2),_flatShadedUvs2);
+            }
+            saveData.ClearPrefix();
+        }
+
+        /// <summary>
+        /// This method is used to load the mesh data.
+        /// </summary>
+        /// <param name="saveData">The save data you want to get the mesh data from.</param>
+        /// <returns>True if the mesh data was loaded, otherwise returns false.</returns>
+        public bool Load(SaveData saveData) {
+            saveData.SetPrefix(PREFIX,LevelOfDetail);
+            if(!saveData.FetchData<bool>(HAS_DATA)) {
+                saveData.ClearPrefix();
+                return false;
+            }
+            HasRequestedMesh = true;
+            saveData.RestoreVector3Array(nameof(vertices),vertices);
+            saveData.RestoreSerializableArray(nameof(triangles),triangles);
+            saveData.RestoreVector2Array(nameof(uvs),uvs);
+            saveData.RestoreVector2Array(nameof(uvs2),uvs2);
+            saveData.RestoreVector3Array(nameof(bakedNormals),bakedNormals);
+            saveData.RestoreVector3Array(nameof(outOfMeshVertices),outOfMeshVertices);
+            saveData.RestoreSerializableArray(nameof(outOfMeshTriangles),outOfMeshTriangles);
+            saveData.RestoreSerializableArray(nameof(edgeConnectionVertices),edgeConnectionVertices);
+            if(UseFlatShading) {
+                saveData.RestoreVector3Array(nameof(_flatShadedVertices),_flatShadedVertices);
+                saveData.RestoreVector2Array(nameof(_flatShadedUvs),_flatShadedUvs);
+                saveData.RestoreVector2Array(nameof(_flatShadedUvs2),_flatShadedUvs2);
+            }
+            saveData.ClearPrefix();
+            _bakedCollisionMesh = false;
+            HasMeshData = true;
+            return true;
+        }
+        
+        /// <summary>
+        /// This method is used to apply the loaded mesh data.
+        /// </summary>
+        /// <returns>True if the mesh data was loaded and applied, otherwise
+        /// false.</returns>
+        public bool ApplyLoadedMesh() {
+            if(!HasMeshData || HasMesh) return false;
+            //if the mesh does not exist we need to create it.
+            _mesh ??= new UnityEngine.Mesh();
+            _meshId = _mesh.GetInstanceID();
+            //apply the changes to the mesh
+            ApplyChanges(true);
+            HasMesh = true;
+            return true;
+        }
         
         #endregion
 
         #region Private Methods
+        
+        /// <summary>
+        /// This method is executed by the mesh requester to generate the mesh.
+        /// </summary>
+        /// <returns>true</returns>
+        private bool MeshRequest(NoiseMap heightMap, bool applyHeight, CancellationToken token) {
+            MeshChunkGenerator.Generate(heightMap, _meshSettings, LevelOfDetail, this, token, applyHeight);
+            return true;
+        }
+
+        /// <summary>
+        /// This method is called when the mesh data is received.
+        /// </summary>
+        /// <param name="success">Contains true if the mesh data was
+        /// loaded correctly.</param>
+        private void MeshReceived(bool success) {
+            HasMeshData = true;
+            //if the mesh does not exist we need to create it.
+            _mesh ??= new UnityEngine.Mesh();
+            _meshId = _mesh.GetInstanceID();
+            //apply the changes to the mesh
+            ApplyChanges(true);
+            HasMesh = true;
+            UpdateCallback?.Invoke();
+        }
         
         /// <summary>
         /// This method is used to calculate the normals.

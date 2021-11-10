@@ -1,55 +1,108 @@
-using System;
-using System.Collections.Generic;
 using UnityEngine;
-using Vector2 = System.Numerics.Vector2;
+using System.Collections.Generic;
 
 namespace Amilious.ProceduralTerrain.Map {
     
     //this class will be used to store map data for a region.
-
     public class MapRegion {
 
-        public RegionSize RegionSize { get; }
-        public Vector2Int RegionCoordinate { get; }
+        #region Properties
         
-        public MapRegion(RegionSize regionSize, Vector2Int regionCoord) {
+        /// <summary>
+        /// This property is used to get the size of a region.
+        /// </summary>
+        public RegionSize RegionSize { get; }
+        
+        /// <summary>
+        /// This property is used to get the regions id.
+        /// </summary>
+        public Vector2Int RegionId { get; }
+        
+        #endregion
+        
+        #region Constructor
+        
+        /// <summary>
+        /// This constructor is used to generate a region.
+        /// </summary>
+        /// <param name="regionSize">The size of the region.</param>
+        /// <param name="regionId">The region's id.</param>
+        public MapRegion(RegionSize regionSize, Vector2Int regionId) {
             RegionSize = regionSize;
-            RegionCoordinate = regionCoord;
+            RegionId = regionId;
         }
 
-        public bool ContainsChunk(Vector2Int chunkCoord) {
-            return IsChunkWithin(RegionSize, RegionCoordinate, chunkCoord);
+        #endregion
+        
+        /// <summary>
+        /// This method is used to check if a chunk exists in this region.
+        /// </summary>
+        /// <param name="chunkId"></param>
+        /// <returns></returns>
+        public virtual bool ContainsChunk(Vector2Int chunkId) {
+            return IsChunkWithin(RegionSize, RegionId, chunkId);
         }
 
-        public static bool IsChunkWithin(RegionSize regionSize, Vector2Int regionCoord, Vector2Int chunkCoord) {
-            return ChunkToRegion(regionSize, chunkCoord) == regionCoord;
+        /// <summary>
+        /// This method is used to check exists within the given region.
+        /// </summary>
+        /// <param name="regionSize">The size of the region.</param>
+        /// <param name="regionId">The region id.</param>
+        /// <param name="chunkId">The chunk id.</param>
+        /// <returns>True if the chunk is within the region, otherwise false.</returns>
+        public static bool IsChunkWithin(RegionSize regionSize, Vector2Int regionId, Vector2Int chunkId) {
+            return ChunkToRegion(regionSize, chunkId) == regionId;
         }
 
-        public static Vector2Int ChunkToRegion(RegionSize regionSize, Vector2Int chunkCoord) {
-            return (chunkCoord - Vector2Int.one * ((int)regionSize / 2 - 1)) / (int)regionSize;
+        /// <summary>
+        /// This method is used to get the region from the chunk id.
+        /// </summary>
+        /// <param name="regionSize">This size of the regions.</param>
+        /// <param name="chunkId">The chunk id you want to get the region for.</param>
+        /// <returns>The region id for the given chunk id.</returns>
+        public static Vector2Int ChunkToRegion(RegionSize regionSize, Vector2Int chunkId) {
+            return (chunkId - Vector2Int.one * ((int)regionSize / 2 - 1)) / (int)regionSize;
         }
 
-        public static Vector2Int[] RequiredRegionsToDraw(RegionSize regionSize, Vector2Int chunkCoord) {
+        /// <summary>
+        /// This method is used to get the regions that are required to draw the given chunk.
+        /// </summary>
+        /// <param name="regionSize">The size of the regions.</param>
+        /// <param name="chunkId">The chunk you want to draw.</param>
+        /// <returns>An array of the regions that need to be loaded to draw the given chunk.</returns>
+        public static Vector2Int[] RequiredRegionsToDraw(RegionSize regionSize, Vector2Int chunkId) {
             var regions = new List<Vector2Int>();
             var tlOffset = TopAndLeftOffset(regionSize);
             var brOffset = BottomAndRightOffset(regionSize);
-            var mainRegion = ChunkToRegion(regionSize, chunkCoord);
+            var mainRegion = ChunkToRegion(regionSize, chunkId);
             regions.Add(mainRegion);
-            if(chunkCoord.x==mainRegion.x-tlOffset) 
+            if(chunkId.x==mainRegion.x-tlOffset) 
                 regions.Add(new Vector2Int(mainRegion.x-1,mainRegion.y));
-            if(chunkCoord.x==mainRegion.x+brOffset)
+            if(chunkId.x==mainRegion.x+brOffset)
                 regions.Add(new Vector2Int(mainRegion.x+1,mainRegion.y));
-            if(chunkCoord.y==mainRegion.y-tlOffset) 
+            if(chunkId.y==mainRegion.y-tlOffset) 
                 regions.Add(new Vector2Int(mainRegion.x,mainRegion.y-1));
-            if(chunkCoord.y==mainRegion.y+brOffset)
+            if(chunkId.y==mainRegion.y+brOffset)
                 regions.Add(new Vector2Int(mainRegion.x,mainRegion.y+1));
             return regions.ToArray();
         }
 
+        /// <summary>
+        /// This method is used to get the regions top and left offset based on the
+        /// provided region size.
+        /// </summary>
+        /// <param name="regionSize">The size of the regions.</param>
+        /// <returns>The top and left offset.</returns>
         public static int TopAndLeftOffset(RegionSize regionSize) {
             return (int)regionSize / 2 - 1;
         }
 
+        /// <summary>
+        /// This method is used to get the regions bottom and right offset based
+        /// on the provided region size.
+        /// </summary>
+        /// <param name="regionSize">The size of the regions.</param>
+        /// <returns>The bottom and right offset.</returns>
         public static int BottomAndRightOffset(RegionSize regionSize) {
             return (int)regionSize / 2;
         }

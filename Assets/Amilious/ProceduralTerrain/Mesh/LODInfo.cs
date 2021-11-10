@@ -1,6 +1,4 @@
-using Sirenix.OdinInspector;
 using UnityEngine;
-using UnityEngine.AI;
 
 namespace Amilious.ProceduralTerrain.Mesh {
     

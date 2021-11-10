@@ -1,9 +1,8 @@
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
+using UnityEngine;
 using Amilious.Core.Extensions;
 using Amilious.Core.Serializable;
-using UnityEngine;
+using System.Collections.Generic;
 
 namespace Amilious.Saving {
     
@@ -138,6 +137,8 @@ namespace Amilious.Saving {
         /// <typeparam name="T">The type of data you are requesting.</typeparam>
         /// <returns>The requested data.</returns>
         /// <exception cref="InvalidDataException">This is thrown if the data was invalid.</exception>
+        /// <seealso cref="TryFetchData{T}"/>
+        /// <see cref="FetchData{T}"/>
         public T FetchData<T>(string key) {
             var result = TryFetchData(key, out T data);
             if(result) return data;
@@ -152,7 +153,7 @@ namespace Amilious.Saving {
         /// <param name="data">The data that you want to try add.  This data
         /// should be serializable or one of the auto serializable types.</param>
         /// <typeparam name="T">The type of the data that you want to add.</typeparam>
-        /// <returns></returns>
+        /// <returns>True if the data was stored, otherwise returns false.</returns>
         public bool TryStoreData<T>(string key, T data) {
             key = AddPrefix(key);
             switch(data) {
@@ -224,6 +225,228 @@ namespace Amilious.Saving {
             var result = TryStoreData(key, data);
             if(!result) throw new InvalidDataException("The provided data could not be serialized!");
         }
+
+        /// <summary>
+        /// This method is used to try restore a <see cref="Vector2"/> array. This
+        /// method uses less memory and creates less garbage than the
+        /// <see cref="TryFetchData{T}"/> method.
+        /// </summary>
+        /// <param name="key">The key for the array.</param>
+        /// <param name="array">The array you want to restore the values to.</param>
+        /// <returns>True if the values were restored</returns>
+        /// <seealso cref="TryFetchData{T}"/>
+        /// <seealso cref="RestoreVector2Array"/>
+        /// <seealso cref="FetchData{T}"/>
+        public bool TryRestoreVector2Array(string key, Vector2[] array) {
+            key = AddPrefix(key);
+            if(!DataDictionary.TryGetCastValue(key, out SerializableVector2[] serializedArray)) return false;
+            if(array.Length != serializedArray.Length) return false;
+            for(var i = 0; i <= array.Length; i++)
+                array[i] = serializedArray[i].Vector2;
+            return true;
+        }
+        
+        /// <summary>
+        /// This method is used to restore a <see cref="Vector2"/> array. This
+        /// method uses less memory and creates less garbage than the
+        /// <see cref="FetchData{T}"/> method.
+        /// </summary>
+        /// <param name="key">The key for the array.</param>
+        /// <param name="array">The array you want to restore the values to.</param>
+        /// <exception cref="InvalidDataException">Thrown if the data was not found or
+        /// if the array length did not match.</exception>
+        /// <seealso cref="FetchData{T}"/>
+        /// <seealso cref="TryFetchData{T}"/>
+        /// <seealso cref="TryRestoreVector2Array"/>
+        public void RestoreVector2Array(string key, Vector2[] array) {
+            var result = TryRestoreVector2Array(key, array);
+            if(!result) throw new InvalidDataException("The data was not found or invalid.");
+        }
+        
+        /// <summary>
+        /// This method is used to try restore a <see cref="Vector2Int"/> array. This
+        /// method uses less memory and creates less garbage than the
+        /// <see cref="TryFetchData{T}"/> method.
+        /// </summary>
+        /// <param name="key">The key for the array.</param>
+        /// <param name="array">The array you want to restore the values to.</param>
+        /// <returns>True if the values were restored</returns>
+        /// <seealso cref="TryFetchData{T}"/>
+        /// <seealso cref="RestoreVector2IntArray"/>
+        /// <seealso cref="FetchData{T}"/>
+        public bool TryRestoreVector2IntArray(string key, Vector2Int[] array) {
+            key = AddPrefix(key);
+            if(!DataDictionary.TryGetCastValue(key, out SerializableVector2Int[] serializedArray)) return false;
+            if(array.Length != serializedArray.Length) return false;
+            for(var i = 0; i <= array.Length; i++)
+                array[i] = serializedArray[i].Vector2Int;
+            return true;
+        }
+        
+        /// <summary>
+        /// This method is used to restore a <see cref="Vector2Int"/> array. This
+        /// method uses less memory and creates less garbage than the
+        /// <see cref="FetchData{T}"/> method.
+        /// </summary>
+        /// <param name="key">The key for the array.</param>
+        /// <param name="array">The array you want to restore the values to.</param>
+        /// <exception cref="InvalidDataException">Thrown if the data was not found or
+        /// if the array length did not match.</exception>
+        /// <seealso cref="FetchData{T}"/>
+        /// <seealso cref="TryFetchData{T}"/>
+        /// <seealso cref="TryRestoreVector2IntArray"/>
+        public void RestoreVector2IntArray(string key, Vector2Int[] array) {
+            var result = TryRestoreVector2IntArray(key, array);
+            if(!result) throw new InvalidDataException("The data was not found or invalid.");
+        }
+        
+        /// <summary>
+        /// This method is used to try restore a <see cref="Vector3"/> array. This
+        /// method uses less memory and creates less garbage than the
+        /// <see cref="TryFetchData{T}"/> method.
+        /// </summary>
+        /// <param name="key">The key for the array.</param>
+        /// <param name="array">The array you want to restore the values to.</param>
+        /// <returns>True if the values were restored</returns>
+        /// <seealso cref="TryFetchData{T}"/>
+        /// <seealso cref="RestoreVector3Array"/>
+        /// <seealso cref="FetchData{T}"/>
+        public bool TryRestoreVector3Array(string key, Vector3[] array) {
+            key = AddPrefix(key);
+            if(!DataDictionary.TryGetCastValue(key, out SerializableVector3[] serializedArray)) return false;
+            if(array.Length != serializedArray.Length) return false;
+            for(var i = 0; i <= array.Length; i++)
+                array[i] = serializedArray[i].Vector3;
+            return true;
+        }
+        
+        /// <summary>
+        /// This method is used to restore a <see cref="Vector3"/> array. This
+        /// method uses less memory and creates less garbage than the
+        /// <see cref="FetchData{T}"/> method.
+        /// </summary>
+        /// <param name="key">The key for the array.</param>
+        /// <param name="array">The array you want to restore the values to.</param>
+        /// <exception cref="InvalidDataException">Thrown if the data was not found or
+        /// if the array length did not match.</exception>
+        /// <seealso cref="FetchData{T}"/>
+        /// <seealso cref="TryFetchData{T}"/>
+        /// <seealso cref="TryRestoreVector3Array"/>
+        public void RestoreVector3Array(string key, Vector3[] array) {
+            var result = TryRestoreVector3Array(key, array);
+            if(!result) throw new InvalidDataException("The data was not found or invalid.");
+        }
+        
+        /// <summary>
+        /// This method is used to try restore a <see cref="Vector3Int"/> array. This
+        /// method uses less memory and creates less garbage than the
+        /// <see cref="TryFetchData{T}"/> method.
+        /// </summary>
+        /// <param name="key">The key for the array.</param>
+        /// <param name="array">The array you want to restore the values to.</param>
+        /// <returns>True if the values were restored</returns>
+        /// <seealso cref="TryFetchData{T}"/>
+        /// <seealso cref="RestoreVector3IntArray"/>
+        /// <seealso cref="FetchData{T}"/>
+        public bool TryRestoreVector3IntArray(string key, Vector3Int[] array) {
+            key = AddPrefix(key);
+            if(!DataDictionary.TryGetCastValue(key, out SerializableVector3Int[] serializedArray)) return false;
+            if(array.Length != serializedArray.Length) return false;
+            for(var i = 0; i <= array.Length; i++)
+                array[i] = serializedArray[i].Vector3Int;
+            return true;
+        }
+        
+        /// <summary>
+        /// This method is used to restore a <see cref="Vector3Int"/> array. This
+        /// method uses less memory and creates less garbage than the
+        /// <see cref="FetchData{T}"/> method.
+        /// </summary>
+        /// <param name="key">The key for the array.</param>
+        /// <param name="array">The array you want to restore the values to.</param>
+        /// <exception cref="InvalidDataException">Thrown if the data was not found or
+        /// if the array length did not match.</exception>
+        /// <seealso cref="FetchData{T}"/>
+        /// <seealso cref="TryFetchData{T}"/>
+        /// <seealso cref="TryRestoreVector3IntArray"/>
+        public void RestoreVector3IntArray(string key, Vector3Int[] array) {
+            var result = TryRestoreVector3IntArray(key, array);
+            if(!result) throw new InvalidDataException("The data was not found or invalid.");
+        }
+        
+        /// <summary>
+        /// This method is used to try restore a <see cref="Quaternion"/> array. This
+        /// method uses less memory and creates less garbage than the
+        /// <see cref="TryFetchData{T}"/> method.
+        /// </summary>
+        /// <param name="key">The key for the array.</param>
+        /// <param name="array">The array you want to restore the values to.</param>
+        /// <returns>True if the values were restored</returns>
+        /// <seealso cref="TryFetchData{T}"/>
+        /// <seealso cref="RestoreQuaternionArray"/>
+        /// <seealso cref="FetchData{T}"/>
+        public bool TryRestoreQuaternionArray(string key, Quaternion[] array) {
+            key = AddPrefix(key);
+            if(!DataDictionary.TryGetCastValue(key, out SerializableQuaternion[] serializedArray)) return false;
+            if(array.Length != serializedArray.Length) return false;
+            for(var i = 0; i <= array.Length; i++)
+                array[i] = serializedArray[i].Quaternion;
+            return true;
+        }
+        
+        /// <summary>
+        /// This method is used to restore a <see cref="Quaternion"/> array. This
+        /// method uses less memory and creates less garbage than the
+        /// <see cref="FetchData{T}"/> method.
+        /// </summary>
+        /// <param name="key">The key for the array.</param>
+        /// <param name="array">The array you want to restore the values to.</param>
+        /// <exception cref="InvalidDataException">Thrown if the data was not found or
+        /// if the array length did not match.</exception>
+        /// <seealso cref="FetchData{T}"/>
+        /// <seealso cref="TryFetchData{T}"/>
+        /// <seealso cref="TryRestoreQuaternionArray"/>
+        public void RestoreQuaternionArray(string key, Quaternion[] array) {
+            var result = TryRestoreQuaternionArray(key, array);
+            if(!result) throw new InvalidDataException("The data was not found or invalid.");
+        }
+
+        /// <summary>
+        /// This method is used to try restore a serializable array. This
+        /// method uses less memory and creates less garbage than the
+        /// <see cref="TryFetchData{T}"/> method.
+        /// </summary>
+        /// <param name="key">The key for the array.</param>
+        /// <param name="array">The array you want to restore the values to.</param>
+        /// <returns>True if the values were restored</returns>
+        /// <seealso cref="TryFetchData{T}"/>
+        /// <seealso cref="RestoreSerializableArray{T}"/>
+        /// <seealso cref="FetchData{T}"/>
+        public bool TryRestoreSerializableArray<T>(string key, T[] array) {
+            key = AddPrefix(key);
+            if(!DataDictionary.TryGetCastValue(key, out T[] serializedArray)) return false;
+            if(serializedArray.Length != array.Length) return false;
+            for(var i = 0; i <= array.Length; i++)
+                array[i] = serializedArray[i];
+            return true;
+        }
+        
+        /// <summary>
+        /// This method is used to restore a serializable array. This
+        /// method uses less memory and creates less garbage than the
+        /// <see cref="FetchData{T}"/> method.
+        /// </summary>
+        /// <param name="key">The key for the array.</param>
+        /// <param name="array">The array you want to restore the values to.</param>
+        /// <exception cref="InvalidDataException">Thrown if the data was not found or
+        /// if the array length did not match.</exception>
+        /// <seealso cref="FetchData{T}"/>
+        /// <seealso cref="TryFetchData{T}"/>
+        /// <seealso cref="TryRestoreSerializableArray{T}"/>
+        public void RestoreSerializableArray<T>(string key, T[] array) {
+            var result = TryRestoreSerializableArray(key, array);
+            if(!result) throw new InvalidDataException("The data was not found or invalid.");
+        }
         
         /// <summary>
         /// This method is used to restore values to the given transform.
@@ -264,6 +487,15 @@ namespace Amilious.Saving {
         /// </summary>
         /// <param name="prefix">The string that you want to use as a prefix.</param>
         public void SetPrefix(string prefix) => Prefix = prefix;
+
+        /// <summary>
+        /// This method is used to set the prefix using a string formatter.
+        /// </summary>
+        /// <param name="prefix">The string you want to format as the prefix.</param>
+        /// <param name="arguments">The formatted strings arguments.</param>
+        public void SetPrefix(string prefix, params object[] arguments) {
+            Prefix = string.Format(prefix, arguments);
+        }
 
         /// <summary>
         /// This method is used to clear the prefix.

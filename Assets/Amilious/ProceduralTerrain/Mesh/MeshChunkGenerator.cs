@@ -1,6 +1,7 @@
+using UnityEngine;
 using System.Threading;
 using Amilious.ProceduralTerrain.Noise;
-using UnityEngine;
+
 namespace Amilious.ProceduralTerrain.Mesh {
     
     /// <summary>
@@ -8,6 +9,16 @@ namespace Amilious.ProceduralTerrain.Mesh {
     /// </summary>
     public static class MeshChunkGenerator {
 
+        /// <summary>
+        /// This method is used to generate the mesh values.
+        /// </summary>
+        /// <param name="heightMap">The height map used to generate the mesh.</param>
+        /// <param name="meshSettings">The mesh settings.</param>
+        /// <param name="levelOfDetail">The level of detail.</param>
+        /// <param name="chunkMesh">The mesh that will be used.</param>
+        /// <param name="token">A cancellation token that can be checked to see if the operation
+        /// has been canceled.</param>
+        /// <param name="applyHeight">True if the height value should be applied to the mesh.</param>
     public static void Generate(NoiseMap heightMap, MeshSettings meshSettings, LevelsOfDetail levelOfDetail,
         ChunkMesh chunkMesh, CancellationToken token, bool applyHeight = true) {
 
@@ -123,22 +134,6 @@ namespace Amilious.ProceduralTerrain.Mesh {
         chunkMesh.ProcessMesh ();
 
         }
-    }
-    
-    [System.Serializable]
-    public struct EdgeConnectionVertexData {
-        public int vertexIndex;
-        public int mainVertexAIndex;
-        public int mainVertexBIndex;
-        public float dstPercentFromAToB;
- 
-        public EdgeConnectionVertexData (int vertexIndex, int mainVertexAIndex, int mainVertexBIndex, float dstPercentFromAToB) {
-            this.vertexIndex = vertexIndex;
-            this.mainVertexAIndex = mainVertexAIndex;
-            this.mainVertexBIndex = mainVertexBIndex;
-            this.dstPercentFromAToB = dstPercentFromAToB;
-        }
-
     }
 
 }

@@ -1,13 +1,13 @@
-using System.Collections.Generic;
 using System.Linq;
-using Amilious.ProceduralTerrain.Map;
-using Sirenix.OdinInspector;
 using UnityEngine;
+using Sirenix.OdinInspector;
+using System.Collections.Generic;
+using Amilious.ProceduralTerrain.Map;
 
 namespace Amilious.ProceduralTerrain.Mesh {
     
     [CreateAssetMenu(menuName = "Amilious/Procedural Terrain/Mesh Settings", order = 0), HideMonoScript]
-    public class MeshSettings : UpdateableData {
+    public class MeshSettings : ScriptableObject {
         
         #region Inspector Values
         
@@ -44,19 +44,56 @@ namespace Amilious.ProceduralTerrain.Mesh {
 
         #endregion
         
+        #region Properties
+        
+        /// <summary>
+        /// This property is used to get the scale of the mesh.
+        /// </summary>
         public float MeshScale { get => meshScale; }
+        
+        /// <summary>
+        /// This property is used to get the chunk's base size.
+        /// </summary>
         public ChunkBaseSize ChunkBaseSize { get => chunkBaseSize; }
+        
+        /// <summary>
+        /// This property is used to get the chunk region size.
+        /// </summary>
         public RegionSize RegionSize { get => regionSize; }
+        
+        /// <summary>
+        /// This property is used to check if the mesh should be using flat shading.
+        /// </summary>
         public bool UseFlatShading { get => useFlatShading; }
+        
+        /// <summary>
+        /// This property contains true if collision meshes should be baked.
+        /// </summary>
         public bool BakeCollisionMeshes { get => bakeCollisionMeshes; }
+        
+        /// <summary>
+        /// This property is used to get the levels of detail.
+        /// </summary>
         public IEnumerable<LODInfo> LevelsOfDetail { get => chunkLevelsOfDetail; }
+        
+        /// <summary>
+        /// This property is used to get the number of vertices per line.
+        /// </summary>
         public int VertsPerLine => (int)ChunkBaseSize + 5;
+        
+        /// <summary>
+        /// This property is used to get the meshes world size.
+        /// </summary>
         public float MeshWorldSize {
             get {
                 _meshWorldSize ??= (VertsPerLine - 3) * meshScale;
                 return _meshWorldSize.Value;
             }
         }
+        
+        /// <summary>
+        /// This property is used to get the max view distance.
+        /// </summary>
         public float MaxViewDistance {
             get {
                 _maxViewDistance ??= chunkLevelsOfDetail.Max(x => x.VisibleDistanceThreshold);
@@ -64,8 +101,14 @@ namespace Amilious.ProceduralTerrain.Mesh {
             }
         }
         
+        /// <summary>
+        /// This property is used to know how the terrains should be painted.
+        /// </summary>
         public TerrainPaintingMode PaintingMode { get => paintingMode; }
         
+        /// <summary>
+        /// This property is used to get the max view distance squared.
+        /// </summary>
         public float MaxViewDistanceSq {
             get {
                 _maxViewDistanceSq ??= MaxViewDistance * MaxViewDistance;
@@ -73,8 +116,14 @@ namespace Amilious.ProceduralTerrain.Mesh {
             }
         }
         
+        /// <summary>
+        /// This property is used to get the chunk's unload distance.
+        /// </summary>
         public float ChunkUnloadDistance { get => chunkUnloadDistance; }
 
+        /// <summary>
+        /// This property is used to get the chunks unload distance squared.
+        /// </summary>
         public float ChunkUnloadDistanceSq {
             get {
                 _chunkUnloadDistanceSq ??= chunkUnloadDistance * chunkUnloadDistance;
@@ -82,6 +131,9 @@ namespace Amilious.ProceduralTerrain.Mesh {
             }
         }
         
+        /// <summary>
+        /// This property is used to get the number of chunks visible in the view distance.
+        /// </summary>
         public int ChunksVisibleInViewDistance {
             get {
                 _chunksVisibleInViewDistance ??= (int)Mathf.Round(MaxViewDistance / MeshWorldSize);
@@ -89,6 +141,10 @@ namespace Amilious.ProceduralTerrain.Mesh {
             }
         }
 
+        /// <summary>
+        /// This property is used to get the level of detail that should be used for
+        /// the colliders.
+        /// </summary>
         public int ColliderLODIndex {
             get {
                 if(_colliderLODIndex.HasValue) return _colliderLODIndex ?? -1;
@@ -100,16 +156,22 @@ namespace Amilious.ProceduralTerrain.Mesh {
             }
         }
         
+        /// <summary>
+        /// This property contains the material that should be applied to all terrain meshes.
+        /// </summary>
         public Material Material { get => material; }
         
+        #endregion
         
         #region Validation Methods
 
-        protected override void OnValidate() {
-            base.OnValidate();
-            //make sure that the lod's are in order.
-            if(chunkLevelsOfDetail == null) return;
-            chunkLevelsOfDetail = chunkLevelsOfDetail.OrderBy(x => x.LevelsOfDetail).ToArray();
+        /// <summary>
+        /// This method is called when a <see cref="GameObject"/> is modified
+        /// in the unity editor.
+        /// </summary>
+        protected void OnValidate() {
+            //make sure that the level of details are in order.
+            chunkLevelsOfDetail = chunkLevelsOfDetail?.OrderBy(x => x.LevelsOfDetail).ToArray();
         }
 
         /// <summary>
@@ -117,7 +179,7 @@ namespace Amilious.ProceduralTerrain.Mesh {
         /// </summary>
         /// <param name="lods">The levels of detail.</param>
         /// <returns>True if the lods are unique.</returns>
-        private bool UniqueLod(LODInfo[] lods) {
+        protected virtual bool UniqueLod(LODInfo[] lods) {
             if(lods == null) return true;
             var uniqueLods = lods.Select(x => x.LevelsOfDetail).Distinct().Count() == lods.Length;
             var uniqueDistances = lods.Select(x => x.VisibleDistanceThreshold).Distinct().Count() == lods.Length;
@@ -129,16 +191,15 @@ namespace Amilious.ProceduralTerrain.Mesh {
         /// </summary>
         /// <param name="lods">The levels of detail you want to check.</param>
         /// <returns>True if there is at least one level of detail.</returns>
-        private bool ContainsValues(LODInfo[] lods) => lods!=null && lods.Length > 0;
+        protected virtual bool ContainsValues(IReadOnlyCollection<LODInfo> lods) => lods!=null && lods.Count > 0;
 
         /// <summary>
         /// This method is used by the inspector to validate the collider lod.
         /// </summary>
         /// <param name="lod">The lod that you want to use for the collider.</param>
         /// <returns>True if the lods contain the collider lod, otherwise false.</returns>
-        private bool ValidateColliderLOD(LevelsOfDetail lod) {
-            if(chunkLevelsOfDetail == null) return false;
-            return chunkLevelsOfDetail.Select(x => x.LevelsOfDetail).Contains(lod);
+        protected virtual bool ValidateColliderLOD(LevelsOfDetail lod) {
+            return chunkLevelsOfDetail != null && chunkLevelsOfDetail.Select(x => x.LevelsOfDetail).Contains(lod);
         }
         
         #endregion

@@ -1,8 +1,9 @@
-using System.Collections.Generic;
 using System.Linq;
-using System.Threading;
-using Amilious.Random;
 using UnityEngine;
+using Amilious.Random;
+using System.Threading;
+using System.Collections.Generic;
+using Amilious.ProceduralTerrain.Sampling;
 
 //https://github.com/KdotJPG/Scattered-Biome-Blender
 //https://noiseposti.ng/posts/2021-03-13-Fast-Biome-Blending-Without-Squareness.html

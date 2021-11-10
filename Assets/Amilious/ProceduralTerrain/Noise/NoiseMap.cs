@@ -1,8 +1,6 @@
 using System;
 using UnityEngine;
-using Amilious.ProceduralTerrain.Map;
 using Amilious.Saving;
-using UnityEngine.PlayerLoop;
 
 namespace Amilious.ProceduralTerrain.Noise {
     

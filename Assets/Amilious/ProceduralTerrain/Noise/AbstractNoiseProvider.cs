@@ -1,7 +1,6 @@
-using Amilious.ProceduralTerrain.Map;
-using Amilious.ProceduralTerrain.Textures;
-using Amilious.Random;
 using UnityEngine;
+using Amilious.Random;
+using Amilious.ProceduralTerrain.Textures;
 
 namespace Amilious.ProceduralTerrain.Noise {
     
@@ -32,8 +31,17 @@ namespace Amilious.ProceduralTerrain.Noise {
         /// a value between one and zero.</returns>
         public abstract float NoiseAtPoint(float x, float z, Seed seed);
 
+        /// <summary>
+        /// This is used to get the preview colors from the noise provider.
+        /// </summary>
         public abstract ColorMap PreviewColors { get; }
 
+        /// <summary>
+        /// This method is used to set the values in the compute shader.
+        /// </summary>
+        /// <param name="computeShader">The compute shader.</param>
+        /// <param name="prefix">The prefix.</param>
+        /// <param name="seed">The seed that will be used.</param>
         public abstract void SetComputeShaderValues(ComputeShader computeShader, char prefix, Seed seed);
 
     }

@@ -368,6 +368,9 @@ namespace Amilious.ProceduralTerrain.Map {
                 _meshRenderer.material.mainTexture = _previewTexture;
             }
             _heightMapReceived = true;
+            if(_mapSaver.SavingEnabled && _mapSaver.SaveMeshData) {
+                foreach(var mesh in _lodMeshes) mesh.ApplyLoadedMesh();
+            }
             UpdateChunk();
             onChunkLoaded?.Invoke(ChunkId);
         }
@@ -383,6 +386,12 @@ namespace Amilious.ProceduralTerrain.Map {
             //try to load or generate biome data
             if(_mapSaver.SavingEnabled && _manager.MapSaver.LoadData(ChunkId, out var saveData)) {
                 _biomeMap.Load(saveData);
+                if(_mapSaver.SaveMeshData) {
+                    foreach(var mesh in _lodMeshes) {
+                        token.ThrowIfCancellationRequested();
+                        mesh.Load(saveData);
+                    }
+                }
             }else _biomeMap.Generate(_sampleCenter, token);
             //generate texture
             _biomeMap.GenerateTextureColors(_preparedColors, _meshSettings.PaintingMode, 1);

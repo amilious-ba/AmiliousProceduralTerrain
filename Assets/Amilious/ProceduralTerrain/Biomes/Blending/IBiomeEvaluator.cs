@@ -1,6 +1,6 @@
+using Amilious.Random;
 using System.Collections.Generic;
 using Amilious.ProceduralTerrain.Sampling;
-using Amilious.Random;
 
 namespace Amilious.ProceduralTerrain.Biomes.Blending {
     

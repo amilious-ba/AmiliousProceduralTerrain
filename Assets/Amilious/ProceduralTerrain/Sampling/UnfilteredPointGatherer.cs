@@ -1,10 +1,9 @@
-using System.Collections.Generic;
-using System.Threading;
-using Amilious.ProceduralTerrain.Sampling;
-using Amilious.Random;
 using UnityEngine;
+using Amilious.Random;
+using System.Threading;
+using System.Collections.Generic;
 
-namespace Amilious.ProceduralTerrain.Biomes.Blending {
+namespace Amilious.ProceduralTerrain.Sampling {
 
     public class UnfilteredPointGatherer {
         
@@ -13,6 +12,7 @@ namespace Amilious.ProceduralTerrain.Biomes.Blending {
         private static readonly float TriangleEdgeLength = Mathf.Sqrt(2.0f / 3.0f);
         private static readonly float TriangleHeight = SqrtHalf;
         private static readonly float InverseTriangleHeight = SqrtHalf * 2;
+        // ReSharper disable once IdentifierTypo
         private static readonly float TriangleCircumRadius = TriangleHeight * (2.0f / 3.0f);
         private static readonly float JitterAmount = TriangleHeight;
         public static readonly float MaxGridScaleDistanceToClosestPoint = JitterAmount + TriangleCircumRadius;
@@ -34,15 +34,15 @@ namespace Amilious.ProceduralTerrain.Biomes.Blending {
         private const int JITTER_SINCOS_OFFSET = JITTER_VECTOR_COUNT_MULTIPLIER * 4;
         private static readonly float[] JitterSincos;
 
-        private static readonly int sinCosArraySize;
-        private static readonly float sinCosOffsetFactor;
+        private static readonly int SinCosArraySize;
+        private static readonly float SinCosOffsetFactor;
 
         static UnfilteredPointGatherer() {
-            sinCosArraySize = N_VECTORS_WITH_REPETITION * 5 / 4;
-            sinCosOffsetFactor = (1.0f / JITTER_VECTOR_COUNT_MULTIPLIER);
-            JitterSincos = new float[sinCosArraySize];
+            SinCosArraySize = N_VECTORS_WITH_REPETITION * 5 / 4;
+            SinCosOffsetFactor = (1.0f / JITTER_VECTOR_COUNT_MULTIPLIER);
+            JitterSincos = new float[SinCosArraySize];
             for(int i = 0, j = 0; i < N_VECTORS; i++) {
-                JitterSincos[j] = Mathf.Sin((i + sinCosOffsetFactor) * 
+                JitterSincos[j] = Mathf.Sin((i + SinCosOffsetFactor) * 
                     ((2.0f * Mathf.PI) / N_VECTORS)) * JitterAmount;
                 j++;
 
@@ -57,7 +57,7 @@ namespace Amilious.ProceduralTerrain.Biomes.Blending {
                 j++;
             }
 
-            for(var j = N_VECTORS_WITH_REPETITION; j < sinCosArraySize; j++) {
+            for(var j = N_VECTORS_WITH_REPETITION; j < SinCosArraySize; j++) {
                 JitterSincos[j] = JitterSincos[j - N_VECTORS_WITH_REPETITION];
             }
         }
