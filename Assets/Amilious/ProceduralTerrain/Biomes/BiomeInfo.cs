@@ -13,6 +13,9 @@ namespace Amilious.ProceduralTerrain.Biomes {
     /// </summary>
     [Serializable]
     public class BiomeInfo {
+
+        public static BiomeInfo invalid = new BiomeInfo { validBiome = false, 
+            biomeId = -1, name = "Invalid", biomeMapColor = Color.magenta};
         
         /// <summary>
         /// This value will be false if the biome is invalid or does not exist.

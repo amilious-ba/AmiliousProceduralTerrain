@@ -311,8 +311,7 @@ namespace Amilious.ProceduralTerrain.Biomes {
             //return the ocean biome
             if(UsingOceanMap && biomeId == 0) return oceanBiome;
             //return the other biomes
-            return _biomeLookup.TryGetValue(biomeId, out var value) ? value : new 
-                BiomeInfo { validBiome = false, biomeId = 0, name = "Invalid", biomeMapColor = Color.magenta};
+            return _biomeLookup.TryGetValue(biomeId, out var value) ? value : BiomeInfo.invalid;
         }
 
         /// <summary>

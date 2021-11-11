@@ -411,11 +411,11 @@ namespace Amilious.ProceduralTerrain.Map {
         /// </summary>
         public void UpdateCollisionMesh() {
             if(!IsInUse || !Active || _hasSetCollider) return;
-            var sqrDistanceFromViewer = _bounds.SqrDistance(ViewerPosition);
-            if(sqrDistanceFromViewer < _detailLevels[_meshSettings.ColliderLODIndex].SqrVisibleDistanceThreshold)
+            _updateDistFromViewerSq = _bounds.SqrDistance(ViewerPosition);
+            if(_updateDistFromViewerSq < _detailLevels[_meshSettings.ColliderLODIndex].SqrVisibleDistanceThreshold)
                 if(!_lodMeshes[_meshSettings.ColliderLODIndex].HasRequestedMesh)
                     _lodMeshes[_meshSettings.ColliderLODIndex].RequestMesh(_biomeMap.HeightMap, _manager.ApplyHeight);
-            if(sqrDistanceFromViewer > _manager.SqrColliderGenerationThreshold) return;
+            if(_updateDistFromViewerSq > _manager.SqrColliderGenerationThreshold) return;
             if(!_lodMeshes[_meshSettings.ColliderLODIndex].HasMesh) return;
             _lodMeshes[_meshSettings.ColliderLODIndex].AssignTo(_meshCollider);
             _hasSetCollider = true;

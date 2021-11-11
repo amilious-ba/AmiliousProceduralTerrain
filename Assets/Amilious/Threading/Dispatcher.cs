@@ -98,7 +98,8 @@ namespace Amilious.Threading {
         }
 
         private readonly Stopwatch _actionTimer = new Stopwatch();
-        private int _updatesSkipped = 0;
+        private int _updatesSkipped;
+        private int _invokesThisUpdate;
         
         private void AdvancedDequeue() {
             if(skippedUpdates > 0) {
@@ -112,11 +113,11 @@ namespace Amilious.Threading {
                 return;
             }
             _actionTimer.Restart();
-            var x = 0;
+            _invokesThisUpdate = 0;
             while(!Actions.IsEmpty&&_actionTimer.ElapsedMilliseconds<dontInvokeIfOverMs&&
-                  (maxInvokesPerUpdate<0||x<maxInvokesPerUpdate)) {
+                  (maxInvokesPerUpdate<0||_invokesThisUpdate<maxInvokesPerUpdate)) {
                 if(Actions.TryDequeue(out var action))action();
-                if(maxInvokesPerUpdate> 0) x++;
+                if(maxInvokesPerUpdate> 0) _invokesThisUpdate++;
             }
             _actionTimer.Stop();
         }
