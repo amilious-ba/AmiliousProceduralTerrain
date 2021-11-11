@@ -43,7 +43,7 @@ namespace Amilious.ProceduralTerrain.Map {
         /// <summary>
         /// This event is triggered to update visible chunks.
         /// </summary>
-        public event Action<int,int,int,int> OnUpdateVisible;
+        public event Action<ChunkRange> OnUpdateVisible;
         
         /// <summary>
         /// This even is triggered at the end of the update cycle.
@@ -77,6 +77,7 @@ namespace Amilious.ProceduralTerrain.Map {
         private Seed? _seedStruct;
         private ChunkPool _chunkPool;
         private readonly Stopwatch _updateSW = new Stopwatch();
+        private int _updateChunksRadius;
 
         #endregion
         
@@ -179,13 +180,10 @@ namespace Amilious.ProceduralTerrain.Map {
         protected virtual void UpdateVisibleChunks() {
             _updateSW.Restart();
             OnStartUpdate?.Invoke();
-            var chunks = meshSettings.ChunksVisibleInViewDistance;
-            OnUpdateVisible?.Invoke(_viewerChunk.x-chunks,_viewerChunk.x+chunks,
-                _viewerChunk.y-chunks,_viewerChunk.y+chunks);
-            for(var xOff = - chunks; xOff <= chunks; xOff++)
-            for(var yOff = -chunks; yOff <= chunks; yOff++) {
-                var chunkCoord = new Vector2Int(_viewerChunk.x + xOff, _viewerChunk.y + yOff);
-                _chunkPool.LoadChunk(chunkCoord);
+            OnUpdateVisible?.Invoke(new ChunkRange(_viewerChunk,_updateChunksRadius));
+            for(var xOff = - _updateChunksRadius; xOff <= _updateChunksRadius; xOff++)
+            for(var yOff = -_updateChunksRadius; yOff <= _updateChunksRadius; yOff++) {
+                _chunkPool.LoadChunk(new Vector2Int(_viewerChunk.x + xOff, _viewerChunk.y + yOff));
             }
             OnEndUpdate?.Invoke();
             OnChunksUpdated?.Invoke(_chunkPool,_updateSW.ElapsedMilliseconds);
@@ -211,6 +209,7 @@ namespace Amilious.ProceduralTerrain.Map {
                 new ChunkPool(this, chunkPoolSize):
                 new ChunkPool(this);
             _sqrChunkUpdateThreshold = chunkUpdateThreshold * chunkUpdateThreshold;
+            _updateChunksRadius = meshSettings.ChunksVisibleInViewDistance;
             UpdateVisibleChunks();
         }
 

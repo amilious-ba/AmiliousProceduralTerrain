@@ -46,7 +46,13 @@ namespace Amilious.ProceduralTerrain.Map {
         private Vector3 _transformPosition = Vector3.zero;
         private string _name;
         private bool _appliedMeshMaterial;
-        
+        //update and update lod methods variables
+        private int _updateLODIndex;
+        private int _updateOldLODIndex;
+        private ChunkMesh _updateLODMesh;
+        private float _updateDistFromViewerSq;
+        private bool _updateWasVisible;
+        private bool _updateVisible;
         #endregion
 
         /// <summary>
@@ -295,16 +301,17 @@ namespace Amilious.ProceduralTerrain.Map {
         /// <summary>
         /// This is a helper method that can be used to call the update chunk from within this class.
         /// </summary>
-        private void UpdateChunk() => UpdateChunk(int.MinValue, int.MaxValue, int.MinValue, int.MaxValue);
+        private void UpdateChunk() => UpdateChunk(ChunkRange.maxRange);
         
         /// <summary>
         /// This method is called when the chunk should be updated.  This
         /// is called if the chunk is visible and the player moved enough
         /// that the chunks need to update.
         /// </summary>
-        public void UpdateChunk(int xMin, int xMax, int yMin, int yMax) {
+        /// <remarks>This method uses variables outside of the method and is not thread safe.</remarks>
+        public void UpdateChunk(ChunkRange chunkRange) {
             if(!_heightMapReceived|| !IsInUse) return;
-            if(ChunkId.x < xMin || ChunkId.x > xMax || ChunkId.y < yMin || ChunkId.y > yMax) {
+            if(!chunkRange.IsInRange(ChunkId)) {
                 //out of range so make sure it is disabled
                 if(!Active) return;
                 Active = false;
@@ -312,13 +319,13 @@ namespace Amilious.ProceduralTerrain.Map {
                 return;
             }
             _updated = true;
-            var distanceFromViewerSq = _bounds.SqrDistance(ViewerPosition);
-            var wasVisible =  Active;
-            var visible = distanceFromViewerSq <= _meshSettings.MaxViewDistanceSq;
-            if(visible) UpdateLOD(distanceFromViewerSq);
-            if(wasVisible == visible) return;
-            Active = visible;
-            onVisibilityChanged?.Invoke(ChunkId,visible);
+            _updateDistFromViewerSq = _bounds.SqrDistance(ViewerPosition);
+            _updateWasVisible =  Active;
+            _updateVisible = _updateDistFromViewerSq <= _meshSettings.MaxViewDistanceSq;
+            if(_updateVisible) UpdateLOD(_updateDistFromViewerSq);
+            if(_updateWasVisible == _updateVisible) return;
+            Active = _updateVisible;
+            onVisibilityChanged?.Invoke(ChunkId,_updateVisible);
         }
 
         /// <summary>
@@ -329,28 +336,29 @@ namespace Amilious.ProceduralTerrain.Map {
             if(_bounds.SqrDistance(ViewerPosition) < _meshSettings.ChunkUnloadDistanceSq) return;
             if(!_startedToRelease) ReleaseToPool();
         }
-        
+
         /// <summary>
         /// This method is used to update the chunks level of detail.
         /// </summary>
         /// <param name="distanceFromViewerSq">The chunks distance from the
-        /// viewer.</param>
+        /// viewer.</param> 
+        /// <remarks>This method uses variables outside of the method and is not thread safe.</remarks>
         private void UpdateLOD(float distanceFromViewerSq) {
-            var lodIndex = 0;
+            _updateLODIndex = 0;
             for(var i = 0; i < _detailLevels.Length - 1; i++) {
                 if(distanceFromViewerSq > _detailLevels[i].SqrVisibleDistanceThreshold)
-                    lodIndex = i + 1;
+                    _updateLODIndex = i + 1;
                 else break;
             }
-            if(lodIndex == _previousLODIndex) return;
-            var lodMesh = _lodMeshes[lodIndex];
-            if(lodMesh.HasMesh) {
-                var oldLod = _previousLODIndex;
-                _previousLODIndex = lodIndex;
-                lodMesh.AssignTo(_meshFilter);
-                onLodChanged?.Invoke(ChunkId,oldLod,lodIndex);
-            }else if(!lodMesh.HasRequestedMesh) {
-                lodMesh.RequestMesh(_biomeMap.HeightMap, _manager.ApplyHeight);
+            if(_updateLODIndex == _previousLODIndex) return;
+            _updateLODMesh = _lodMeshes[_updateLODIndex];
+            if(_updateLODMesh.HasMesh) {
+                _updateOldLODIndex = _previousLODIndex;
+                _previousLODIndex = _updateLODIndex;
+                _updateLODMesh.AssignTo(_meshFilter);
+                onLodChanged?.Invoke(ChunkId,_updateOldLODIndex,_updateLODIndex);
+            }else if(!_updateLODMesh.HasRequestedMesh) {
+                _updateLODMesh.RequestMesh(_biomeMap.HeightMap, _manager.ApplyHeight);
             }
         }
 
