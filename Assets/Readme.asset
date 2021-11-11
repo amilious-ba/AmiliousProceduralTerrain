@@ -23,6 +23,7 @@ MonoBehaviour:
     icon: {fileID: 2800000, guid: 823ba047c0b98344b857d4b2af31e4b7, type: 3}
     iconWidth: 125
     inLine: 1
+    newLine: 0
     spaceBefore: 0
     spaceAfter: 5
   - alignment: 1
@@ -33,7 +34,30 @@ MonoBehaviour:
     icon: {fileID: 2800000, guid: 483599d963a33d642b0589da1058479f, type: 3}
     iconWidth: 125
     inLine: 1
+    newLine: 0
     spaceBefore: 0
+    spaceAfter: 5
+  - alignment: 1
+    heading: Milanote
+    text: 
+    linkText: Milanote
+    url: https://app.milanote.com/1MLdBZ1cPvbubr/amilious-procedural-terrain
+    icon: {fileID: 2800000, guid: 104bc902ca3cab44d97a6b18ffeb7f07, type: 3}
+    iconWidth: 125
+    inLine: 1
+    newLine: 1
+    spaceBefore: 20
+    spaceAfter: 5
+  - alignment: 1
+    heading: Discord
+    text: 
+    linkText: Discord
+    url: https://discord.com/invite/m3BhGJ6BAf
+    icon: {fileID: 2800000, guid: 3b708a805c83e944c8cbef63b99143f4, type: 3}
+    iconWidth: 125
+    inLine: 1
+    newLine: 0
+    spaceBefore: 20
     spaceAfter: 5
   - alignment: 0
     heading: About
@@ -47,6 +71,7 @@ MonoBehaviour:
     icon: {fileID: 0}
     iconWidth: -1
     inLine: 0
+    newLine: 0
     spaceBefore: 20
     spaceAfter: 5
   loadedLayout: 1

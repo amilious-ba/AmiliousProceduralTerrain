@@ -73,6 +73,12 @@ namespace Amilious.Core.Editor {
 					GUILayout.FlexibleSpace();
 					GUILayout.EndHorizontal();
 				}
+				if(usingInline && section.inLine && section.newLine) {
+					GUILayout.FlexibleSpace();
+					GUILayout.EndHorizontal();
+					GUILayout.BeginHorizontal();
+					GUILayout.FlexibleSpace();
+				}
 				GUILayout.BeginVertical();
 				GUILayout.Space(section.spaceBefore);
 				GUILayout.FlexibleSpace();

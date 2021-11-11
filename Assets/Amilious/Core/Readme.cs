@@ -15,6 +15,7 @@ namespace Amilious.Core {
 			public Texture2D icon;
 			public float iconWidth = -1;
 			public bool inLine;
+			public bool newLine;
 			public float spaceBefore = 0f;
 			public float spaceAfter= 5f;
 		}
