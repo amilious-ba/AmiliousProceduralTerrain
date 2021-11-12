@@ -191,7 +191,7 @@ namespace Amilious.ProceduralTerrain.Mesh {
         /// </summary>
         /// <param name="lods">The levels of detail you want to check.</param>
         /// <returns>True if there is at least one level of detail.</returns>
-        protected virtual bool ContainsValues(IReadOnlyCollection<LODInfo> lods) => lods!=null && lods.Count > 0;
+        protected virtual bool ContainsValues(LODInfo[] lods) => lods!=null && lods.Length > 0;
 
         /// <summary>
         /// This method is used by the inspector to validate the collider lod.

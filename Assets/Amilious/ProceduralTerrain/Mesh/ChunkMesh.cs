@@ -1,10 +1,8 @@
 using System;
-using System.IO;
 using UnityEngine;
 using Amilious.Saving;
 using System.Threading;
 using Amilious.Threading;
-using System.Collections.Generic;
 using Amilious.ProceduralTerrain.Noise;
 
 namespace Amilious.ProceduralTerrain.Mesh {
@@ -79,12 +77,6 @@ namespace Amilious.ProceduralTerrain.Mesh {
                 return true;
             }
         }
-        
-        /// <summary>
-        /// This property is used to check if the code is being executed on
-        /// the main thread.
-        /// </summary>
-        private static bool NotMainThread { get =>!Dispatcher.IsMainThread; }
         
         #endregion
 
@@ -209,7 +201,7 @@ namespace Amilious.ProceduralTerrain.Mesh {
         /// returns false if the mesh is invalid.</returns>
         public bool ApplyChanges(bool recalculateBounds=false) {
             if(InvalidMesh) return false;
-            if(NotMainThread) {
+            if(!Dispatcher.IsMainThread) {
                 Dispatcher.InvokeAsync(() => { ApplyChanges(recalculateBounds);});
                 return true;
             }

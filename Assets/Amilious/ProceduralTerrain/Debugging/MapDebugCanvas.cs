@@ -20,6 +20,10 @@ namespace Amilious.ProceduralTerrain.Debugging {
         [SerializeField] protected TMP_Text viewerChunk;
 
         private MapManager _mapManager;
+        private long _lastMs = -1;
+        private int _lastPoolSize = -1;
+        private int _lastLoadChunks = -1;
+        private int _lastPoolChunks = -1;
 
         #region Properties
         
@@ -88,12 +92,25 @@ namespace Amilious.ProceduralTerrain.Debugging {
         /// <param name="chunkPool">The chunk pool.</param>
         /// <param name="ms">The update time in milliseconds.</param>
         protected virtual void ChunksUpdated(ChunkPool chunkPool, long ms) {
-            SetText(chunkPoolSize,chunkPool.PoolSize);
-            SetText(loadedChunks,chunkPool.NumberOfLoadedChunks);
-            SetText(availableChunks, chunkPool.NumberOfUnusedChunks);
-            SetText(lastChunkUpdateTime,string.Format(MS_STRING,ms));
+            if(_lastPoolSize < 0 || _lastPoolSize != chunkPool.PoolSize) {
+                _lastPoolSize = chunkPool.PoolSize;
+                SetText(chunkPoolSize, _lastPoolSize);
+            }
+            if(_lastLoadChunks < 0 || _lastLoadChunks != chunkPool.NumberOfLoadedChunks) {
+                _lastLoadChunks = chunkPool.NumberOfLoadedChunks;
+                SetText(loadedChunks, _lastLoadChunks);
+            }
+
+            if(_lastPoolChunks < 0 || _lastPoolChunks != chunkPool.NumberOfLoadedChunks) {
+                _lastLoadChunks = chunkPool.NumberOfLoadedChunks;
+                SetText(availableChunks, _lastLoadChunks);
+            }
+
+            if(_lastMs>-1 && ms ==_lastMs) return;
+            _lastMs = ms;
+            SetText(lastChunkUpdateTime,string.Format(MS_STRING,_lastMs));
             //change the color based on the time
-            var lerp = Mathf.InverseLerp(GOOD_MS_TIME, BAD_MS_TIME, ms);
+            var lerp = Mathf.InverseLerp(GOOD_MS_TIME, BAD_MS_TIME, _lastMs);
             lastChunkUpdateTime.color = Color.Lerp(Color.green, Color.red, lerp);
         }
 
