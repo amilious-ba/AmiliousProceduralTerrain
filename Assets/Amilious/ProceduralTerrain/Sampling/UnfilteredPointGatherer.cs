@@ -34,15 +34,12 @@ namespace Amilious.ProceduralTerrain.Sampling {
         private const int JITTER_SINCOS_OFFSET = JITTER_VECTOR_COUNT_MULTIPLIER * 4;
         private static readonly float[] JitterSincos;
 
-        private static readonly int SinCosArraySize;
-        private static readonly float SinCosOffsetFactor;
-
         static UnfilteredPointGatherer() {
-            SinCosArraySize = N_VECTORS_WITH_REPETITION * 5 / 4;
-            SinCosOffsetFactor = (1.0f / JITTER_VECTOR_COUNT_MULTIPLIER);
-            JitterSincos = new float[SinCosArraySize];
+            const int sinCosArraySize = N_VECTORS_WITH_REPETITION * 5 / 4;
+            const float sinCosOffsetFactor = (1.0f / JITTER_VECTOR_COUNT_MULTIPLIER);
+            JitterSincos = new float[sinCosArraySize];
             for(int i = 0, j = 0; i < N_VECTORS; i++) {
-                JitterSincos[j] = Mathf.Sin((i + SinCosOffsetFactor) * 
+                JitterSincos[j] = Mathf.Sin((i + sinCosOffsetFactor) * 
                     ((2.0f * Mathf.PI) / N_VECTORS)) * JitterAmount;
                 j++;
 
@@ -57,7 +54,7 @@ namespace Amilious.ProceduralTerrain.Sampling {
                 j++;
             }
 
-            for(var j = N_VECTORS_WITH_REPETITION; j < SinCosArraySize; j++) {
+            for(var j = N_VECTORS_WITH_REPETITION; j < sinCosArraySize; j++) {
                 JitterSincos[j] = JitterSincos[j - N_VECTORS_WITH_REPETITION];
             }
         }
@@ -66,14 +63,13 @@ namespace Amilious.ProceduralTerrain.Sampling {
         private readonly LatticePoint[] _pointsToSearch;
 
         public UnfilteredPointGatherer(float frequency, float maxPointContributionRadius) {
-            this._frequency = frequency;
-            this._inverseFrequency = 1.0f / frequency;
+            _frequency = frequency;
+            _inverseFrequency = 1.0f / frequency;
 
             // How far out in the jittered hex grid we need to look for points.
             // Assumes the jitter can go any angle, which should only very occasionally
             // cause us to search one more layer out than we need.
-            var maxContributingDistance = maxPointContributionRadius * frequency
-                                          + MaxGridScaleDistanceToClosestPoint;
+            var maxContributingDistance = maxPointContributionRadius * frequency + MaxGridScaleDistanceToClosestPoint;
             var maxContributingDistanceSq = maxContributingDistance * maxContributingDistance;
             var latticeSearchRadius = maxContributingDistance * InverseTriangleHeight;
 
@@ -81,8 +77,7 @@ namespace Amilious.ProceduralTerrain.Sampling {
             // Exclude almost all points which can't possibly be jittered into range.
             // The "almost" is again because we assume any jitter angle is possible,
             // when in fact we only use a small set of uniformly distributed angles.
-            var pointsToSearchList = new List<LatticePoint>();
-            pointsToSearchList.Add(new LatticePoint(0, 0));
+            var pointsToSearchList = new List<LatticePoint> { new LatticePoint(0, 0) };
             for(var i = 1; i < latticeSearchRadius; i++) {
                 var xsv = i;
                 var zsv = 0;

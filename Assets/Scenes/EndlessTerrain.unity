@@ -208,6 +208,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   enableSaving: 1
+  saveOnGenerate: 0
   saveMeshData: 0
   saveTextureData: 0
   saveFolder: testSave

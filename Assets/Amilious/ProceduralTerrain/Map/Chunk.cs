@@ -151,7 +151,7 @@ namespace Amilious.ProceduralTerrain.Map {
             //make sure the chunk gameObject and components get
             //created on the main thead
             Dispatcher.Invoke(() => {
-                _gameObject = new GameObject() {
+                _gameObject = new GameObject{
                     transform = { parent = manager.transform }
                 };
                 _meshFilter = _gameObject.AddComponent<MeshFilter>();
@@ -159,7 +159,6 @@ namespace Amilious.ProceduralTerrain.Map {
                 _meshRenderer = _gameObject.AddComponent<MeshRenderer>();
                 _transformPosition = _gameObject.transform.position;
             });
-            
             Name = $"Chunk (pooled)";
             _meshSettings = manager.MeshSettings;
             _viewer = manager.Viewer;
@@ -391,6 +390,7 @@ namespace Amilious.ProceduralTerrain.Map {
         private bool ProcessLoad(CancellationToken token) {
             //try to load or generate biome data
             if(_mapSaver.SavingEnabled && _manager.MapSaver.LoadData(ChunkId, out var saveData)) {
+                //the save data was found so load the data
                 _biomeMap.Load(saveData);
                 if(_mapSaver.SaveMeshData) {
                     foreach(var mesh in _lodMeshes) {
@@ -398,7 +398,16 @@ namespace Amilious.ProceduralTerrain.Map {
                         mesh.Load(saveData);
                     }
                 }
-            }else _biomeMap.Generate(_sampleCenter, token);
+            }else {
+                //nothing has been loaded so generate new
+                _biomeMap.Generate(_sampleCenter, token);
+                if(_mapSaver.SaveOnGenerate) {
+                    //save the generated data
+                    saveData = _mapSaver.NewChunkSaveData(ChunkId);
+                    _biomeMap.Save(saveData);
+                    _mapSaver.SaveData(ChunkId, saveData);
+                }
+            }
             //generate texture
             _biomeMap.GenerateTextureColors(_preparedColors, _meshSettings.PaintingMode, 1);
             return true;
