@@ -181,11 +181,9 @@ namespace Amilious.ProceduralTerrain.Map {
             _manager = manager;
             //setup loader
             _loader = new ReusableFuture();
-            _loader.OnError(Debug.LogError);
             _loader.OnProcess(ProcessLoad).OnSuccess(OnLoadComplete);
             //setup saver
             _saver = new ReusableFuture<bool, bool>();
-            _saver.OnError(Debug.LogError);
             _saver.OnProcess(ProcessSave).OnSuccess(SaveComplete);
             //if not in use disable gameObject
             if(!IsInUse) Active = false;

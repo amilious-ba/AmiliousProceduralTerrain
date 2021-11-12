@@ -29,6 +29,7 @@ namespace Amilious.ProceduralTerrain.Biomes {
         private const string TAB_B = "Biomes";
         private const string TAB_C = "Biome Mapping";
         public const int SHADER_BUFFER_SIZE = sizeof(float) * 2 + sizeof(int) * 2;
+        private const string BIOME_LOOKUP_TEST = "{0}: {1}";
 
         #region Inspector Preview Variables
         
@@ -86,8 +87,11 @@ namespace Amilious.ProceduralTerrain.Biomes {
         #region Inspector Biomes Tab
         [TabGroup(TG, TAB_B), SerializeField] 
         private BiomeInfo oceanBiome = new BiomeInfo{name = "Ocean", biomeMapColor = Color.blue};
-        [TabGroup(TG, TAB_B),SerializeField,ListDrawerSettings(CustomAddFunction = nameof(AddNewBiomeInfo), 
-            Expanded = true, DraggableItems = false)] 
+        
+        [TabGroup(TG, TAB_B),SerializeField]
+        #if UNITY_EDITOR
+        [ListDrawerSettings(CustomAddFunction = nameof(AddNewBiomeInfo), Expanded = true, DraggableItems = false)] 
+        #endif
         private BiomeInfo[] biomeInfo;
         
         #endregion
@@ -102,14 +106,14 @@ namespace Amilious.ProceduralTerrain.Biomes {
         #endif
         // ReSharper disable once InconsistentNaming
         private int[,] biomeTable;
-        [SerializeField, TabGroup(TG, TAB_C), Range(-1,1)]
+        [SerializeField, TabGroup(TG, TAB_C), Range(-1,1), Title("Test Result")]
+        #if UNITY_EDITOR
         private float testHeat;
         [SerializeField, TabGroup(TG, TAB_C), Range(-1,1)]
         private float testMoisture;
         [TabGroup(TG, TAB_C), SerializeField, DisplayAsString, HideLabel, GUIColor(0f,1f,0f)]
-        // ReSharper disable once NotAccessedField.Local
-        private string testResult = "press test to get the biome for the given levels.";
-    
+        private string previewTestResult = "press test to get the biome for the given levels.";
+        #endif
         #endregion
 
         #region Private instace variables
@@ -147,7 +151,14 @@ namespace Amilious.ProceduralTerrain.Biomes {
         #endregion
         
         #region Inspector Methods
-
+        
+        #if UNITY_EDITOR
+        
+        /// <summary>
+        /// This method is used to add a new biome info to the
+        /// array.
+        /// </summary>
+        /// <returns>The new biome info.</returns>
         private BiomeInfo AddNewBiomeInfo() {
             Debug.Log("reached");
             int id;
@@ -158,13 +169,14 @@ namespace Amilious.ProceduralTerrain.Biomes {
             return new BiomeInfo { biomeId = id, validBiome = true};
         }
 
-        public void TextLookUp() {
+        /// <summary>
+        /// This method is used to display the preview biome.
+        /// </summary>
+        public void PreviewLoopUpBiome() {
             var test = GetBiomeInfo(testHeat, testMoisture);
-            testResult = $"{test.biomeId}: {test.name}";
+            previewTestResult = string.Format(BIOME_LOOKUP_TEST,test.biomeId, test.name);
         }
-        
-        #if UNITY_EDITOR
-        
+
         /// <summary>
         /// This method is used to draw the biome dropdown.
         /// </summary>
@@ -232,7 +244,7 @@ namespace Amilious.ProceduralTerrain.Biomes {
         /// </summary>
         private void OnValidate() {
             BuildLookup();
-            TextLookUp();
+            PreviewLoopUpBiome();
             GeneratePreviewTexture();
             //setup the shader
             var seedStruct = new Seed(4564);
@@ -321,7 +333,7 @@ namespace Amilious.ProceduralTerrain.Biomes {
         /// <param name="moisture">The moisture level.</param>
         /// <param name="baseValue">The base value.</param>
         /// <returns>The biome info for the given values.</returns>
-        protected virtual BiomeInfo GetBiomeInfo(float heat, float moisture, float baseValue=1) => 
+        protected virtual BiomeInfo GetBiomeInfo(float heat, float moisture, float baseValue=-1) => 
             GetBiomeInfo(GetBiomeId(heat, moisture, baseValue));
 
         /// <summary>

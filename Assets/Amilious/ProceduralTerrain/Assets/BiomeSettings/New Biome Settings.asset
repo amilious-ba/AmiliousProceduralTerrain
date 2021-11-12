@@ -118,4 +118,4 @@ MonoBehaviour:
     maxHeight: 150
   testHeat: -1
   testMoisture: -1
-  testResult: '0: Ocean'
+  testResult: '-1498540875: Grass'
