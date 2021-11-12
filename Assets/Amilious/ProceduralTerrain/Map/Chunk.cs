@@ -184,6 +184,10 @@ namespace Amilious.ProceduralTerrain.Map {
             //setup saver
             _saver = new ReusableFuture<bool, bool>();
             _saver.OnProcess(ProcessSave).OnSuccess(SaveComplete);
+            //subscribe to the events
+            _manager.OnUpdateVisible += UpdateChunk;
+            _manager.OnEndUpdate += ValidateNonUpdatedChunk;
+            _manager.OnUpdateCollisionMesh += UpdateCollisionMesh;
             //if not in use disable gameObject
             if(!IsInUse) Active = false;
         }
@@ -212,10 +216,6 @@ namespace Amilious.ProceduralTerrain.Map {
         /// <param name="setActive"></param>
         public void PullFromPool(bool setActive = false) {
             IsInUse = true;
-            _manager.OnStartUpdate += StartUpdateCycle;
-            _manager.OnUpdateVisible += UpdateChunk;
-            _manager.OnEndUpdate += ValidateNonUpdatedChunk;
-            _manager.OnUpdateCollisionMesh += UpdateCollisionMesh;
         }
 
         /// <summary>
@@ -254,11 +254,6 @@ namespace Amilious.ProceduralTerrain.Map {
         public void ReleaseToPool() {
             if(_startedToRelease) return;
             _startedToRelease = true;
-            //unsubscribe from events
-            _manager.OnStartUpdate -= StartUpdateCycle;
-            _manager.OnUpdateVisible -= UpdateChunk;
-            _manager.OnEndUpdate -= ValidateNonUpdatedChunk;
-            _manager.OnUpdateCollisionMesh -= UpdateCollisionMesh;
             //cancel current actions
             _loader.Cancel();
             //save if saving is enabled
@@ -289,11 +284,6 @@ namespace Amilious.ProceduralTerrain.Map {
             HasProcessedRelease = true;
             _chunkPool.AddToAvailableChunkQueue(this);
         }
-
-        /// <summary>
-        /// This method is called when the <see cref="MapManager"/> starts the update cycle.
-        /// </summary>
-        private void StartUpdateCycle() { _updated = false; }
 
         /// <summary>
         /// This is a helper method that can be used to call the update chunk from within this class.
@@ -329,7 +319,11 @@ namespace Amilious.ProceduralTerrain.Map {
         /// This method is called when the <see cref="MapManager"/> is ending the update cycle.
         /// </summary>
         public void ValidateNonUpdatedChunk() {
-            if(!IsInUse||_updated||_startedToRelease) return;
+            if(!IsInUse || _updated || _startedToRelease) {
+                _updated = false;
+                return;
+            }
+            _updated = false;
             if(_bounds.SqrDistance(ViewerPosition) < _meshSettings.ChunkUnloadDistanceSq) return;
             if(!_startedToRelease) ReleaseToPool();
         }

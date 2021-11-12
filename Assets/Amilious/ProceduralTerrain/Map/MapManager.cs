@@ -232,7 +232,7 @@ namespace Amilious.ProceduralTerrain.Map {
             }
 
             //check if visible chunks need to be updated.
-            if(!((_oldViewerPosition - _viewerPosition).sqrMagnitude > _sqrChunkUpdateThreshold)) return;
+            if((_oldViewerPosition - _viewerPosition).sqrMagnitude <= _sqrChunkUpdateThreshold) return;
             _oldViewerPosition = _viewerPosition;
             UpdateVisibleChunks();
         }
