@@ -2,6 +2,8 @@
 using UnityEngine;
 
 namespace Amilious.Core {
+	
+	[CreateAssetMenu(menuName = "Amilious/Readme",fileName = "Readme",order = 0)]
 	public class Readme : ScriptableObject {
 		public Texture2D icon;
 		public string title;

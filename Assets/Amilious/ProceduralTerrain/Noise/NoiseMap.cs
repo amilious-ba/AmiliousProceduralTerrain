@@ -12,6 +12,10 @@ namespace Amilious.ProceduralTerrain.Noise {
         private const string PREFIX = "noiseMap";
         private const string VALUES = "values";
         private const string POSITION = "position";
+        private const string INVALID_KEY = "The provided key does not exist in this map.";
+        private const string INVALID_CENTER_KEY =
+            "The key you provided is invaid.  The key must exist in the map and it" +
+            "cannot be a border value";
         
         #region Properties
         
@@ -133,6 +137,38 @@ namespace Amilious.ProceduralTerrain.Noise {
             values = saveData.FetchData<float[,]>(VALUES);
             Position = saveData.FetchData<Vector2>(POSITION);
             saveData.ClearPrefix();
+        }
+
+        /// <summary>
+        /// This method is used to get the steepness of a given point in the map.
+        /// </summary>
+        /// <param name="key">The point you want to get the steepness for.</param>
+        /// <param name="useFast">If true the method will be faster but less accurate.</param>
+        /// <returns>The calculated steepness value.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">Thrown if the key is invalid.</exception>
+        public float GetSteepnessUsing3Points(Vector2Int key,bool useFast = false) {
+            if(!ContainsKey(key)) throw new ArgumentOutOfRangeException(nameof(key), key, INVALID_KEY);
+            var dx = this[key.x + 1, key.y] - this[key];
+            var dy = this[key.x, key.y + 1] - this[key];
+            return useFast? Mathf.Abs(dx)+Mathf.Abs(dy) : Mathf.Sqrt(dx * dx + dy * dy);
+        }
+
+        /// <summary>
+        /// This method is used to get the steepness of a give point in the map using
+        /// central differencing.
+        /// </summary>
+        /// <param name="key">The point that you want to get the steepness for.</param>
+        /// <param name="gridSize">The grid size.</param>
+        /// <returns>The steepness of the given point.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">Thrown if the key is invalid.</exception>
+        public Vector3 GetSteepnessCentralDifferencing(Vector2Int key, float gridSize = 1) {
+            if(key.x<gridSize||key.x>=Size-gridSize||key.y<gridSize||key.y>=Size-gridSize)
+                throw new ArgumentOutOfRangeException(nameof(key), key, INVALID_CENTER_KEY);
+            var t = this[key + Vector2Int.up];
+            var b = this[key + Vector2Int.down];
+            var l = this[key + Vector2Int.left];
+            var r = this[key + Vector2Int.right];
+            return new Vector3((r - l) / (2 * gridSize), (t - b) / (2 * gridSize), -1).normalized;
         }
 
         #endregion

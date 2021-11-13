@@ -16,6 +16,8 @@ namespace Amilious.ProceduralTerrain.Map {
     [HideMonoScript]
     public class Chunk {
 
+        private const string CHUNK_POOLED = "Chunk (pooled)";
+
         #region Instance Variables
         
         private GameObject _gameObject;
@@ -46,38 +48,42 @@ namespace Amilious.ProceduralTerrain.Map {
         private Vector3 _transformPosition = Vector3.zero;
         private string _name;
         private bool _appliedMeshMaterial;
-        //update and update lod methods variables
+        //###############################################################
+        //update methods variables if the update calls are
+        //moved to a separate thead these values will need to be local to
+        //the methods that are using them.
         private int _updateLODIndex;
         private int _updateOldLODIndex;
         private ChunkMesh _updateLODMesh;
         private float _updateDistFromViewerSq;
         private bool _updateWasVisible;
         private bool _updateVisible;
+        //###############################################################
         #endregion
 
         /// <summary>
         /// This event is triggered when a chunks visibility changes.
         /// </summary>
         /// ReSharper disable once UnassignedField.Global
-        public static Delegates.OnChunkVisibilityChangedDelegate onVisibilityChanged;
+        public static OnChunkVisibilityChangedDelegate onVisibilityChanged;
 
         /// <summary>
         /// This event is triggered when a chunks lod changes.
         /// </summary>
         /// ReSharper disable once UnassignedField.Global
-        public static Delegates.OnLodChangedDelegate onLodChanged;
+        public static OnLodChangedDelegate onLodChanged;
 
         /// <summary>
         /// This event is triggered when a chunk is loaded.
         /// </summary>
         /// ReSharper disable once UnassignedField.Global
-        public static Delegates.OnChunkLoadedDelegate onChunkLoaded;
+        public static OnChunkLoadedDelegate onChunkLoaded;
 
         /// <summary>
         /// This event is triggered when a chunk is saved.
         /// </summary>
         /// ReSharper disable once UnassignedField.Global
-        public static Delegates.OnChunkSavedDelegate onChunkSaved;
+        public static OnChunkSavedDelegate onChunkSaved;
         
         /// <summary>
         /// This property contains true if the chunk is being used,
@@ -159,7 +165,7 @@ namespace Amilious.ProceduralTerrain.Map {
                 _meshRenderer = _gameObject.AddComponent<MeshRenderer>();
                 _transformPosition = _gameObject.transform.position;
             });
-            Name = $"Chunk (pooled)";
+            Name = CHUNK_POOLED;
             _meshSettings = manager.MeshSettings;
             _viewer = manager.Viewer;
             _biomeMap = new BiomeMap(manager.Seed,manager.MeshSettings.VertsPerLine, manager.BiomeSettings);
@@ -170,8 +176,7 @@ namespace Amilious.ProceduralTerrain.Map {
             _chunkPool = chunkPool;
             _mapSaver = manager.MapSaver;
             for(var i = 0; i < _detailLevels.Length; i++) {
-                _lodMeshes[i] = new ChunkMesh(_meshSettings, 
-                    _detailLevels[i].SkipStep, _detailLevels[i].LevelsOfDetail);
+                _lodMeshes[i] = new ChunkMesh(_meshSettings, _detailLevels[i].LevelsOfDetail);
                 _lodMeshes[i].UpdateCallback += UpdateChunk;
                 if(i == _meshSettings.ColliderLODIndex)
                     _lodMeshes[i].UpdateCallback += UpdateCollisionMesh;
@@ -272,7 +277,7 @@ namespace Amilious.ProceduralTerrain.Map {
         /// </summary>
         private void SendToPool() {
             Active = false;
-            Name = $"Chunk (pooled)";
+            Name = CHUNK_POOLED;
             //reset the mesh values
             foreach(var mesh in _lodMeshes) mesh.Reset();
             _previousLODIndex = -1;
@@ -282,7 +287,7 @@ namespace Amilious.ProceduralTerrain.Map {
             IsInUse = false;
             _startedToRelease = false;
             HasProcessedRelease = true;
-            _chunkPool.AddToAvailableChunkQueue(this);
+            _chunkPool.ReturnToPool(this);
         }
 
         /// <summary>
@@ -300,14 +305,14 @@ namespace Amilious.ProceduralTerrain.Map {
             if(!_heightMapReceived|| !IsInUse) return;
             if(!chunkRange.IsInRange(ChunkId)) {
                 //out of range so make sure it is disabled
-                if(!Active) return;
+                if(!_isActive) return;
                 Active = false;
                 onVisibilityChanged?.Invoke(ChunkId,false);
                 return;
             }
             _updated = true;
             _updateDistFromViewerSq = _bounds.SqrDistance(ViewerPosition);
-            _updateWasVisible =  Active;
+            _updateWasVisible =  _isActive;
             _updateVisible = _updateDistFromViewerSq <= _meshSettings.MaxViewDistanceSq;
             if(_updateVisible) UpdateLOD(_updateDistFromViewerSq);
             if(_updateWasVisible == _updateVisible) return;
@@ -411,7 +416,7 @@ namespace Amilious.ProceduralTerrain.Map {
         /// This method is used to handle the collision mesh.
         /// </summary>
         public void UpdateCollisionMesh() {
-            if(!IsInUse || !Active || _hasSetCollider) return;
+            if(!IsInUse || !_isActive || _hasSetCollider) return;
             _updateDistFromViewerSq = _bounds.SqrDistance(ViewerPosition);
             if(_updateDistFromViewerSq < _detailLevels[_meshSettings.ColliderLODIndex].SqrVisibleDistanceThreshold)
                 if(!_lodMeshes[_meshSettings.ColliderLODIndex].HasRequestedMesh)

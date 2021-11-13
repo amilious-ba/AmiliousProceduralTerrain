@@ -22,6 +22,7 @@ namespace Amilious.ProceduralTerrain.Mesh {
         public readonly int[] triangles;
         public readonly Vector2[] uvs;
         public readonly Vector2[] uvs2;
+        public readonly int[,] verticesMap;
         public Vector3[] bakedNormals;
         public readonly Vector3[] outOfMeshVertices;
         public readonly int[] outOfMeshTriangles;
@@ -49,6 +50,8 @@ namespace Amilious.ProceduralTerrain.Mesh {
         /// This property is used to get the meshes level of detail.
         /// </summary>
         public LevelsOfDetail LevelOfDetail { get; }
+        
+        public int SkipStep { get; }
         
         /// <summary>
         /// This property is used to check if the mesh has been requested yet.
@@ -86,10 +89,10 @@ namespace Amilious.ProceduralTerrain.Mesh {
         /// This constructor is used to create a new chunk mesh.
         /// </summary>
         /// <param name="meshSettings">The <see cref="MeshSettings"/> that will be used for the mesh.</param>
-        /// <param name="skipStep">The number of skipped vertices between each main vertex.</param>
         /// <param name="levelOfDetail">The meshes level of detail.</param>
-        public ChunkMesh(MeshSettings meshSettings, int skipStep, LevelsOfDetail levelOfDetail) {
+        public ChunkMesh(MeshSettings meshSettings, LevelsOfDetail levelOfDetail) {
             _meshSettings = meshSettings;
+            SkipStep = (int)levelOfDetail;
             //setup the mesh requester
             _meshRequester = new ReusableFuture<bool, NoiseMap, bool>();
             _meshRequester.OnSuccess(MeshReceived).OnProcess(MeshRequest);
@@ -100,9 +103,10 @@ namespace Amilious.ProceduralTerrain.Mesh {
             LevelOfDetail = levelOfDetail;
             var numVertsPerLine = meshSettings.VertsPerLine;
             var numMeshEdgeVertices = (numVertsPerLine - 2) * 4 - 4;
-            var numEdgeConnectionVertices = (skipStep - 1) * (numVertsPerLine - 5) / skipStep * 4;
-            var numMainVerticesPerLine = (numVertsPerLine - 5) / skipStep + 1;
+            var numEdgeConnectionVertices = (SkipStep - 1) * (numVertsPerLine - 5) / SkipStep * 4;
+            var numMainVerticesPerLine = (numVertsPerLine - 5) / SkipStep + 1;
             var numMainVertices = numMainVerticesPerLine * numMainVerticesPerLine;
+            verticesMap = new int[numVertsPerLine, numVertsPerLine];
             vertices = new Vector3[numMeshEdgeVertices + numEdgeConnectionVertices + numMainVertices];
             uvs = new Vector2[vertices.Length];
             uvs2 = new Vector2[vertices.Length];

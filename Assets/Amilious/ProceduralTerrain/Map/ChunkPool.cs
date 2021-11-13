@@ -1,10 +1,12 @@
 using UnityEngine;
 using System.Collections.Concurrent;
+using Amilious.Core.Interfaces;
+using Amilious.Core.Structs;
 
 namespace Amilious.ProceduralTerrain.Map {
     
     //This class is used for pooling chunks.
-    public class ChunkPool {
+    public class ChunkPool : IPool<Chunk,Vector2Int> {
 
         #region Private Instance Variables
         
@@ -34,22 +36,27 @@ namespace Amilious.ProceduralTerrain.Map {
         /// <param name="x">The x value of the chunkId.</param>
         /// <param name="z">The z (uses y) value of the chunkId.</param>
         public Chunk this[int x, int z] { get => this[new Vector2Int(x, z)]; }
-
-        /// <summary>
-        /// This property returns the number of chunks that are loaded but not being used.
-        /// </summary>
-        public int NumberOfUnusedChunks => _chunkQueue.Count;
-
-        /// <summary>
-        /// This property returns the number of loaded chunks.
-        /// </summary>
-        public int NumberOfLoadedChunks => _loadedChunks.Count;
-
+        
         /// <summary>
         /// This property returns the total number of used and unused chunks in this pool.
         /// </summary>
-        public int PoolSize => NumberOfUnusedChunks + NumberOfLoadedChunks;
+        public int Size { get => Available + CheckedOut; }
         
+        /// <summary>
+        /// This property returns the number of chunks that are loaded but not being used.
+        /// </summary>
+        public int Available { get => _chunkQueue.Count; }
+        
+        /// <summary>
+        /// This property returns the number of loaded chunks.
+        /// </summary>
+        public int CheckedOut { get => _loadedChunks.Count; }
+
+        /// <summary>
+        /// This property is used to get the pool info for this pool.
+        /// </summary>
+        public PoolInfo PoolInfo { get => PoolInfo.FromCheckedOutAndAvailable(CheckedOut,Available); }
+
         /// <summary>
         /// This property is used to check if the <see cref="Chunk"/> with the given id is visible.
         /// </summary>
@@ -86,47 +93,27 @@ namespace Amilious.ProceduralTerrain.Map {
         /// if one exists in the pool, otherwise it will create a new <see cref="Chunk"/>.
         /// </summary>
         /// <param name="chunkId">This id of the <see cref="Chunk"/> that you want to load.</param>
-        /// <param name="chunk">The loaded chunk.</param>
-        /// <returns>True if the chunk was loaded, otherwise returns false if the chunk was
-        /// already loaded.</returns>
-        public bool LoadChunk(Vector2Int chunkId, out Chunk chunk) {
-            if(_loadedChunks.TryGetValue(chunkId, out chunk)) return false;
-             if(!_chunkQueue.TryDequeue(out chunk)){
-                 //no available chunk so create new chunk
-                 chunk = new Chunk(_manager,this);
-             }
-            if(chunk == null) return false;
-             chunk.PullFromPool();
-             chunk.Setup(chunkId);
-             _loadedChunks[chunkId] = chunk;
-             return true;
-         }
-
-        /// <summary>
-        /// This method is used to load a chunk.  This will use an available <see cref="Chunk"/>
-        /// if one exists in the pool, otherwise it will create a new <see cref="Chunk"/>.
-        /// </summary>
-        /// <param name="chunkId">This id of the <see cref="Chunk"/> that you want to load.</param>
-        /// <returns>True if the chunk was loaded, otherwise returns false if the chunk was
-        /// already loaded.</returns>
-        public bool LoadChunk(Vector2Int chunkId) {
-            if(_loadedChunks.TryGetValue(chunkId, out _)) return false;
-            if(!_chunkQueue.TryDequeue(out var chunk)){
-                //no available chunk so create new chunk
-                chunk = new Chunk(_manager,this);
-            }
-            if(chunk == null) return false;
+        /// <returns>The existing, loaded, or generated chunk with the given <see cref="chunkId"/>.</returns>
+        public Chunk BarrowFromPool(Vector2Int chunkId) {
+            //if the chunk is already loaded return it.
+            if(_loadedChunks.TryGetValue(chunkId, out var existing)) return existing;
+            //try to get an available chunk
+            _chunkQueue.TryDequeue(out var chunk);
+            //if the chunk is null create a new one.
+            chunk??= new Chunk(_manager,this);
+            //setup the chunk
             chunk.PullFromPool();
             chunk.Setup(chunkId);
             _loadedChunks[chunkId] = chunk;
-            return true;
+            //return the chunk
+            return chunk;
         }
 
         /// <summary>
         /// This method is used to return a chunk to the pool.
         /// </summary>
         /// <param name="chunk">The chunk that you want to return to the pool.</param>
-        public void AddToAvailableChunkQueue(Chunk chunk) {
+        public void ReturnToPool(Chunk chunk) {
             if(chunk == null) return;
             if(!chunk.HasProcessedRelease) {
                 chunk.ReleaseToPool();

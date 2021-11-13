@@ -58,12 +58,12 @@ namespace Amilious.ProceduralTerrain.Map {
         /// <summary>
         /// This event is triggered when an update cycle is complete.
         /// </summary>
-        public event Delegates.OnChunksUpdatedDelegate OnChunksUpdated;
+        public event OnChunksUpdatedDelegate OnChunksUpdated;
         
         /// <summary>
         /// This event is called when a viewer enters a new chunk.
         /// </summary>
-        public event Delegates.OnViewerChangedChunkDelegate OnViewerChangedChunk;
+        public event OnViewerChangedChunkDelegate OnViewerChangedChunk;
 
         #endregion
 
@@ -183,10 +183,10 @@ namespace Amilious.ProceduralTerrain.Map {
             OnUpdateVisible?.Invoke(new ChunkRange(_viewerChunk,_updateChunksRadius));
             for(var xOff = - _updateChunksRadius; xOff <= _updateChunksRadius; xOff++)
             for(var yOff = -_updateChunksRadius; yOff <= _updateChunksRadius; yOff++) {
-                _chunkPool.LoadChunk(new Vector2Int(_viewerChunk.x + xOff, _viewerChunk.y + yOff));
+                _chunkPool.BarrowFromPool(new Vector2Int(_viewerChunk.x + xOff, _viewerChunk.y + yOff));
             }
             OnEndUpdate?.Invoke();
-            OnChunksUpdated?.Invoke(_chunkPool,_updateSW.ElapsedMilliseconds);
+            OnChunksUpdated?.Invoke(_chunkPool.PoolInfo,_updateSW.ElapsedMilliseconds);
         }
         
         /// <summary>

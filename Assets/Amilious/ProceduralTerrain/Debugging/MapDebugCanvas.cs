@@ -1,3 +1,4 @@
+using Amilious.Core.Structs;
 using TMPro;
 using UnityEngine;
 using Amilious.ProceduralTerrain.Map;
@@ -89,20 +90,20 @@ namespace Amilious.ProceduralTerrain.Debugging {
         /// <summary>
         /// This method is called when the chunk update cycle has completed.
         /// </summary>
-        /// <param name="chunkPool">The chunk pool.</param>
+        /// <param name="chunkPoolInfo">The chunk pool.</param>
         /// <param name="ms">The update time in milliseconds.</param>
-        protected virtual void ChunksUpdated(ChunkPool chunkPool, long ms) {
-            if(_lastPoolSize < 0 || _lastPoolSize != chunkPool.PoolSize) {
-                _lastPoolSize = chunkPool.PoolSize;
+        protected virtual void ChunksUpdated(PoolInfo chunkPoolInfo, long ms) {
+            if(_lastPoolSize < 0 || _lastPoolSize != chunkPoolInfo.Size) {
+                _lastPoolSize = chunkPoolInfo.Size;
                 SetText(chunkPoolSize, _lastPoolSize);
             }
-            if(_lastLoadChunks < 0 || _lastLoadChunks != chunkPool.NumberOfLoadedChunks) {
-                _lastLoadChunks = chunkPool.NumberOfLoadedChunks;
+            if(_lastLoadChunks < 0 || _lastLoadChunks != chunkPoolInfo.CheckedOut) {
+                _lastLoadChunks = chunkPoolInfo.CheckedOut;
                 SetText(loadedChunks, _lastLoadChunks);
             }
 
-            if(_lastPoolChunks < 0 || _lastPoolChunks != chunkPool.NumberOfLoadedChunks) {
-                _lastLoadChunks = chunkPool.NumberOfLoadedChunks;
+            if(_lastPoolChunks < 0 || _lastPoolChunks != chunkPoolInfo.Available) {
+                _lastLoadChunks = chunkPoolInfo.Available;
                 SetText(availableChunks, _lastLoadChunks);
             }
 
