@@ -7,6 +7,7 @@ using Amilious.ProceduralTerrain.Mesh;
 using Amilious.ProceduralTerrain.Biomes;
 using Amilious.ProceduralTerrain.Saving;
 using Amilious.ProceduralTerrain.Textures;
+using Amilious.Saving;
 
 namespace Amilious.ProceduralTerrain.Map {
     
@@ -48,6 +49,7 @@ namespace Amilious.ProceduralTerrain.Map {
         private Vector3 _transformPosition = Vector3.zero;
         private string _name;
         private bool _appliedMeshMaterial;
+        private SaveData _saveData;
         //###############################################################
         //update methods variables if the update calls are
         //moved to a separate thead these values will need to be local to
@@ -118,7 +120,7 @@ namespace Amilious.ProceduralTerrain.Map {
                 });
             }
         }
-
+        
         /// <summary>
         /// This property is used to get the chunk's transform position.  It can also
         /// be used to protected set the transforms position.
@@ -137,6 +139,12 @@ namespace Amilious.ProceduralTerrain.Map {
         /// This property contains the chunk id.
         /// </summary>
         public Vector2Int ChunkId { get; private set; }
+        
+        /// <summary>
+        /// This property is used to check if any of the chunk data has been updated.
+        /// </summary>
+        public bool HasBeenUpdated => _lodMeshes.Any(x => x.HasBeenUpdated) 
+                || _biomeMap.HasBeenUpdated || _biomeMap.HeightMap.HasBeenUpdated;
         
         /// <summary>
         /// This property contains true it the chunks has been processed to be released.Updated
@@ -204,6 +212,7 @@ namespace Amilious.ProceduralTerrain.Map {
         /// <param name="chunkId">The chunks id.</param>
         public void Setup(Vector2Int chunkId) {
             ChunkId = chunkId;
+            _saveData = _mapSaver.NewChunkSaveData(ChunkId);
             var floatCoord = new Vector2(ChunkId.x, ChunkId.y);
             _sampleCenter = floatCoord * _meshSettings.MeshWorldSize / _meshSettings.MeshScale;
             _position = floatCoord * _meshSettings.MeshWorldSize;
@@ -244,11 +253,16 @@ namespace Amilious.ProceduralTerrain.Map {
         /// <returns>True if the chunk should be released to the pool, otherwise
         /// false.</returns>
         private bool ProcessSave(bool releaseFromPool, CancellationToken token) {
-            if((!_mapSaver.SavingEnabled && releaseFromPool) || !_heightMapReceived) 
+            if(!_mapSaver.SavingEnabled && releaseFromPool || !_heightMapReceived) 
                 return releaseFromPool;
-            var saveData = _manager.MapSaver.NewChunkSaveData(ChunkId);
-            _biomeMap.Save(saveData);
-            _manager.MapSaver.SaveData(ChunkId, saveData);
+            //save the biome data
+            var updated = _biomeMap.Save(_saveData);
+            //save mesh data
+            if(_mapSaver.SaveMeshData) {
+                foreach(var mesh in _lodMeshes) updated = updated || mesh.Save(_saveData);
+            }
+            //if anything has been updated save the chunk
+            if(updated) _manager.MapSaver.SaveData(ChunkId, _saveData);
             return releaseFromPool;
         }
 
@@ -262,7 +276,7 @@ namespace Amilious.ProceduralTerrain.Map {
             //cancel current actions
             _loader.Cancel();
             //save if saving is enabled
-            if(_mapSaver.SavingEnabled) {
+            if(_mapSaver.SavingEnabled&&HasBeenUpdated) {
                 _saver.Process(true);
                 return;
             }
@@ -388,13 +402,13 @@ namespace Amilious.ProceduralTerrain.Map {
         /// will be thrown if false.</returns>
         private bool ProcessLoad(CancellationToken token) {
             //try to load or generate biome data
-            if(_mapSaver.SavingEnabled && _manager.MapSaver.LoadData(ChunkId, out var saveData)) {
+            if(_mapSaver.SavingEnabled && _manager.MapSaver.LoadData(ChunkId, out _saveData)) {
                 //the save data was found so load the data
-                _biomeMap.Load(saveData);
+                _biomeMap.Load(_saveData);
                 if(_mapSaver.SaveMeshData) {
                     foreach(var mesh in _lodMeshes) {
                         token.ThrowIfCancellationRequested();
-                        mesh.Load(saveData);
+                        mesh.Load(_saveData);
                     }
                 }
             }else {
@@ -402,9 +416,8 @@ namespace Amilious.ProceduralTerrain.Map {
                 _biomeMap.Generate(_sampleCenter, token);
                 if(_mapSaver.SaveOnGenerate) {
                     //save the generated data
-                    saveData = _mapSaver.NewChunkSaveData(ChunkId);
-                    _biomeMap.Save(saveData);
-                    _mapSaver.SaveData(ChunkId, saveData);
+                    _biomeMap.Save(_saveData);
+                    _mapSaver.SaveData(ChunkId, _saveData);
                 }
             }
             //generate texture

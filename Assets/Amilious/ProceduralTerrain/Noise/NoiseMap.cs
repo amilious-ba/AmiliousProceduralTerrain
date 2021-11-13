@@ -24,7 +24,7 @@ namespace Amilious.ProceduralTerrain.Noise {
         /// values before modification.
         /// </summary>
         public Vector2 GeneratedMinMax { get; }
-
+        
         #endregion
 
         
@@ -59,6 +59,7 @@ namespace Amilious.ProceduralTerrain.Noise {
         public bool ClampReduce(Vector2Int key, float amount) {
             if(!ContainsKey(key)) return false;
             this[key] = Mathf.Clamp(this[key] - amount, -1, 1);
+            HasBeenUpdated = true;
             return true;
         }
 
@@ -72,6 +73,7 @@ namespace Amilious.ProceduralTerrain.Noise {
         public bool ClampGain(Vector2Int key, float amount) {
             if(!ContainsKey(key)) return false;
             this[key] = Mathf.Clamp(this[key] + amount, -1, 1);
+            HasBeenUpdated = true;
             return true;
         }
 
@@ -121,11 +123,14 @@ namespace Amilious.ProceduralTerrain.Noise {
         /// This method is used to save the <see cref="NoiseMap"/>.
         /// </summary>
         /// <param name="saveData">The <see cref="SaveData"/> that will be used to save the map values.</param>
-        public void Save(SaveData saveData) {
+        public bool Save(SaveData saveData) {
+            if(!HasBeenUpdated) return false;
             saveData.SetPrefix(PREFIX);
             saveData.StoreData(VALUES, values);
             saveData.StoreData(POSITION, Position);
             saveData.ClearPrefix();
+            HasBeenUpdated = false;
+            return true;
         }
 
         /// <summary>
@@ -137,6 +142,7 @@ namespace Amilious.ProceduralTerrain.Noise {
             values = saveData.FetchData<float[,]>(VALUES);
             Position = saveData.FetchData<Vector2>(POSITION);
             saveData.ClearPrefix();
+            HasBeenUpdated = false;
         }
 
         /// <summary>

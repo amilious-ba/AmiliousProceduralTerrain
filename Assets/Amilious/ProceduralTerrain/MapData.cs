@@ -21,6 +21,11 @@ namespace Amilious.ProceduralTerrain {
         public bool IsPositionCentered { get; }
         
         /// <summary>
+        /// This property is used to check if any values have been updated.
+        /// </summary>
+        public bool HasBeenUpdated { get; protected set; }
+        
+        /// <summary>
         /// This constructor is used to create a new map data.
         /// </summary>
         /// <param name="size">Both the length and width of the map.</param>
@@ -63,6 +68,7 @@ namespace Amilious.ProceduralTerrain {
                     throw new ArgumentOutOfRangeException(nameof(z), z,
                         $"This value should be inclusively between 0 and {Size - 1}");
                 values[x, z] = value;
+                HasBeenUpdated = true;
             }
         }
 

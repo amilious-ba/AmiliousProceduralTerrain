@@ -84,6 +84,16 @@ namespace Amilious.ProceduralTerrain.Biomes {
         
         #region Constructors
         
+        /// <summary>
+        /// This constructor is used to create a new BiomeMap.
+        /// </summary>
+        /// <param name="seed">The seed that will be used to generate the map.</param>
+        /// <param name="size">The size of the map.</param>
+        /// <param name="settings">The biome settings that will be used when generating the map.</param>
+        /// <param name="isPositionCentered">True if the position of the map is centered.</param>
+        /// <remarks>The constructor does not generate the biome map.  To generate
+        /// the map you need to use the <see cref="Generate(UnityEngine.Vector2,System.Threading.CancellationToken)"/>
+        /// or the <see cref="Generate(UnityEngine.Vector2)"/> methods.</remarks>
         public BiomeMap(Seed seed, int size, BiomeSettings settings, bool isPositionCentered = true) : 
             base(size,Vector2.zero, isPositionCentered) {
             //set the values
@@ -109,6 +119,7 @@ namespace Amilious.ProceduralTerrain.Biomes {
             if(BiomeSettings.UsingBiomeBlending) GenerateBlendedMap(token);
             else GenerateNonBlendedMap(token);
             GenerateHeightMap();
+            HasBeenUpdated = true;
         }
         
         /// <summary>
@@ -124,6 +135,7 @@ namespace Amilious.ProceduralTerrain.Biomes {
             if(BiomeSettings.UsingBiomeBlending) GenerateBlendedMap(tokenSource.Token);
             else GenerateNonBlendedMap(tokenSource.Token);
             GenerateHeightMap();
+            HasBeenUpdated = true;
             tokenSource.Dispose();
         }
 
@@ -131,13 +143,18 @@ namespace Amilious.ProceduralTerrain.Biomes {
         /// This method is used to save the <see cref="BiomeMap"/>.
         /// </summary>
         /// <param name="saveData">The <see cref="SaveData"/> that is being used to save the data.</param>
-        public virtual void Save(SaveData saveData) {
+        public virtual bool Save(SaveData saveData) {
+            if(!HasBeenUpdated && !HeightMap.HasBeenUpdated) return false;
             saveData.SetPrefix(PREFIX);
-            saveData.StoreData(BIOME_VALUES, values);
-            saveData.StoreData(BIOME_WEIGHTS, weights);
-            saveData.StoreData(POSITION, Position);
-            saveData.ClearPrefix();
+            if(HasBeenUpdated) {
+                saveData.StoreData(BIOME_VALUES, values);
+                saveData.StoreData(BIOME_WEIGHTS, weights);
+                saveData.StoreData(POSITION, Position);
+            }
             HeightMap.Save(saveData);
+            saveData.ClearPrefix();
+            HasBeenUpdated = false;
+            return true;
         }
 
         /// <summary>
@@ -151,6 +168,7 @@ namespace Amilious.ProceduralTerrain.Biomes {
             weights = saveData.FetchData<Dictionary<int, float[,]>>(BIOME_WEIGHTS);
             saveData.ClearPrefix();
             HeightMap.Load(saveData);
+            HasBeenUpdated = false;
         }
 
         /// <summary>
@@ -255,7 +273,7 @@ namespace Amilious.ProceduralTerrain.Biomes {
         /// <summary>
         /// This method is used to generate a height map using this biome map.
         /// </summary>
-        protected virtual  void GenerateHeightMap() {
+        protected virtual void GenerateHeightMap() {
             var centerX = HeightMap.Position.x;
             var centerY = -HeightMap.Position.y;
             if(IsPositionCentered) {
@@ -279,7 +297,7 @@ namespace Amilious.ProceduralTerrain.Biomes {
         /// <summary>
         /// This method is used to generate a <see cref="BiomeMap"/> without blending the biomes.
         /// </summary>
-        protected virtual  void GenerateNonBlendedMap(CancellationToken token) {
+        protected virtual void GenerateNonBlendedMap(CancellationToken token) {
             //create maps
             var heatMap = BiomeSettings.HeatMapSettings.Generate(Size, Seed, Position);
             var moistureMap = BiomeSettings.MoistureMapSettings.Generate(Size, Seed, Position);
@@ -313,7 +331,7 @@ namespace Amilious.ProceduralTerrain.Biomes {
         /// <summary>
         /// This method is used to generate a <see cref="BiomeMap"/> with biome blending.
         /// </summary>
-        protected virtual  void GenerateBlendedMap(CancellationToken token) {
+        protected virtual void GenerateBlendedMap(CancellationToken token) {
             //generate the blend weights
             weights = BiomeSettings.BlendChunk(Size,Seed,Position, token);
             //set the biome to the greatest weight

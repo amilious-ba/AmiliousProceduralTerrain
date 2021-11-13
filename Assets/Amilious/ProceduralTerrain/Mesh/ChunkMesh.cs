@@ -51,6 +51,12 @@ namespace Amilious.ProceduralTerrain.Mesh {
         /// </summary>
         public LevelsOfDetail LevelOfDetail { get; }
         
+        /// <summary>
+        /// This property is true if the chunk has been modified.  This will act as
+        /// a flag that indicates if the chunk needs to be saved.
+        /// </summary>
+        public bool HasBeenUpdated { get; private set; }
+        
         public int SkipStep { get; }
         
         /// <summary>
@@ -157,6 +163,7 @@ namespace Amilious.ProceduralTerrain.Mesh {
             HasMeshData = false;
             HasMesh = false;
             _bakedCollisionMesh = false;
+            HasBeenUpdated = false;
         }
 
         /// <summary>
@@ -209,6 +216,7 @@ namespace Amilious.ProceduralTerrain.Mesh {
                 Dispatcher.InvokeAsync(() => { ApplyChanges(recalculateBounds);});
                 return true;
             }
+            HasBeenUpdated = true;
             _mesh.vertices = UseFlatShading?_flatShadedVertices:vertices;
             _mesh.triangles = triangles;
             _mesh.uv = UseFlatShading?_flatShadedUvs:uvs;
@@ -236,12 +244,14 @@ namespace Amilious.ProceduralTerrain.Mesh {
         /// This method is used to save the mesh data.
         /// </summary>
         /// <param name="saveData">The save data you want to add the mesh data to.</param>
-        public void Save(SaveData saveData) {
+        public bool Save(SaveData saveData) {
+            if(!HasBeenUpdated) return false;
+            HasBeenUpdated = false;
             saveData.SetPrefix(PREFIX,LevelOfDetail);
             saveData.SetPrefix(HAS_DATA,HasMesh);
             if(!HasMesh) {
                 saveData.ClearPrefix();
-                return;
+                return false;
             }
             saveData.StoreData(nameof(vertices),vertices);
             saveData.StoreData(nameof(triangles),triangles);
@@ -257,6 +267,7 @@ namespace Amilious.ProceduralTerrain.Mesh {
                 saveData.StoreData(nameof(_flatShadedUvs2),_flatShadedUvs2);
             }
             saveData.ClearPrefix();
+            return true;
         }
 
         /// <summary>
@@ -303,6 +314,7 @@ namespace Amilious.ProceduralTerrain.Mesh {
             //apply the changes to the mesh
             ApplyChanges(true);
             HasMesh = true;
+            HasBeenUpdated = false;
             return true;
         }
         

@@ -23,8 +23,8 @@ namespace Amilious.ProceduralTerrain.Saving {
         private bool saveOnGenerate;
         [SerializeField, ShowIf(nameof(enableSaving))]
         private bool saveMeshData;
-        [SerializeField, ShowIf(nameof(enableSaving))]
-        private bool saveTextureData;
+        /*[SerializeField, ShowIf(nameof(enableSaving))]
+        private bool saveTextureData;*/
         [SerializeField, ShowIf(nameof(enableSaving))] 
         private string saveFolder;
 
@@ -47,6 +47,12 @@ namespace Amilious.ProceduralTerrain.Saving {
         /// when it is generated.
         /// </summary>
         public bool SaveOnGenerate { get => enableSaving && saveOnGenerate; }
+        
+        /*/// <summary>
+        /// This property is used to check if the texture data should be saved
+        /// when it is generated.
+        /// </summary>
+        public bool SaveTextureData { get => saveTextureData; }*/
 
         #endregion
         
