@@ -15,7 +15,7 @@ namespace Amilious.ProceduralTerrain.Map {
     /// This class will represent a chunk
     /// </summary>
     [HideMonoScript]
-    public class Chunk {
+    public class Chunk : IMapComponent<Chunk> {
 
         private const string CHUNK_POOLED = "Chunk (pooled)";
 
@@ -33,7 +33,7 @@ namespace Amilious.ProceduralTerrain.Map {
         private readonly BiomeMap _biomeMap;
         private readonly Color[] _preparedColors;
         private readonly MapSaver _mapSaver;
-        private readonly ChunkPool _chunkPool;
+        private readonly MapPool<Chunk> _mapPool;
         private readonly ReusableFuture _loader;
         private readonly ReusableFuture<bool, bool> _saver;
         private int _previousLODIndex = -1;
@@ -138,7 +138,7 @@ namespace Amilious.ProceduralTerrain.Map {
         /// <summary>
         /// This property contains the chunk id.
         /// </summary>
-        public Vector2Int ChunkId { get; private set; }
+        public Vector2Int Id { get; private set; }
         
         /// <summary>
         /// This property is used to check if any of the chunk data has been updated.
@@ -155,13 +155,18 @@ namespace Amilious.ProceduralTerrain.Map {
         /// This property is used to get the player's position as a <see cref="Vector2"/>.
         /// </summary>
         private Vector2 ViewerPosition => new Vector2 (_viewer.position.x, _viewer.position.z);
-        
+
+        /// <summary>
+        /// This is only used for the reference version
+        /// </summary>
+        public Chunk() { }
+
         /// <summary>
         /// This constructor is used to create a new reusable chunk.
         /// </summary>
         /// <param name="manager">The map manager that will use this chunk.</param>
-        /// <param name="chunkPool">The chunk pool that contains this chunk.</param>
-        public Chunk(MapManager manager, ChunkPool chunkPool) {
+        /// <param name="mapPool">The chunk pool that contains this chunk.</param>
+        public Chunk(MapManager manager, MapPool<Chunk> mapPool) {
             //make sure the chunk gameObject and components get
             //created on the main thead
             Dispatcher.Invoke(() => {
@@ -181,7 +186,7 @@ namespace Amilious.ProceduralTerrain.Map {
             //create meshes
             _detailLevels = _meshSettings.LevelsOfDetail.ToArray();
             _lodMeshes = new ChunkMesh[_detailLevels.Length];
-            _chunkPool = chunkPool;
+            _mapPool = mapPool;
             _mapSaver = manager.MapSaver;
             for(var i = 0; i < _detailLevels.Length; i++) {
                 _lodMeshes[i] = new ChunkMesh(_meshSettings, _detailLevels[i].LevelsOfDetail);
@@ -211,13 +216,13 @@ namespace Amilious.ProceduralTerrain.Map {
         /// </summary>
         /// <param name="chunkId">The chunks id.</param>
         public void Setup(Vector2Int chunkId) {
-            ChunkId = chunkId;
-            _saveData = _mapSaver.NewChunkSaveData(ChunkId);
-            var floatCoord = new Vector2(ChunkId.x, ChunkId.y);
+            Id = chunkId;
+            _saveData = _mapSaver.NewChunkSaveData(Id);
+            var floatCoord = new Vector2(Id.x, Id.y);
             _sampleCenter = floatCoord * _meshSettings.MeshWorldSize / _meshSettings.MeshScale;
             _position = floatCoord * _meshSettings.MeshWorldSize;
             _bounds = new Bounds(_position, Vector3.one * _meshSettings.MeshWorldSize);
-            Name = $"Chunk ({ChunkId.x},{ChunkId.y})";
+            Name = $"Chunk ({Id.x},{Id.y})";
             TransformPosition = new Vector3(_position.x, 0, _position.y);
             HasProcessedRelease = false;
             _loader.Process();
@@ -227,9 +232,11 @@ namespace Amilious.ProceduralTerrain.Map {
         /// This method is used to mark the chunk as in use so
         /// that the chunk pool will not issue it again.
         /// </summary>
-        /// <param name="setActive"></param>
+        /// <param name="setActive">If true the GameObject will be
+        /// set to active.</param>
         public void PullFromPool(bool setActive = false) {
             IsInUse = true;
+            if(setActive) Active = true;
         }
 
         /// <summary>
@@ -239,7 +246,7 @@ namespace Amilious.ProceduralTerrain.Map {
         /// <param name="releaseFromPool">True if the chunk should be
         /// released to the pool, otherwise false.</param>
         private void SaveComplete(bool releaseFromPool) {
-            onChunkSaved?.Invoke(ChunkId);
+            onChunkSaved?.Invoke(Id);
             if(releaseFromPool) SendToPool();
         }
 
@@ -259,10 +266,11 @@ namespace Amilious.ProceduralTerrain.Map {
             var updated = _biomeMap.Save(_saveData);
             //save mesh data
             if(_mapSaver.SaveMeshData) {
+                // ReSharper disable once LoopCanBeConvertedToQuery
                 foreach(var mesh in _lodMeshes) updated = updated || mesh.Save(_saveData);
             }
             //if anything has been updated save the chunk
-            if(updated) _manager.MapSaver.SaveData(ChunkId, _saveData);
+            if(updated) _manager.MapSaver.SaveData(Id, _saveData);
             return releaseFromPool;
         }
 
@@ -287,7 +295,7 @@ namespace Amilious.ProceduralTerrain.Map {
         /// <summary>
         /// This method should only be called from <see cref="ReleaseToPool"/> or
         /// <see cref="SaveComplete"/>.  If you want to return the object to the
-        /// <see cref="ChunkPool"/> see <see cref="ReleaseToPool"/>.
+        /// <see cref="MapPool{T}"/> see <see cref="ReleaseToPool"/>.
         /// </summary>
         private void SendToPool() {
             Active = false;
@@ -301,7 +309,7 @@ namespace Amilious.ProceduralTerrain.Map {
             IsInUse = false;
             _startedToRelease = false;
             HasProcessedRelease = true;
-            _chunkPool.ReturnToPool(this);
+            _mapPool.ReturnToPool(this);
         }
 
         /// <summary>
@@ -317,11 +325,11 @@ namespace Amilious.ProceduralTerrain.Map {
         /// <remarks>This method uses variables outside of the method and is not thread safe.</remarks>
         public void UpdateChunk(ChunkRange chunkRange) {
             if(!_heightMapReceived|| !IsInUse) return;
-            if(!chunkRange.IsInRange(ChunkId)) {
+            if(!chunkRange.IsInRange(Id)) {
                 //out of range so make sure it is disabled
                 if(!_isActive) return;
                 Active = false;
-                onVisibilityChanged?.Invoke(ChunkId,false);
+                onVisibilityChanged?.Invoke(Id,false);
                 return;
             }
             _updated = true;
@@ -331,7 +339,7 @@ namespace Amilious.ProceduralTerrain.Map {
             if(_updateVisible) UpdateLOD(_updateDistFromViewerSq);
             if(_updateWasVisible == _updateVisible) return;
             Active = _updateVisible;
-            onVisibilityChanged?.Invoke(ChunkId,_updateVisible);
+            onVisibilityChanged?.Invoke(Id,_updateVisible);
         }
 
         /// <summary>
@@ -366,7 +374,7 @@ namespace Amilious.ProceduralTerrain.Map {
                 _updateOldLODIndex = _previousLODIndex;
                 _previousLODIndex = _updateLODIndex;
                 _updateLODMesh.AssignTo(_meshFilter);
-                onLodChanged?.Invoke(ChunkId,_updateOldLODIndex,_updateLODIndex);
+                onLodChanged?.Invoke(Id,_updateOldLODIndex,_updateLODIndex);
             }else if(!_updateLODMesh.HasRequestedMesh) {
                 _updateLODMesh.RequestMesh(_biomeMap.HeightMap, _manager.ApplyHeight);
             }
@@ -390,7 +398,7 @@ namespace Amilious.ProceduralTerrain.Map {
                 foreach(var mesh in _lodMeshes) mesh.ApplyLoadedMesh();
             }
             UpdateChunk();
-            onChunkLoaded?.Invoke(ChunkId);
+            onChunkLoaded?.Invoke(Id);
         }
 
         /// <summary>
@@ -402,7 +410,7 @@ namespace Amilious.ProceduralTerrain.Map {
         /// will be thrown if false.</returns>
         private bool ProcessLoad(CancellationToken token) {
             //try to load or generate biome data
-            if(_mapSaver.SavingEnabled && _manager.MapSaver.LoadData(ChunkId, out _saveData)) {
+            if(_mapSaver.SavingEnabled && _manager.MapSaver.LoadData(Id, out _saveData)) {
                 //the save data was found so load the data
                 _biomeMap.Load(_saveData);
                 if(_mapSaver.SaveMeshData) {
@@ -417,7 +425,7 @@ namespace Amilious.ProceduralTerrain.Map {
                 if(_mapSaver.SaveOnGenerate) {
                     //save the generated data
                     _biomeMap.Save(_saveData);
-                    _mapSaver.SaveData(ChunkId, _saveData);
+                    _mapSaver.SaveData(Id, _saveData);
                 }
             }
             //generate texture
@@ -439,6 +447,9 @@ namespace Amilious.ProceduralTerrain.Map {
             _lodMeshes[_meshSettings.ColliderLODIndex].AssignTo(_meshCollider);
             _hasSetCollider = true;
         }
-        
+
+        public Chunk CreateMapComponent(MapManager mapManager, MapPool<Chunk> mapPool) {
+            return new Chunk(mapManager, mapPool);
+        }
     }
 }

@@ -4,7 +4,7 @@ using System.Collections.Generic;
 namespace Amilious.ProceduralTerrain.Map {
     
     //this class will be used to store map data for a region.
-    public class MapRegion {
+    public class MapRegion : IMapComponent<MapRegion> {
 
         #region Properties
         
@@ -31,6 +31,12 @@ namespace Amilious.ProceduralTerrain.Map {
             RegionSize = regionSize;
             RegionId = regionId;
         }
+
+        /// <summary>
+        /// This constructor is only to be used by the <see cref="MapPool{T}"/> class.  It should not
+        /// be used anywhere else.
+        /// </summary>
+        public MapRegion() {}
 
         #endregion
         
@@ -106,7 +112,26 @@ namespace Amilious.ProceduralTerrain.Map {
         public static int BottomAndRightOffset(RegionSize regionSize) {
             return (int)regionSize / 2;
         }
-        
+
+        public MapRegion CreateMapComponent(MapManager mapManager, MapPool<MapRegion> mapPool) {
+            throw new System.NotImplementedException();
+        }
+
+        public void PullFromPool(bool setActive = false) {
+            throw new System.NotImplementedException();
+        }
+
+        public void Setup(Vector2Int itemId) {
+            throw new System.NotImplementedException();
+        }
+
+        public Vector2Int Id { get; }
+        public bool HasProcessedRelease { get; }
+        public void ReleaseToPool() {
+            throw new System.NotImplementedException();
+        }
+
+        public bool Active { get; }
     }
     
 }

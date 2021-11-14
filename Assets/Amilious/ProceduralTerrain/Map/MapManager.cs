@@ -51,7 +51,7 @@ namespace Amilious.ProceduralTerrain.Map {
         public event Action OnEndUpdate;
         
         /// <summary>
-        /// This event is triggered when collision mesh should be udated.
+        /// This event is triggered when collision mesh should be updated.
         /// </summary>
         public event Action OnUpdateCollisionMesh;
         
@@ -75,7 +75,7 @@ namespace Amilious.ProceduralTerrain.Map {
         private Vector2 _oldViewerPosition;
         private float? _sqrColliderGenerationThreshold;
         private Seed? _seedStruct;
-        private ChunkPool _chunkPool;
+        private MapPool<Chunk> _mapPool;
         private readonly Stopwatch _updateSW = new Stopwatch();
         private int _updateChunksRadius;
 
@@ -183,10 +183,10 @@ namespace Amilious.ProceduralTerrain.Map {
             OnUpdateVisible?.Invoke(new ChunkRange(_viewerChunk,_updateChunksRadius));
             for(var xOff = - _updateChunksRadius; xOff <= _updateChunksRadius; xOff++)
             for(var yOff = -_updateChunksRadius; yOff <= _updateChunksRadius; yOff++) {
-                _chunkPool.BarrowFromPool(new Vector2Int(_viewerChunk.x + xOff, _viewerChunk.y + yOff));
+                _mapPool.BarrowFromPool(new Vector2Int(_viewerChunk.x + xOff, _viewerChunk.y + yOff));
             }
             OnEndUpdate?.Invoke();
-            OnChunksUpdated?.Invoke(_chunkPool.PoolInfo,_updateSW.ElapsedMilliseconds);
+            OnChunksUpdated?.Invoke(_mapPool.PoolInfo,_updateSW.ElapsedMilliseconds);
         }
         
         /// <summary>
@@ -205,9 +205,9 @@ namespace Amilious.ProceduralTerrain.Map {
         protected virtual void Start() {
             //we use a squared threshold because it is cheaper to calculate a squared
             //distance than a normal distance.
-            _chunkPool = generateChunksAtStart?
-                new ChunkPool(this, chunkPoolSize):
-                new ChunkPool(this);
+            _mapPool = generateChunksAtStart?
+                new MapPool<Chunk>(this, chunkPoolSize):
+                new MapPool<Chunk>(this);
             _sqrChunkUpdateThreshold = chunkUpdateThreshold * chunkUpdateThreshold;
             _updateChunksRadius = meshSettings.ChunksVisibleInViewDistance;
             UpdateVisibleChunks();

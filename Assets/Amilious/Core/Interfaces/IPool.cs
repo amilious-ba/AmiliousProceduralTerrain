@@ -74,10 +74,10 @@ namespace Amilious.Core.Interfaces {
         /// This method is used to pull an item from the available items in the pool, or create a new
         /// item if there are no available items.
         /// </summary>
-        /// <param name="key">A key that is used for setting up the object as it is pulled
+        /// <param name="itemId">A key that is used for setting up the object as it is pulled
         /// from the pool.</param>
         /// <returns>The <see cref="T"/> that was created or pulled from the pool.</returns>
-        T BarrowFromPool(T2 key);
+        T BarrowFromPool(T2 itemId);
         
         /// <summary>
         /// This method is used to add or return a <see cref="T"/> to the pool.
