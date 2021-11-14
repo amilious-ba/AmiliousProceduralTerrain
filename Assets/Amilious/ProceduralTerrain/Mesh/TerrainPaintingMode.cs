@@ -19,16 +19,6 @@ namespace Amilious.ProceduralTerrain.Mesh {
         /// <summary>
         /// This value indicates that the meshes should be colored based on their blended biome.
         /// </summary>
-        BlendedBiomeColors = 2,
-        
-        /// <summary>
-        /// This value indicates that the meshes should be colored based on their noise preview colors.
-        /// </summary>
-        NoisePreviewColors = 3,
-        
-        /// <summary>
-        /// This value indicates that the meshes should be colored based on the biome blended noise preivew colors.
-        /// </summary>
-        BlendedNoisePreviewColors = 4,
+        BlendedBiomeColors = 2
     }
 }

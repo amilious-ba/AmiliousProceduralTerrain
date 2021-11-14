@@ -103,7 +103,7 @@ bool use_ocean;
 float ocean_height;
 int moisture_values;
 int heat_values;
-int num_points;
+uint num_points;
 RWStructuredBuffer<biome_information> biome_info;
 
 //This method is used to get the biome indexes for
