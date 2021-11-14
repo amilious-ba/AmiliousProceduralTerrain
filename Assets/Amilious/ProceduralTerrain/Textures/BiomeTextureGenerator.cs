@@ -52,8 +52,6 @@ namespace Amilious.ProceduralTerrain.Textures {
                 colorMap[colorKey] = paintMode switch {
                     TerrainPaintingMode.BiomeColors => map.GetBiomeColor(key),
                     TerrainPaintingMode.BlendedBiomeColors => map.GetBlendedBiomeColor(key),
-                    TerrainPaintingMode.NoisePreviewColors => map.PreviewColor(key),
-                    TerrainPaintingMode.BlendedNoisePreviewColors => map.BlendedPreviewColor(key),
                     _ => throw new ArgumentOutOfRangeException(nameof(paintMode), paintMode, null)
                 };
             }
@@ -81,8 +79,6 @@ namespace Amilious.ProceduralTerrain.Textures {
                 colorMap[colorKey] = paintMode switch {
                     TerrainPaintingMode.BiomeColors => map.GetBiomeColor(key),
                     TerrainPaintingMode.BlendedBiomeColors => map.GetBlendedBiomeColor(key),
-                    TerrainPaintingMode.NoisePreviewColors => map.PreviewColor(key),
-                    TerrainPaintingMode.BlendedNoisePreviewColors => map.BlendedPreviewColor(key),
                     _ => throw new ArgumentOutOfRangeException(nameof(paintMode), paintMode, null)
                 };
             }

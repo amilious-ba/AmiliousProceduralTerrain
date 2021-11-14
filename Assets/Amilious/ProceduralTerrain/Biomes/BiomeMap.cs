@@ -210,40 +210,6 @@ namespace Amilious.ProceduralTerrain.Biomes {
         }
         
         /// <summary>
-        /// This method is used to get the preview color based on the
-        /// provided key.
-        /// </summary>
-        /// <param name="key">The location within the map.</param>
-        /// <returns>The preview color based on the given key.</returns>
-        /// <exception cref="ArgumentOutOfRangeException">Thrown if the key
-        /// is invalid.</exception>
-        public virtual Color PreviewColor(Vector2Int key) {
-            if(!ContainsKey(key)) throw new ArgumentOutOfRangeException(nameof(key), key, 
-                "The provided map data key is invalid.");
-            return BiomePreviewColor(this[key], HeightMap[key]);
-        }
-
-        /// <summary>
-        /// This method is used to get the blended preview color for the given key.
-        /// </summary>
-        /// <param name="key">The location you want to get the blended biome color of.</param>
-        /// <returns>The blended biome color at the given key position.</returns>
-        /// <exception cref="ArgumentOutOfRangeException">Thrown if the key
-        /// is invalid.</exception>
-        public virtual Color BlendedPreviewColor(Vector2Int key) {
-            if(!ContainsKey(key)) throw new ArgumentOutOfRangeException(nameof(key), key, 
-                "The provided map data key is invalid.");
-            float red = 0f, blue = 0f, green=0f;
-            foreach(var biome in weights.Keys) {
-                var color = BiomePreviewColor(biome,HeightMap[key]);
-                red += color.r * weights[biome][key.x, key.y];
-                green += color.g * weights[biome][key.x, key.y];
-                blue += color.b * weights[biome][key.x, key.y];
-            }
-            return new Color(red, green, blue, 1f);
-        }
-        
-        /// <summary>
         /// This method is used to get the biome info for the main biome at
         /// the given key position.
         /// </summary>
@@ -257,19 +223,6 @@ namespace Amilious.ProceduralTerrain.Biomes {
         
         #region Protected Methods
         
-        /// <summary>
-        /// This method is used to get the biome preview color.
-        /// </summary>
-        /// <param name="biomeGuid">The biome id.</param>
-        /// <param name="height">The height value.</param>
-        /// <returns>The preview color of the given biome with the given height.</returns>
-        protected virtual Color BiomePreviewColor(string biomeGuid, float height) {
-            var info = BiomeSettings.GetBiome(biomeGuid);
-            height = Mathf.InverseLerp(-info.maxHeight, info.maxHeight, height) * 2 - 1;
-            return info.noiseSettings.PreviewColors.GetColor(height);
-
-        }
-
         /// <summary>
         /// This method is used to generate a height map using this biome map.
         /// </summary>

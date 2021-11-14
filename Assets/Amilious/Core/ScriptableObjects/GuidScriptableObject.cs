@@ -1,7 +1,8 @@
 using Sirenix.OdinInspector;
-using UnityEditor;
 using UnityEngine;
-using UnityEngine.Serialization;
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
 
 namespace Amilious.Core.ScriptableObjects {
     
@@ -33,9 +34,11 @@ namespace Amilious.Core.ScriptableObjects {
         /// and the localId here to make sure that it is accurate.
         /// </summary>
         public virtual void OnBeforeSerialize() {
+            #if UNITY_EDITOR
             AssetDatabase.TryGetGUIDAndLocalFileIdentifier(this, out var guid, out long localId);
             if(guid != null && guid != this.guid) this.guid = guid;
             this.localId = localId;
+            #endif
         }
 
         /// <summary>

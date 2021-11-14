@@ -1,7 +1,9 @@
 using System.IO;
 using UnityEngine;
 using Amilious.Saving;
+#if UNITY_EDITOR
 using System.Diagnostics;
+#endif
 using Sirenix.OdinInspector;
 using Debug = UnityEngine.Debug;
 
@@ -68,6 +70,7 @@ namespace Amilious.ProceduralTerrain.Saving {
             Debug.Log(Directory.Exists(path) ? "Unable to clear the save data!" : "Cleared the save data!");
         }
 
+        #if UNITY_EDITOR
         /// <summary>
         /// This method is used to open the current save directory.
         /// </summary>
@@ -77,6 +80,7 @@ namespace Amilious.ProceduralTerrain.Saving {
             if(!Directory.Exists(path)) path = Application.persistentDataPath;
             Process.Start(path);
         }
+        #endif
 
         /// <summary>
         /// This method is used to save the world settings.

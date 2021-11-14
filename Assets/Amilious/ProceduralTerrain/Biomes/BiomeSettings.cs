@@ -30,7 +30,7 @@ namespace Amilious.ProceduralTerrain.Biomes {
         private const string BIOME_LOOKUP_TEST = "{0}: {1}";
 
         #region Inspector Preview Variables
-        
+        #if UNITY_EDITOR
         [Tooltip("This is the seed that is used for random generation.")]
         [BoxGroup(PREVIEW), LabelText("Seed"), OnInspectorGUI("DrawPreview", append: false), SerializeField]
         [InfoBox("The biome map has not been set up correctly.", InfoMessageType.Error, nameof(InvalidBiomeMapping))]
@@ -59,6 +59,7 @@ namespace Amilious.ProceduralTerrain.Biomes {
         [BoxGroup(PREVIEW), LabelText("Max Moisture Color"), ShowIf(nameof(previewType),BiomePreviewType.MoistureMap), SerializeField]
         [Tooltip("This color will be used as the high value color for the moisture map.")]
         private Color pvMaxMoistureColor = Color.blue;
+        #endif
         #endregion
 
         #region Inspector Settings Tab
@@ -84,8 +85,7 @@ namespace Amilious.ProceduralTerrain.Biomes {
         #endregion
 
         #region Inspector Biomes Tab
-        [TabGroup(TG, TAB_B), SerializeField] 
-        private Biome oceanBiome;
+        
         
         #endregion
 
@@ -94,13 +94,16 @@ namespace Amilious.ProceduralTerrain.Biomes {
         [TabGroup(TG, TAB_C)]
         [OdinSerialize]
         #if UNITY_EDITOR
-        [TableMatrix(VerticalTitle ="<-Heat", HorizontalTitle = "Moisture->", DrawElementMethod = nameof(DrawTableItem),
-            HideColumnIndices = true,HideRowIndices = true)]
+        [TableMatrix(VerticalTitle = "<-Heat", HorizontalTitle = "Moisture->",
+            DrawElementMethod = nameof(DrawTableItem))]
         #endif
+        
         // ReSharper disable once InconsistentNaming
         private Biome[,] biomeTable;
-        [SerializeField, TabGroup(TG, TAB_C), Range(-1,1), Title("Test Result")]
+        [TabGroup(TG, TAB_C), SerializeField] 
+        private Biome oceanBiome;
         #if UNITY_EDITOR
+        [SerializeField, TabGroup(TG, TAB_C), Range(-1,1), Title("Test Result")]
         private float testHeat;
         [SerializeField, TabGroup(TG, TAB_C), Range(-1,1)]
         private float testMoisture;

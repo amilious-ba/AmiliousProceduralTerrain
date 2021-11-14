@@ -20,11 +20,9 @@ namespace Amilious.ProceduralTerrain.Noise {
 
         #region Inspector Preview
         
-        /// <summary>
-        /// Preview Inspector
-        /// </summary>
+        #if UNITY_EDITOR
         [Tooltip("This is the seed that is used for random generation.")]
-        [BoxGroup(PREVIEW), OnInspectorGUI("DrawPreview", append: false)]
+        [BoxGroup(PREVIEW), OnInspectorGUI(nameof(DrawPreview), append: false)]
         [BoxGroup(PREVIEW), SerializeField, LabelText("Seed")]
         private string pvSeed = "seedless";
         [Tooltip("This is the size of the generated noise map used for the preview.")]
@@ -47,7 +45,7 @@ namespace Amilious.ProceduralTerrain.Noise {
         [BoxGroup(PREVIEW), SerializeField, ShowIf("noisePreviewType", NoisePreviewType.CrossSection)]
         [PropertyRange(1,nameof(pvSize))]
         private int crossSectionDepth;
-
+        #endif
         #endregion
 
         #region Inspector General Settigns
@@ -100,11 +98,6 @@ namespace Amilious.ProceduralTerrain.Noise {
         #endregion
         
         #region Properties
-        
-        /// <summary>
-        /// This property is used to get the preview colors.
-        /// </summary>
-        public override ColorMap PreviewColors { get => pvColorMap; }
         
         #endregion
 

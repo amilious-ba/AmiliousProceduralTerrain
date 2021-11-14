@@ -32,11 +32,6 @@ namespace Amilious.ProceduralTerrain.Noise {
         public abstract float NoiseAtPoint(float x, float z, Seed seed);
 
         /// <summary>
-        /// This is used to get the preview colors from the noise provider.
-        /// </summary>
-        public abstract ColorMap PreviewColors { get; }
-
-        /// <summary>
         /// This method is used to set the values in the compute shader.
         /// </summary>
         /// <param name="computeShader">The compute shader.</param>
