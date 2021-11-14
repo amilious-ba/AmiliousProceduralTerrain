@@ -22,6 +22,9 @@ namespace Amilious.Core {
 			public float spaceAfter= 5f;
 		}
 		
+		/// <summary>
+		/// This enum is used to align objects in the inspector.
+		/// </summary>
 		public enum ReadmeAlignment{Left, Center, Right}
 	}
 }
