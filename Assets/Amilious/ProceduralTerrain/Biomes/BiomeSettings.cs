@@ -6,14 +6,12 @@ using System.Threading;
 using System.Diagnostics;
 using Sirenix.OdinInspector;
 using Sirenix.Serialization;
-using Debug = UnityEngine.Debug;
 using System.Collections.Generic;
 using System.Collections.Concurrent;
 using Amilious.ProceduralTerrain.Noise;
 using Amilious.ProceduralTerrain.Sampling;
 using Amilious.ProceduralTerrain.Textures;
 using Amilious.ProceduralTerrain.Biomes.Blending;
-
 #if UNITY_EDITOR
 using Sirenix.Utilities.Editor;
 #endif
@@ -35,6 +33,7 @@ namespace Amilious.ProceduralTerrain.Biomes {
         
         [Tooltip("This is the seed that is used for random generation.")]
         [BoxGroup(PREVIEW), LabelText("Seed"), OnInspectorGUI("DrawPreview", append: false), SerializeField]
+        [InfoBox("The biome map has not been set up correctly.", InfoMessageType.Error, nameof(InvalidBiomeMapping))]
         private string pvSeed = "seedless";
         [Tooltip("This is the size of the generated noise map used for the preview.")]
         [BoxGroup(PREVIEW), LabelText("Size"), SerializeField]
@@ -86,13 +85,7 @@ namespace Amilious.ProceduralTerrain.Biomes {
 
         #region Inspector Biomes Tab
         [TabGroup(TG, TAB_B), SerializeField] 
-        private BiomeInfo oceanBiome = new BiomeInfo{name = "Ocean", biomeMapColor = Color.blue};
-        
-        [TabGroup(TG, TAB_B),SerializeField]
-        #if UNITY_EDITOR
-        [ListDrawerSettings(CustomAddFunction = nameof(AddNewBiomeInfo), Expanded = true, DraggableItems = false)] 
-        #endif
-        private BiomeInfo[] biomeInfo;
+        private Biome oceanBiome;
         
         #endregion
 
@@ -101,27 +94,29 @@ namespace Amilious.ProceduralTerrain.Biomes {
         [TabGroup(TG, TAB_C)]
         [OdinSerialize]
         #if UNITY_EDITOR
-        [TableMatrix(VerticalTitle ="Heat", HorizontalTitle = "Moisture", 
-            DrawElementMethod = nameof(GetBiomeDropdown))]
+        [TableMatrix(VerticalTitle ="<-Heat", HorizontalTitle = "Moisture->", DrawElementMethod = nameof(DrawTableItem),
+            HideColumnIndices = true,HideRowIndices = true)]
         #endif
         // ReSharper disable once InconsistentNaming
-        private int[,] biomeTable;
+        private Biome[,] biomeTable;
         [SerializeField, TabGroup(TG, TAB_C), Range(-1,1), Title("Test Result")]
         #if UNITY_EDITOR
         private float testHeat;
         [SerializeField, TabGroup(TG, TAB_C), Range(-1,1)]
         private float testMoisture;
         [TabGroup(TG, TAB_C), SerializeField, DisplayAsString, HideLabel, GUIColor(0f,1f,0f)]
+        // ReSharper disable once NotAccessedField.Local
         private string previewTestResult = "press test to get the biome for the given levels.";
         #endif
         #endregion
-
+        
+        
         #region Private instace variables
 
         private readonly ConcurrentDictionary<int, BiomeBlender> _biomeBlenderCache =
             new ConcurrentDictionary<int, BiomeBlender>();
-        private readonly ConcurrentDictionary<int, BiomeInfo> _biomeLookup = 
-            new ConcurrentDictionary<int, BiomeInfo>();
+        private readonly ConcurrentDictionary<string, Biome> _biomeLookup = 
+            new ConcurrentDictionary<string, Biome>();
         private readonly Stopwatch _stopwatch = new Stopwatch();
         private GUIStyle _timerGUI;
         private string _generateHeightTime;
@@ -154,40 +149,26 @@ namespace Amilious.ProceduralTerrain.Biomes {
         
         #if UNITY_EDITOR
         
-        /// <summary>
-        /// This method is used to add a new biome info to the
-        /// array.
-        /// </summary>
-        /// <returns>The new biome info.</returns>
-        private BiomeInfo AddNewBiomeInfo() {
-            Debug.Log("reached");
-            int id;
-            while(true) {
-                id = Guid.NewGuid().GetHashCode();
-                if(biomeInfo.All(info => info.biomeId != id)&&id!=0) break;
-            }
-            return new BiomeInfo { biomeId = id, validBiome = true};
+        public Biome DrawTableItem(Rect rect, Biome biome) {
+            SirenixEditorFields.UnityObjectField(rect, biome,typeof(Biome),false);
+            return biome;
         }
-
+        
         /// <summary>
         /// This method is used to display the preview biome.
         /// </summary>
         public void PreviewLoopUpBiome() {
-            var test = GetBiomeInfo(testHeat, testMoisture);
-            previewTestResult = string.Format(BIOME_LOOKUP_TEST,test.biomeId, test.name);
+            var test = GetBiome(testHeat, testMoisture);
+            previewTestResult = string.Format(BIOME_LOOKUP_TEST,test==null?"null":test.Guid, test==null?"null":test.name);
         }
 
-        /// <summary>
-        /// This method is used to draw the biome dropdown.
-        /// </summary>
-        /// <param name="rect">The rectangle that contains the dropdown.</param>
-        /// <param name="value">The current value of the dropdown.</param>
-        /// <returns>The resulting value of the dropdown.</returns>
-        public int GetBiomeDropdown(Rect rect, int value) {
-            var values = biomeInfo.Select(x => x.biomeId).ToList();
-            var names = biomeInfo.Select(x => x.name).ToList();
-            values.Add(0); names.Add("not set");
-            return SirenixEditorFields.Dropdown(rect, "", value, values.ToArray(), names.ToArray());
+        public bool InvalidBiomeMapping {
+            get {
+                if(biomeTable == null) return true;
+                if(biomeTable.Cast<Biome>().Any(biome => biome is null)) return true;
+                if(oceanBiome == null) return true;
+                return false;
+            }
         }
         
         /// <summary>
@@ -222,6 +203,7 @@ namespace Amilious.ProceduralTerrain.Biomes {
         /// </summary>
         // ReSharper disable once UnusedMember.Local
         private void DrawPreview() {
+            if(InvalidBiomeMapping) return;
             _timerGUI ??= new GUIStyle { normal = { textColor = Color.red } };
             GUILayout.BeginVertical(GUI.skin.box);
             GUILayout.BeginHorizontal();
@@ -290,7 +272,7 @@ namespace Amilious.ProceduralTerrain.Biomes {
         /// <param name="token">A cancellation token that can be used to
         /// cancel the blending.</param>
         /// <returns>A dictionary of the biomes and their weights.</returns>
-        public virtual Dictionary<int, float[,]> BlendChunk(int size, Seed seed, Vector2 position, CancellationToken token) {
+        public virtual Dictionary<string, float[,]> BlendChunk(int size, Seed seed, Vector2 position, CancellationToken token) {
             //try to get biomeBlender from cache
             var found = _biomeBlenderCache.TryGetValue(size, out var biomeBlender);
             //if the biome blender is not cached create it and cache it.
@@ -307,8 +289,8 @@ namespace Amilious.ProceduralTerrain.Biomes {
             //if the application is not running build lookup
             if(Application.isPlaying && _builtLookup) return;
             //need to build
-            foreach(var info in biomeInfo)
-                _biomeLookup.TryAdd(info.biomeId, info);
+            foreach(var biome in biomeTable)
+                if(biome!=null)_biomeLookup.TryAdd(biome.Guid, biome);
             _builtLookup = true;
         }
         
@@ -316,14 +298,14 @@ namespace Amilious.ProceduralTerrain.Biomes {
         /// This method is used to get the biome info for the biome with
         /// the given id.
         /// </summary>
-        /// <param name="biomeId">The id of the biome you want to get the info for.</param>
+        /// <param name="biomeGuid">The id of the biome you want to get the info for.</param>
         /// <returns>The biome info for the id that was provided, otherwise returns
         /// a biome info that is marked invalid.</returns>
-        public virtual BiomeInfo GetBiomeInfo(int biomeId) {
+        public virtual Biome GetBiome(string biomeGuid) {
             //return the ocean biome
-            if(UsingOceanMap && biomeId == 0) return oceanBiome;
+            if(UsingOceanMap && oceanBiome == null || biomeGuid == oceanBiome.Guid) return oceanBiome;
             //return the other biomes
-            return _biomeLookup.TryGetValue(biomeId, out var value) ? value : BiomeInfo.invalid;
+            return _biomeLookup.TryGetValue(biomeGuid, out var value) ? value : null;
         }
 
         /// <summary>
@@ -333,8 +315,8 @@ namespace Amilious.ProceduralTerrain.Biomes {
         /// <param name="moisture">The moisture level.</param>
         /// <param name="baseValue">The base value.</param>
         /// <returns>The biome info for the given values.</returns>
-        protected virtual BiomeInfo GetBiomeInfo(float heat, float moisture, float baseValue=-1) => 
-            GetBiomeInfo(GetBiomeId(heat, moisture, baseValue));
+        protected virtual Biome GetBiome(float heat, float moisture, float baseValue=-1) => 
+            GetBiome(GetBiomeId(heat, moisture, baseValue));
 
         /// <summary>
         /// This method is used to get the biome id using the provided values.
@@ -343,12 +325,12 @@ namespace Amilious.ProceduralTerrain.Biomes {
         /// <param name="moisture">The moisture level.</param>
         /// <param name="baseValue">The base value.</param>
         /// <returns>The biome id based on the passed values.</returns>
-        public virtual int GetBiomeId(float heat, float moisture, float baseValue = 1) {
+        public virtual string GetBiomeId(float heat, float moisture, float baseValue = 1) {
             //convert the -1 to 1 value into an integer value 0 to the array length minus one.
-            if(useOceanMap && oceanHeight <= baseValue) return oceanBiome.biomeId;
+            if(useOceanMap && oceanHeight <= baseValue) return oceanBiome.Guid;
             var x = (int)((moisture+1)*(biomeTable.GetUpperBound(0)+1)*.5f-.0001f);
             var y = (int)((heat+1)*(biomeTable.GetUpperBound(1)+1)*.5f-.0001f);
-            return biomeTable[x, y];
+            return biomeTable[x, y]?.Guid;
         }
 
         /// <summary>
@@ -373,7 +355,7 @@ namespace Amilious.ProceduralTerrain.Biomes {
         /// <param name="z">The y position.</param>
         /// <param name="seed">The seed.</param>
         /// <returns>The id for the biome at that position.</returns>
-        public virtual int GetBiomeAt(float x, float z, Seed seed) {
+        public virtual string GetBiomeAt(float x, float z, Seed seed) {
             var heat = heatMapSettings.NoiseAtPoint(x, z, seed);
             var moisture = moistureMapSettings.NoiseAtPoint(x, z, seed);
             if(!useOceanMap) return GetBiomeId(heat, moisture);
@@ -387,10 +369,10 @@ namespace Amilious.ProceduralTerrain.Biomes {
         /// <param name="samplePoints">The points you want the biome for.</param>
         /// <param name="seed">The seed you want to use for the biomes.</param>
         /// <returns>A list of biomes.</returns>
-        public virtual List<int> GetBiomesFromComputeShader(List<SamplePoint<int>> samplePoints, Seed seed) {
-            var result = new List<int>();
-            
-            //create the buffer
+        public virtual List<string> GetBiomesFromComputeShader(List<SamplePoint<string>> samplePoints, Seed seed) {
+            var result = new List<string>();
+            return result;
+            /*//create the buffer
             var bufferData = new ShaderBufferBiomeInfo[samplePoints.Count];
             for(var i = 0; i < samplePoints.Count; i++)
                 bufferData[i]= new ShaderBufferBiomeInfo{position = new Vector2(samplePoints[i].X,samplePoints[i].Z)};
@@ -414,7 +396,7 @@ namespace Amilious.ProceduralTerrain.Biomes {
             }
             //cleanup
             buffer.Dispose();
-            return result;
+            return result;*/
         }
 
     }

@@ -24,7 +24,7 @@ namespace Amilious.ProceduralTerrain.Biomes.Blending {
         /// the given position.</param>
         /// <returns>The biome id at the given position
         /// using the given hashed seed.</returns>
-        int GetBiomeAt(float x, float z, Seed seed);
+        string GetBiomeAt(float x, float z, Seed seed);
 
         /// <summary>
         /// This property is used to check if the biome evaluator should use
@@ -39,6 +39,6 @@ namespace Amilious.ProceduralTerrain.Biomes.Blending {
         /// <param name="samplePoints">The points that you want to get the biomes for.</param>
         /// <param name="seed">The seed you are using for generation.</param>
         /// <returns>The biomes at the given sample points.</returns>
-        List<int> GetBiomesFromComputeShader(List<SamplePoint<int>> samplePoints, Seed seed);
+        List<string> GetBiomesFromComputeShader(List<SamplePoint<string>> samplePoints, Seed seed);
     }
 }

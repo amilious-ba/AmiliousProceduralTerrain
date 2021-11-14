@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 284470e2096042279d5aae99e3b0a570, type: 3}
+  m_Name: Ocean
+  m_EditorClassIdentifier: 
+  guid: a13dbb77c52e2bb48ba63d71bb3236d0
+  localId: 11400000
+  biomeName: Ocean
+  biomeMapColor: {r: 0, g: 0.11372549, b: 1, a: 1}
+  noiseSettings: {fileID: 11400000, guid: 21710f253a12fd84a9ae29dfff37b039, type: 2}
+  minHeight: -50
+  maxHeight: 3
+  mapModifiers: []

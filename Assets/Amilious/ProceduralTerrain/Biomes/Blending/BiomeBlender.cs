@@ -57,7 +57,7 @@ namespace Amilious.ProceduralTerrain.Biomes.Blending {
         /// <param name="positionIsCenter">This value should be true if the chunk's position
         /// is centered, otherwise false.</param>
         /// <returns>A dictionary of this chunk's biome weights.</returns>
-        public Dictionary<int, float[,]> GetChunkBiomeWeights(Seed seed, Vector2 position,
+        public Dictionary<string, float[,]> GetChunkBiomeWeights(Seed seed, Vector2 position,
             IBiomeEvaluator evaluator, CancellationToken token,  bool positionIsCenter = true) {
             //we need to negate the z because the unfilteredPointGather
             //does not correctly apply the position offset
@@ -70,7 +70,7 @@ namespace Amilious.ProceduralTerrain.Biomes.Blending {
                     _gatherer.GetPointsFromChunkBase(seed,position, token);
 
             // Evaluate and aggregate all biomes to be blended in this chunk.
-            var weightMap = new Dictionary<int, float[,]>();
+            var weightMap = new Dictionary<string, float[,]>();
             if(_useComputeShader) {
                 var biomes = evaluator.GetBiomesFromComputeShader(points, seed);
                 foreach(var biome in biomes){

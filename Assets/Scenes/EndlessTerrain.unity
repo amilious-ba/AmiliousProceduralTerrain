@@ -210,7 +210,6 @@ MonoBehaviour:
   enableSaving: 0
   saveOnGenerate: 0
   saveMeshData: 0
-  saveTextureData: 0
   saveFolder: testSave
 --- !u!1 &653260035
 GameObject:

@@ -12,7 +12,7 @@ namespace Amilious.ProceduralTerrain.Biomes {
     /// This class is used to store Biome information for
     /// a chunk or a map.
     /// </summary>
-    public class BiomeMap : MapData<int> {
+    public class BiomeMap : MapData<string> {
 
         protected const string PREFIX = "biomeMapData";
         protected const string BIOME_VALUES = "biomeValue";
@@ -21,7 +21,7 @@ namespace Amilious.ProceduralTerrain.Biomes {
         
         #region Instance Variables
         
-        protected Dictionary<int, float[,]> weights = new Dictionary<int, float[,]>();
+        protected Dictionary<string, float[,]> weights = new Dictionary<string, float[,]>();
         
         #endregion
         
@@ -42,7 +42,7 @@ namespace Amilious.ProceduralTerrain.Biomes {
         /// <summary>
         /// This property is used to get the weight of the given biome.
         /// </summary>
-        /// <param name="biomeId">The biome id that you want to get
+        /// <param name="biomeGuid">The biome id that you want to get
         /// the weight for.</param>
         /// <param name="x">The x map data position that you want to get
         /// the biome weight for.</param>
@@ -51,32 +51,32 @@ namespace Amilious.ProceduralTerrain.Biomes {
         /// <exception cref="ArgumentOutOfRangeException">This is thrown
         /// if the provided map data x or z positions are invalid.</exception>
         /// ReSharper disable once MemberCanBeProtected.Global
-        public virtual float this[int biomeId, int x, int z] {
+        public virtual float this[string biomeGuid, int x, int z] {
             get {
                 if(!IsValidX(x)) throw new ArgumentOutOfRangeException(nameof(x), x, 
                     "The given x map position is not valid.");
                 if(!IsValidX(z)) throw new ArgumentOutOfRangeException(nameof(z), z, 
                     "The given z map position is not valid.");
-                if(!weights.ContainsKey(biomeId)) return 0;
-                return weights[biomeId][x, z];
+                if(!weights.ContainsKey(biomeGuid)) return 0;
+                return weights[biomeGuid][x, z];
             }
         }
 
         /// <summary>
         /// This property is used to get the weight of the given biome.
         /// </summary>
-        /// <param name="biomeId">The biome id that you want to get
+        /// <param name="biomeGuid">The biome id that you want to get
         /// the weight for.</param>
         /// <param name="key">The key that you want to use to get the
         /// biome weight.  The x value will be used as the x map data
         /// position and the y value will be used as the z map data position.</param>
         /// <exception cref="ArgumentOutOfRangeException">This is thrown
         /// if the provided map data key is invalid.</exception>
-        public virtual float this[int biomeId, Vector2Int key] {
+        public virtual float this[string biomeGuid, Vector2Int key] {
             get {
                 if(!ContainsKey(key)) throw new ArgumentOutOfRangeException(nameof(key), key,
                     "The provided map data key is invalid.");
-                return this[biomeId, key.x, key.y];
+                return this[biomeGuid, key.x, key.y];
             }
         }
 
@@ -164,8 +164,8 @@ namespace Amilious.ProceduralTerrain.Biomes {
         public virtual void Load(SaveData saveData) {
             saveData.SetPrefix(PREFIX);
             Position = saveData.FetchData<Vector2>(POSITION);
-            values = saveData.FetchData<int[,]>(BIOME_VALUES);
-            weights = saveData.FetchData<Dictionary<int, float[,]>>(BIOME_WEIGHTS);
+            values = saveData.FetchData<string[,]>(BIOME_VALUES);
+            weights = saveData.FetchData<Dictionary<string, float[,]>>(BIOME_WEIGHTS);
             saveData.ClearPrefix();
             HeightMap.Load(saveData);
             HasBeenUpdated = false;
@@ -184,7 +184,7 @@ namespace Amilious.ProceduralTerrain.Biomes {
         public virtual Color GetBiomeColor(Vector2Int key) {
             if(!ContainsKey(key)) throw new ArgumentOutOfRangeException(nameof(key), key, 
         "The provided map data key is invalid.");
-            return BiomeSettings.GetBiomeInfo(this[key]).biomeMapColor;
+            return BiomeSettings.GetBiome(this[key]).biomeMapColor;
         }
 
         /// <summary>
@@ -201,7 +201,7 @@ namespace Amilious.ProceduralTerrain.Biomes {
         "The provided map data key is invalid.");
             float red = 0f, blue = 0f, green=0f;
             foreach(var biome in weights.Keys) {
-                var color = BiomeSettings.GetBiomeInfo(biome).biomeMapColor;
+                var color = BiomeSettings.GetBiome(biome).biomeMapColor;
                 red += color.r * weights[biome][key.x, key.y];
                 green += color.g * weights[biome][key.x, key.y];
                 blue += color.b * weights[biome][key.x, key.y];
@@ -249,8 +249,8 @@ namespace Amilious.ProceduralTerrain.Biomes {
         /// </summary>
         /// <param name="key">The position you want to get the biome info for.</param>
         /// <returns>The biome info at the given key position.</returns>
-        public virtual BiomeInfo GetBiomeInfo(Vector2Int key) {
-            return BiomeSettings.GetBiomeInfo(this[key]);
+        public virtual Biome GetBiomeInfo(Vector2Int key) {
+            return BiomeSettings.GetBiome(this[key]);
         }
 
         #endregion
@@ -260,11 +260,11 @@ namespace Amilious.ProceduralTerrain.Biomes {
         /// <summary>
         /// This method is used to get the biome preview color.
         /// </summary>
-        /// <param name="biomeId">The biome id.</param>
+        /// <param name="biomeGuid">The biome id.</param>
         /// <param name="height">The height value.</param>
         /// <returns>The preview color of the given biome with the given height.</returns>
-        protected virtual Color BiomePreviewColor(int biomeId, float height) {
-            var info = BiomeSettings.GetBiomeInfo(biomeId);
+        protected virtual Color BiomePreviewColor(string biomeGuid, float height) {
+            var info = BiomeSettings.GetBiome(biomeGuid);
             height = Mathf.InverseLerp(-info.maxHeight, info.maxHeight, height) * 2 - 1;
             return info.noiseSettings.PreviewColors.GetColor(height);
 
@@ -285,7 +285,7 @@ namespace Amilious.ProceduralTerrain.Biomes {
                 var heightValue = 0f;
                 foreach(var biome in weights.Keys) {
                     if(weights[biome][key.x, key.y] == 0) continue;
-                    var info = BiomeSettings.GetBiomeInfo(biome);
+                    var info = BiomeSettings.GetBiome(biome);
                     var rawHeight = info.noiseSettings.NoiseAtPoint(key.x + centerX, key.y + centerY, Seed);
                     var lerp = Mathf.InverseLerp(-1, 1, rawHeight);
                     heightValue += Mathf.Lerp(info.minHeight,info.maxHeight,lerp) * weights[biome][key.x,key.y];
@@ -336,7 +336,7 @@ namespace Amilious.ProceduralTerrain.Biomes {
             weights = BiomeSettings.BlendChunk(Size,Seed,Position, token);
             //set the biome to the greatest weight
             foreach(var key in this) {
-                var currentBiome = 0;
+                string currentBiome = null;
                 var currentWeight = 0f;
                 foreach(var biome in weights.Keys) {
                     token.ThrowIfCancellationRequested();
