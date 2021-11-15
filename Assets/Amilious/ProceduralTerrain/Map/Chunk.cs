@@ -1,5 +1,6 @@
 using System.Linq;
 using UnityEngine;
+using Amilious.Saving;
 using System.Threading;
 using Amilious.Threading;
 using Sirenix.OdinInspector;
@@ -7,7 +8,6 @@ using Amilious.ProceduralTerrain.Mesh;
 using Amilious.ProceduralTerrain.Biomes;
 using Amilious.ProceduralTerrain.Saving;
 using Amilious.ProceduralTerrain.Textures;
-using Amilious.Saving;
 
 namespace Amilious.ProceduralTerrain.Map {
     
@@ -29,7 +29,6 @@ namespace Amilious.ProceduralTerrain.Map {
         private readonly MeshSettings _meshSettings;
         private readonly ChunkMesh[] _lodMeshes;
         private readonly LODInfo[] _detailLevels;
-        private readonly Transform _viewer;
         private readonly BiomeMap _biomeMap;
         private readonly Color[] _preparedColors;
         private readonly MapSaver _mapSaver;
@@ -147,11 +146,6 @@ namespace Amilious.ProceduralTerrain.Map {
                 || _biomeMap.HasBeenUpdated || _biomeMap.HeightMap.HasBeenUpdated;
 
         /// <summary>
-        /// This property is used to get the player's position as a <see cref="Vector2"/>.
-        /// </summary>
-        private Vector2 ViewerPosition => new Vector2 (_viewer.position.x, _viewer.position.z);
-
-        /// <summary>
         /// This is only used for the reference version
         /// </summary>
         public Chunk() { }
@@ -175,7 +169,6 @@ namespace Amilious.ProceduralTerrain.Map {
             });
             Name = CHUNK_POOLED;
             _meshSettings = manager.MeshSettings;
-            _viewer = manager.Viewer;
             _biomeMap = new BiomeMap(manager.Seed,manager.MeshSettings.VertsPerLine, manager.BiomeSettings);
             _preparedColors = new Color[_biomeMap.GetBorderCulledValuesCount(1)];
             //create meshes
@@ -326,7 +319,7 @@ namespace Amilious.ProceduralTerrain.Map {
                 return;
             }
             _updated = true;
-            _updateDistFromViewerSq = _bounds.SqrDistance(ViewerPosition);
+            _updateDistFromViewerSq = _bounds.SqrDistance(_manager.ViewerPosition);
             _updateWasVisible =  _isActive;
             _updateVisible = _updateDistFromViewerSq <= _meshSettings.MaxViewDistanceSq;
             if(_updateVisible) UpdateLOD(_updateDistFromViewerSq);
@@ -341,7 +334,7 @@ namespace Amilious.ProceduralTerrain.Map {
         public void ValidateNonUpdatedChunk() {
             if(!IsInUse || _updated || _startedToRelease) { _updated = false; return; }
             _updated = false;
-            if(_bounds.SqrDistance(ViewerPosition) < _meshSettings.ChunkUnloadDistanceSq) return;
+            if(_bounds.SqrDistance(_manager.ViewerPosition) < _meshSettings.ChunkUnloadDistanceSq) return;
             if(_startedToRelease) return;
             _startedToRelease = true;
             _mapPool.ReturnToPool(this);
@@ -430,7 +423,7 @@ namespace Amilious.ProceduralTerrain.Map {
         /// </summary>
         public void UpdateCollisionMesh() {
             if(!IsInUse || !_isActive || _hasSetCollider) return;
-            _updateDistFromViewerSq = _bounds.SqrDistance(ViewerPosition);
+            _updateDistFromViewerSq = _bounds.SqrDistance(_manager.ViewerPosition);
             if(_updateDistFromViewerSq < _detailLevels[_meshSettings.ColliderLODIndex].SqrVisibleDistanceThreshold)
                 if(!_lodMeshes[_meshSettings.ColliderLODIndex].HasRequestedMesh)
                     _lodMeshes[_meshSettings.ColliderLODIndex].RequestMesh(_biomeMap.HeightMap, _manager.ApplyHeight);
@@ -440,6 +433,12 @@ namespace Amilious.ProceduralTerrain.Map {
             _hasSetCollider = true;
         }
 
+        /// <summary>
+        /// This method is used by the MapPool to create a new chunk.
+        /// </summary>
+        /// <param name="mapManager">The map manager to assign to the chunk.</param>
+        /// <param name="mapPool">The chunks map pool.</param>
+        /// <returns>The newly created chunk.</returns>
         public Chunk CreateMapComponent(MapManager mapManager, MapPool<Chunk> mapPool) {
             return new Chunk(mapManager, mapPool);
         }
