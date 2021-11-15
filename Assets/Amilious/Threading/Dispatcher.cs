@@ -15,6 +15,8 @@ namespace Amilious.Threading {
     [InfoBox("This script is responsible for executing code on the main thead.")]
     public class Dispatcher : MonoBehaviour {
 
+        private const string NO_DISPATCHER = "No Dispatcher exists in the scene. Actions will not be invoked!";
+
         [SerializeField] private bool useAdvancedSettings;
 
         [SerializeField, ShowIf(nameof(useAdvancedSettings))]
@@ -48,10 +50,7 @@ namespace Amilious.Threading {
         /// </summary>
         /// <param name="action">The action to be queued.</param>
         public static void InvokeAsync(Action action) {
-            if (!_instanceExists) {
-                Debug.LogError("No Dispatcher exists in the scene. Actions will not be invoked!");
-                return;
-            }
+            if (!_instanceExists) { Debug.LogError(NO_DISPATCHER); return; }
             if (IsMainThread) action();
             else Actions.Enqueue(action);
         }
@@ -62,10 +61,7 @@ namespace Amilious.Threading {
         /// </summary>
         /// <param name="action">The action to be queued.</param>
         public static void Invoke(Action action) {
-            if (!_instanceExists) {
-                Debug.LogError("No Dispatcher exists in the scene. Actions will not be invoked!");
-                return;
-            }
+            if (!_instanceExists) { Debug.LogError(NO_DISPATCHER); return; }
             var hasRun = false;
             InvokeAsync(() => {action(); hasRun = true;});
             // Lock until the action has run
@@ -93,7 +89,7 @@ namespace Amilious.Threading {
             else StandardDequeue();
         }
 
-        private void StandardDequeue() {
+        private static void StandardDequeue() {
             while(!Actions.IsEmpty) { if(Actions.TryDequeue(out var action))action(); }
         }
 

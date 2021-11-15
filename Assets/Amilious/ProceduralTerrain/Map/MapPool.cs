@@ -59,14 +59,6 @@ namespace Amilious.ProceduralTerrain.Map {
         /// This property is used to get the pool info for this pool.
         /// </summary>
         public PoolInfo PoolInfo { get => PoolInfo.FromCheckedOutAndAvailable(CheckedOut,Available); }
-
-        /// <summary>
-        /// This property is used to check if the <typeparamref name="T"/> with the given id is visible.
-        /// </summary>
-        /// <param name="itemId">The id of the <typeparamref name="T"/> that you want to check.</param>
-        /// <returns>True if the <typeparamref name="T"/> with the given id is loaded and visible.</returns>
-        public bool IsVisible(Vector2Int itemId) => 
-            _loadedItems.TryGetValue(itemId, out var chunk) && chunk is { Active: true };
         
         #endregion
 
@@ -114,15 +106,20 @@ namespace Amilious.ProceduralTerrain.Map {
         }
 
         /// <summary>
-        /// This method is used to return a chunk to the pool.
+        /// This method should be used to return an item to the pool.
         /// </summary>
         /// <param name="item">The <typeparamref name="T"/> that you want to return to the pool.</param>
         public void ReturnToPool(T item) {
             if(item == null) return;
-            if(!item.HasProcessedRelease) {
-                item.ReleaseToPool();
-                return;
-            }
+            item.ReleaseToPool();
+        }
+
+        /// <summary>
+        /// This method adds an item to the pool.  If you want to return an item to
+        /// the pool DO NOT USE THIS METHOD, instead use <see cref="ReturnToPool"/>.
+        /// </summary>
+        /// <param name="item">The item that you want to enqueue.</param>
+        public void EnqueueItem(T item) {
             _loadedItems.TryRemove(item.Id, out _);
             _poolQueue.Enqueue(item);
         }
