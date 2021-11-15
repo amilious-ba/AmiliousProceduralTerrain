@@ -3,7 +3,7 @@ using System.Threading;
 using UnityEngine;
 
 namespace Amilious.Threading {
-    
+
     /// <summary>
     /// This class is used to execute a process on a background thread.
     /// </summary>
@@ -11,7 +11,7 @@ namespace Amilious.Threading {
     /// <seealso cref="ReusableFuture{T,T2}"/>
     /// <seealso cref="ReusableFuture{T,T2,T3}"/>
     /// <seealso cref="ReusableFuture{T,T2,T3,T4}"/>
-    public class ReusableFuture {
+    public class ReusableFuture : IReusableFuture {
         
         private volatile FutureState _state;
         private Action _successCallback;
@@ -164,7 +164,7 @@ namespace Amilious.Threading {
     /// <seealso cref="ReusableFuture{T,T2}"/>
     /// <seealso cref="ReusableFuture{T,T2,T3}"/>
     /// <seealso cref="ReusableFuture{T,T2,T3,T4}"/>
-    public class ReusableFuture<T> {
+    public class ReusableFuture<T> : IReusableFuture {
         
         private volatile FutureState _state;
         private Action<T> _successCallback;
@@ -316,7 +316,7 @@ namespace Amilious.Threading {
     /// <seealso cref="ReusableFuture{T}"/>
     /// <seealso cref="ReusableFuture{T,T2,T3}"/>
     /// <seealso cref="ReusableFuture{T,T2,T3,T4}"/>
-    public class ReusableFuture<T,T2> {
+    public class ReusableFuture<T,T2> : IReusableFuture {
         
         private volatile FutureState _state;
         private Action<T> _successCallback;
@@ -466,7 +466,7 @@ namespace Amilious.Threading {
     /// <seealso cref="ReusableFuture{T}"/>
     /// <seealso cref="ReusableFuture{T,T2}"/>
     /// <seealso cref="ReusableFuture{T,T2,T3,T4}"/>
-    public class ReusableFuture<T,T2,T3> {
+    public class ReusableFuture<T,T2,T3> : IReusableFuture {
         
         private volatile FutureState _state;
         private Action<T> _successCallback;
@@ -620,7 +620,7 @@ namespace Amilious.Threading {
     /// <seealso cref="ReusableFuture{T}"/>
     /// <seealso cref="ReusableFuture{T,T2}"/>
     /// <seealso cref="ReusableFuture{T,T2,T3}"/>
-    public class ReusableFuture<T,T2,T3,T4> {
+    public class ReusableFuture<T,T2,T3,T4> : IReusableFuture {
         
         private volatile FutureState _state;
         private Action<T> _successCallback;

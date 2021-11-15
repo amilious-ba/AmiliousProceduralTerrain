@@ -319,7 +319,7 @@ namespace Amilious.ProceduralTerrain.Map {
                 return;
             }
             _updated = true;
-            _updateDistFromViewerSq = _bounds.SqrDistance(_manager.ViewerPosition);
+            _updateDistFromViewerSq = _bounds.SqrDistance(_manager.ViewerPositionXZ);
             _updateWasVisible =  _isActive;
             _updateVisible = _updateDistFromViewerSq <= _meshSettings.MaxViewDistanceSq;
             if(_updateVisible) UpdateLOD(_updateDistFromViewerSq);
@@ -334,9 +334,8 @@ namespace Amilious.ProceduralTerrain.Map {
         public void ValidateNonUpdatedChunk() {
             if(!IsInUse || _updated || _startedToRelease) { _updated = false; return; }
             _updated = false;
-            if(_bounds.SqrDistance(_manager.ViewerPosition) < _meshSettings.ChunkUnloadDistanceSq) return;
+            if(_bounds.SqrDistance(_manager.ViewerPositionXZ) < _meshSettings.ChunkUnloadDistanceSq) return;
             if(_startedToRelease) return;
-            _startedToRelease = true;
             _mapPool.ReturnToPool(this);
         }
 
@@ -361,7 +360,7 @@ namespace Amilious.ProceduralTerrain.Map {
                 _updateLODMesh.AssignTo(_meshFilter);
                 onLodChanged?.Invoke(Id,_updateOldLODIndex,_updateLODIndex);
             }else if(!_updateLODMesh.HasRequestedMesh) {
-                _updateLODMesh.RequestMesh(_biomeMap.HeightMap, _manager.ApplyHeight);
+                _updateLODMesh.RequestMeshAsync(_biomeMap.HeightMap, _manager.ApplyHeight);
             }
         }
 
@@ -379,7 +378,7 @@ namespace Amilious.ProceduralTerrain.Map {
                 _meshRenderer.material.mainTexture = _previewTexture;
             }
             _heightMapReceived = true;
-            if(_mapSaver.SavingEnabled && _mapSaver.SaveMeshData) {
+            if((_mapSaver.SavingEnabled && _mapSaver.SaveMeshData)||_meshSettings.CalculateMeshDataOnLoad) {
                 foreach(var mesh in _lodMeshes) mesh.ApplyLoadedMesh();
             }
             UpdateChunk();
@@ -412,6 +411,11 @@ namespace Amilious.ProceduralTerrain.Map {
                     _biomeMap.Save(_saveData);
                     _mapSaver.SaveData(Id, _saveData);
                 }
+                //generate the mesh data using the same process
+                if(_meshSettings.CalculateMeshDataOnLoad) {
+                    foreach(var mesh in _lodMeshes) 
+                        mesh.RequestMesh(_biomeMap.HeightMap, _loader,token,_manager.ApplyHeight);
+                }
             }
             //generate texture
             _biomeMap.GenerateTextureColors(_preparedColors, _meshSettings.PaintingMode, 1);
@@ -423,10 +427,10 @@ namespace Amilious.ProceduralTerrain.Map {
         /// </summary>
         public void UpdateCollisionMesh() {
             if(!IsInUse || !_isActive || _hasSetCollider) return;
-            _updateDistFromViewerSq = _bounds.SqrDistance(_manager.ViewerPosition);
+            _updateDistFromViewerSq = _bounds.SqrDistance(_manager.ViewerPositionXZ);
             if(_updateDistFromViewerSq < _detailLevels[_meshSettings.ColliderLODIndex].SqrVisibleDistanceThreshold)
                 if(!_lodMeshes[_meshSettings.ColliderLODIndex].HasRequestedMesh)
-                    _lodMeshes[_meshSettings.ColliderLODIndex].RequestMesh(_biomeMap.HeightMap, _manager.ApplyHeight);
+                    _lodMeshes[_meshSettings.ColliderLODIndex].RequestMeshAsync(_biomeMap.HeightMap, _manager.ApplyHeight);
             if(_updateDistFromViewerSq > _manager.SqrColliderGenerationThreshold) return;
             if(!_lodMeshes[_meshSettings.ColliderLODIndex].HasMesh) return;
             _lodMeshes[_meshSettings.ColliderLODIndex].AssignTo(_meshCollider);

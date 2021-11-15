@@ -30,7 +30,7 @@ namespace Amilious.ProceduralTerrain.Mesh {
         private readonly Vector3[] _flatShadedVertices;
         private readonly Vector2[] _flatShadedUvs;
         private readonly Vector2[] _flatShadedUvs2;
-
+        private IReusableFuture _outSideFuture;
         private UnityEngine.Mesh _mesh;
         private int _meshId;
         private bool _bakedCollisionMesh;
@@ -172,14 +172,35 @@ namespace Amilious.ProceduralTerrain.Mesh {
         /// <param name="heightMap">The height map that you want to use to generate the mesh.</param>
         /// <param name="applyHeight">If true the height map's height values will be applied,
         /// otherwise the heights will be set to zero.</param>
-        public void RequestMesh(NoiseMap heightMap, bool applyHeight = true) {
+        public void RequestMeshAsync(NoiseMap heightMap, bool applyHeight = true) {
             HasRequestedMesh = true;
             _meshRequester.Process(heightMap,applyHeight);
         }
 
+        /// <summary>
+        /// This method is used to request the mesh from an already running ReusableFuture's process.
+        /// </summary>
+        /// <param name="heightMap">The height map that you want to use to generate the mesh.</param>
+        /// <param name="future">The future that is executing the request.</param>
+        /// <param name="token">The futures cancellation token.</param>
+        /// <param name="applyHeight">If true the height map's height values will be applied,
+        /// otherwise the heights will be set to zero.</param>
+        /// <remarks>The ApplyLoadedMesh method should be called in the futures onSuccess method.</remarks>
+        public void RequestMesh(NoiseMap heightMap, IReusableFuture future, CancellationToken token, bool applyHeight = true) {
+            HasRequestedMesh = true;
+            _outSideFuture = future;
+            MeshRequest(heightMap, applyHeight, token);
+            token.ThrowIfCancellationRequested();
+            HasMeshData = true;
+        }
+        
+        /// <summary>
+        /// This method is used to cancel any of the futures that are running on this mesh.
+        /// </summary>
         public void CancelProcessing() {
             _meshRequester.Cancel();
             _collisionBaker.Cancel();
+            _outSideFuture?.Cancel();
         }
         
         /// <summary>
