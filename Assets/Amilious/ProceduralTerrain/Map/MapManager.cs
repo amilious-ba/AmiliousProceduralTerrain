@@ -70,7 +70,8 @@ namespace Amilious.ProceduralTerrain.Map {
         #region Private Instance Variables
 
         private float _sqrChunkUpdateThreshold;
-        private Vector2 _viewerPosition;
+        private Vector2 _viewerPositionXZ;
+        private Vector3 _viewerPosition;
         private Vector2Int _viewerChunk;
         private Vector2 _oldViewerPosition;
         private float? _sqrColliderGenerationThreshold;
@@ -126,9 +127,14 @@ namespace Amilious.ProceduralTerrain.Map {
         public MapSaver MapSaver { get; private set; }
 
         /// <summary>
-        /// This property is used to get the viewer's x and z positions as a <see cref="Vector2"/>.
+        /// This property is used to get the viewer's x and z positions on the last update as a <see cref="Vector2"/>.
         /// </summary>
-        public Vector2 ViewerPositionXZ => new Vector2(viewer.position.x, viewer.position.z);
+        public Vector2 ViewerPositionXZ { get => _viewerPositionXZ; }
+        
+        /// <summary>
+        /// This property is used to get the viewer's position on the last update.
+        /// </summary>
+        public Vector3 ViewerPosition { get => _viewerPosition; }
         
         /// <summary>
         /// This property is used to get the map's <see cref="MapType"/>.
@@ -168,6 +174,14 @@ namespace Amilious.ProceduralTerrain.Map {
                 Mathf.RoundToInt(point.x / meshSettings.MeshWorldSize),
                 Mathf.RoundToInt(point.y / meshSettings.MeshWorldSize)
             );
+        }
+
+        /// <summary>
+        /// This method is used for setting the viewer.
+        /// </summary>
+        /// <param name="newViewer">The viewer that you want </param>
+        public void SetViewer(Transform newViewer) {
+            viewer = newViewer;
         }
         
         #endregion
@@ -217,23 +231,24 @@ namespace Amilious.ProceduralTerrain.Map {
         /// This method is called on every game update.
         /// </summary>
         protected virtual void Update() {
-            
+            if(viewer == null) return;
             //get the player position
-            _viewerPosition = ViewerPositionXZ;
-            var vChunk = ChunkAtPoint(_viewerPosition);
+            _viewerPosition = viewer.position;
+            _viewerPositionXZ = new Vector2(_viewerPosition.x, _viewerPosition.z);
+            var vChunk = ChunkAtPoint(_viewerPositionXZ);
             if(vChunk != _viewerChunk) {
                 OnViewerChangedChunk?.Invoke(viewer,_viewerChunk,vChunk);
                 _viewerChunk = vChunk;
             }
             
             //check for collision mesh update
-            if(_viewerPosition != _oldViewerPosition) {
+            if(_viewerPositionXZ != _oldViewerPosition) {
                 OnUpdateCollisionMesh?.Invoke();
             }
 
             //check if visible chunks need to be updated.
-            if((_oldViewerPosition - _viewerPosition).sqrMagnitude <= _sqrChunkUpdateThreshold) return;
-            _oldViewerPosition = _viewerPosition;
+            if((_oldViewerPosition - _viewerPositionXZ).sqrMagnitude <= _sqrChunkUpdateThreshold) return;
+            _oldViewerPosition = _viewerPositionXZ;
             UpdateVisibleChunks();
         }
 
