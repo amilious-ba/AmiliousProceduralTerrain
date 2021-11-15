@@ -180,7 +180,13 @@ namespace Amilious.ProceduralTerrain.Map {
         /// This method is used for setting the viewer.
         /// </summary>
         /// <param name="newViewer">The viewer that you want </param>
-        public void SetViewer(Transform newViewer) {
+        /// <param name="resetNewViewerPosition">If true the new viewer's position
+        /// will be set to the current viewer's position.</param>
+        public void SetViewer(Transform newViewer, bool resetNewViewerPosition = true) {
+            if(resetNewViewerPosition && viewer!=null) {
+                if(Dispatcher.IsMainThread) newViewer.position = ViewerPosition;
+                else Dispatcher.Invoke(()=>newViewer.position = ViewerPosition);
+            }
             viewer = newViewer;
         }
         
