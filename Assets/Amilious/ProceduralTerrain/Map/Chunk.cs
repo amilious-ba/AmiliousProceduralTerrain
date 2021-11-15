@@ -145,11 +145,6 @@ namespace Amilious.ProceduralTerrain.Map {
         /// </summary>
         public bool HasBeenUpdated => _lodMeshes.Any(x => x.HasBeenUpdated) 
                 || _biomeMap.HasBeenUpdated || _biomeMap.HeightMap.HasBeenUpdated;
-        
-        /// <summary>
-        /// This property contains true it the chunks has been processed to be released.Updated
-        /// </summary>
-        public bool HasProcessedRelease { get; private set; }
 
         /// <summary>
         /// This property is used to get the player's position as a <see cref="Vector2"/>.
@@ -224,7 +219,6 @@ namespace Amilious.ProceduralTerrain.Map {
             _bounds = new Bounds(_position, Vector3.one * _meshSettings.MeshWorldSize);
             Name = $"Chunk ({Id.x},{Id.y})";
             TransformPosition = new Vector3(_position.x, 0, _position.y);
-            HasProcessedRelease = false;
             _loader.Process();
         }
 
@@ -308,8 +302,7 @@ namespace Amilious.ProceduralTerrain.Map {
             //return to pool
             IsInUse = false;
             _startedToRelease = false;
-            HasProcessedRelease = true;
-            _mapPool.ReturnToPool(this);
+            _mapPool.EnqueueItem(this);
         }
 
         /// <summary>
@@ -346,13 +339,12 @@ namespace Amilious.ProceduralTerrain.Map {
         /// This method is called when the <see cref="MapManager"/> is ending the update cycle.
         /// </summary>
         public void ValidateNonUpdatedChunk() {
-            if(!IsInUse || _updated || _startedToRelease) {
-                _updated = false;
-                return;
-            }
+            if(!IsInUse || _updated || _startedToRelease) { _updated = false; return; }
             _updated = false;
             if(_bounds.SqrDistance(ViewerPosition) < _meshSettings.ChunkUnloadDistanceSq) return;
-            if(!_startedToRelease) ReleaseToPool();
+            if(_startedToRelease) return;
+            _startedToRelease = true;
+            _mapPool.ReturnToPool(this);
         }
 
         /// <summary>

@@ -14,9 +14,13 @@ namespace Amilious.ProceduralTerrain.Map {
         public RegionSize RegionSize { get; }
         
         /// <summary>
-        /// This property is used to get the regions id.
+        /// The regions id.
         /// </summary>
-        public Vector2Int RegionId { get; }
+        public Vector2Int Id { get; }
+        
+        public bool HasProcessedRelease { get; }
+        
+        public bool Active { get; }
         
         #endregion
         
@@ -29,7 +33,7 @@ namespace Amilious.ProceduralTerrain.Map {
         /// <param name="regionId">The region's id.</param>
         public MapRegion(RegionSize regionSize, Vector2Int regionId) {
             RegionSize = regionSize;
-            RegionId = regionId;
+            Id = regionId;
         }
 
         /// <summary>
@@ -46,7 +50,7 @@ namespace Amilious.ProceduralTerrain.Map {
         /// <param name="chunkId"></param>
         /// <returns></returns>
         public virtual bool ContainsChunk(Vector2Int chunkId) {
-            return IsChunkWithin(RegionSize, RegionId, chunkId);
+            return IsChunkWithin(RegionSize, Id, chunkId);
         }
 
         /// <summary>
@@ -125,13 +129,10 @@ namespace Amilious.ProceduralTerrain.Map {
             throw new System.NotImplementedException();
         }
 
-        public Vector2Int Id { get; }
-        public bool HasProcessedRelease { get; }
         public void ReleaseToPool() {
             throw new System.NotImplementedException();
         }
 
-        public bool Active { get; }
     }
     
 }

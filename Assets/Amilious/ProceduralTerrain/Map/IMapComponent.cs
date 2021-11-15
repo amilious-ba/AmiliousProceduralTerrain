@@ -37,19 +37,11 @@ namespace Amilious.ProceduralTerrain.Map {
         Vector2Int Id { get; }
 
         /// <summary>
-        /// This property is used to check if the item has been processed to be released back to the pool.
-        /// </summary>
-        bool HasProcessedRelease { get; }
-
-        /// <summary>
-        /// This method is used to process the items release to the pool.
+        /// This method is used to process the items release to the pool. At
+        /// the end of this method EnqueueItem should be called on the
+        /// MapPool.
         /// </summary>
         void ReleaseToPool();
-        
-        /// <summary>
-        /// This property is used to check if the map component is active.
-        /// </summary>
-        bool Active { get; }
 
     }
 }
