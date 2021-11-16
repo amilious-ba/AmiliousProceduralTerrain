@@ -1,33 +1,32 @@
+using System.Collections;
+using System.Collections.Generic;
 using System.Text;
 using Amilious.ProceduralTerrain.Map;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using System.IO;
+using System.Linq;
+using System.Runtime.CompilerServices;
+using System.Threading.Tasks;
 using Sirenix.OdinInspector;
-
+using UnityEditor.PackageManager;
+using UnityEditor.PackageManager.Requests;
 namespace Amilious.ValueAdds
 {
 	public partial class FlyCamera : MonoBehaviour, ICameraActions
 	{
-		
-		
-		private static readonly string RootPath  = @"C:\Users\Abdikarim\FileSystem\manifest.json";
-		private static          string _maniFest = File.ReadAllText(RootPath, Encoding.Default);
-
 
 		
-		private bool HasNewInputSystem() => _maniFest.Contains("inputsystem");
-
-
+		
 		#region Public Instance Variables
 		
-		[ValidateInput("HasNewInputSystem", "New Input System is not installed", InfoMessageType.Error)]
+		// Check if Player has New Input System
+		[ValidateInput("@hasNewInputSystem", "New Input System is not installed", InfoMessageType.Error)]
 		public float lookSpeed   = 5f;
 		public float moveSpeed   = 5f;
 		public float sprintSpeed = 50f;
 		
 		public bool  enableInputCapture = true;
-		public bool  lockAndHideCursor;
 		public bool  holdRightMouseCapture = true;
 
 		#endregion
@@ -49,8 +48,11 @@ namespace Amilious.ValueAdds
 		private float mouseX;
 		private float mouseY;
 		
-		private bool  m_inputCaptured;
-		private bool  hasReachedLimit;
+		private bool m_inputCaptured;
+		
+		private bool hasReachedLimit;
+		
+		private bool hasNewInputSystem;
 		
 
 		#endregion
@@ -58,9 +60,12 @@ namespace Amilious.ValueAdds
 		#region Event Functions
 		
 		/// <summary>
-		/// This function is always called before any Start functions 
+		/// This method is always called before any Start functions 
 		/// </summary>
-		private void Awake() => mapManager = FindObjectOfType<MapManager>();
+		private void Awake()
+		{ 
+			mapManager = FindObjectOfType<MapManager>();
+		}
 
 		/// <summary>
 		/// This function is called just after the object is enabled
@@ -71,14 +76,18 @@ namespace Amilious.ValueAdds
 				CaptureInput();
 		}
 		
+		
 		/// <summary>
 		/// Unity calls when the script is loaded or a value changes in the Inspector.
 		/// </summary>
 		private void OnValidate()
 		{
+			hasNewInputSystem = AmiliousValidator.ValidatePackage("inputsystem");
+
 			if (Application.isPlaying)
 				enabled = enableInputCapture;
 		}
+
 
 		/// <summary>
 		/// Start is called before the first frame update only if the script instance is enabled
@@ -122,7 +131,7 @@ namespace Amilious.ValueAdds
 		}
 
 		/// <summary>
-		/// This function is for if player has canceled holding MouserRight
+		/// This method is for if player has canceled holding MouserRight
 		/// </summary>
 		private void ReleaseInput() => m_inputCaptured  = false;
 
