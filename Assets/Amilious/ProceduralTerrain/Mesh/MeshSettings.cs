@@ -27,7 +27,7 @@ namespace Amilious.ProceduralTerrain.Mesh {
         private bool useFlatShading;
         [SerializeField] 
         private bool bakeCollisionMeshes;
-        [FormerlySerializedAs("initializeMeshDataOnLoad")] [SerializeField]
+        [SerializeField]
         private bool calculateMeshDataOnLoad;
         [SerializeField, Required, TableList(AlwaysExpanded = true)]
         [ValidateInput(nameof(UniqueLod), "Each Lod must have a unique level of detail and visible distance.")]

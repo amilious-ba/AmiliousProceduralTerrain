@@ -128,7 +128,12 @@ namespace Amilious.Threading {
         /// the process was not being executed.</returns>
         /// </summary>
         public bool Cancel() {
-            if(_tokenSource == null) return false;
+            if(_tokenSource == null) {
+                //still call the cancel callback even if there was no running process.
+                CancelImpl();
+                return false;
+            }
+            _executeAfterCancel = false;
             _tokenSource?.Cancel();
             return true;
         }
@@ -248,7 +253,7 @@ namespace Amilious.Threading {
             }
             if(_state == FutureState.Processing) {
                 _executeAfterCancel = true;
-                Cancel();
+                _tokenSource?.Cancel();
                 return;
             }
             _state = FutureState.Processing;
@@ -280,7 +285,11 @@ namespace Amilious.Threading {
         /// the process was not being executed.</returns>
         /// </summary>
         public bool Cancel() {
-            if(_tokenSource == null) return false;
+            if(_tokenSource == null) {
+                //still call the cancel callback even if there was no running process.
+                CancelImpl();
+                return false;
+            }
             _tokenSource?.Cancel();
             return true;
         }
@@ -403,7 +412,7 @@ namespace Amilious.Threading {
             if(_state == FutureState.Processing) {
                 _executeAfterCancel = true;
                 _executeInput = inputValue;
-                Cancel();
+                _tokenSource?.Cancel();
                 return;
             }
             _state = FutureState.Processing;
@@ -429,7 +438,12 @@ namespace Amilious.Threading {
         /// the process was not being executed.</returns>
         /// </summary>
         public bool Cancel() {
-            if(_tokenSource == null) return false;
+            if(_tokenSource == null) {
+                //still call the cancel callback even if there was no running process.
+                CancelImpl();
+                return false;
+            }
+            _executeAfterCancel = false;
             _tokenSource?.Cancel();
             return true;
         }
@@ -556,7 +570,7 @@ namespace Amilious.Threading {
                 _executeAfterCancel = true;
                 _executeInput = inputValue;
                 _executeInput2 = inputValue2;
-                Cancel();
+                _tokenSource?.Cancel();
                 return;
             }
             _state = FutureState.Processing;
@@ -582,7 +596,12 @@ namespace Amilious.Threading {
         /// the process was not being executed.</returns>
         /// </summary>
         public bool Cancel() {
-            if(_tokenSource == null) return false;
+            if(_tokenSource == null) {
+                //still call the cancel callback even if there was no running process.
+                CancelImpl();
+                return false;
+            }
+            _executeAfterCancel = false;
             _tokenSource?.Cancel();
             return true;
         }
@@ -713,7 +732,7 @@ namespace Amilious.Threading {
                 _executeInput = inputValue;
                 _executeInput2 = inputValue2;
                 _executeInput3 = inputValue3;
-                Cancel();
+                _tokenSource?.Cancel();
                 return;
             }
             _state = FutureState.Processing;
@@ -739,7 +758,12 @@ namespace Amilious.Threading {
         /// the process was not being executed.</returns>
         /// </summary>
         public bool Cancel() {
-            if(_tokenSource == null) return false;
+            if(_tokenSource == null) {
+                //still call the cancel callback even if there was no running process.
+                CancelImpl();
+                return false;
+            }
+            _executeAfterCancel = false;
             _tokenSource?.Cancel();
             return true;
         }
