@@ -3,7 +3,7 @@ using System.Threading;
 using UnityEngine;
 
 namespace Amilious.Threading {
-    
+
     /// <summary>
     /// This class is used to execute a process on a background thread.
     /// </summary>
@@ -11,7 +11,7 @@ namespace Amilious.Threading {
     /// <seealso cref="ReusableFuture{T,T2}"/>
     /// <seealso cref="ReusableFuture{T,T2,T3}"/>
     /// <seealso cref="ReusableFuture{T,T2,T3,T4}"/>
-    public class ReusableFuture {
+    public class ReusableFuture : IReusableFuture {
         
         private volatile FutureState _state;
         private Action _successCallback;
@@ -128,7 +128,12 @@ namespace Amilious.Threading {
         /// the process was not being executed.</returns>
         /// </summary>
         public bool Cancel() {
-            if(_tokenSource == null) return false;
+            if(_tokenSource == null) {
+                //still call the cancel callback even if there was no running process.
+                CancelImpl();
+                return false;
+            }
+            _executeAfterCancel = false;
             _tokenSource?.Cancel();
             return true;
         }
@@ -164,7 +169,7 @@ namespace Amilious.Threading {
     /// <seealso cref="ReusableFuture{T,T2}"/>
     /// <seealso cref="ReusableFuture{T,T2,T3}"/>
     /// <seealso cref="ReusableFuture{T,T2,T3,T4}"/>
-    public class ReusableFuture<T> {
+    public class ReusableFuture<T> : IReusableFuture {
         
         private volatile FutureState _state;
         private Action<T> _successCallback;
@@ -248,7 +253,7 @@ namespace Amilious.Threading {
             }
             if(_state == FutureState.Processing) {
                 _executeAfterCancel = true;
-                Cancel();
+                _tokenSource?.Cancel();
                 return;
             }
             _state = FutureState.Processing;
@@ -280,7 +285,11 @@ namespace Amilious.Threading {
         /// the process was not being executed.</returns>
         /// </summary>
         public bool Cancel() {
-            if(_tokenSource == null) return false;
+            if(_tokenSource == null) {
+                //still call the cancel callback even if there was no running process.
+                CancelImpl();
+                return false;
+            }
             _tokenSource?.Cancel();
             return true;
         }
@@ -316,7 +325,7 @@ namespace Amilious.Threading {
     /// <seealso cref="ReusableFuture{T}"/>
     /// <seealso cref="ReusableFuture{T,T2,T3}"/>
     /// <seealso cref="ReusableFuture{T,T2,T3,T4}"/>
-    public class ReusableFuture<T,T2> {
+    public class ReusableFuture<T,T2> : IReusableFuture {
         
         private volatile FutureState _state;
         private Action<T> _successCallback;
@@ -403,7 +412,7 @@ namespace Amilious.Threading {
             if(_state == FutureState.Processing) {
                 _executeAfterCancel = true;
                 _executeInput = inputValue;
-                Cancel();
+                _tokenSource?.Cancel();
                 return;
             }
             _state = FutureState.Processing;
@@ -429,7 +438,12 @@ namespace Amilious.Threading {
         /// the process was not being executed.</returns>
         /// </summary>
         public bool Cancel() {
-            if(_tokenSource == null) return false;
+            if(_tokenSource == null) {
+                //still call the cancel callback even if there was no running process.
+                CancelImpl();
+                return false;
+            }
+            _executeAfterCancel = false;
             _tokenSource?.Cancel();
             return true;
         }
@@ -466,7 +480,7 @@ namespace Amilious.Threading {
     /// <seealso cref="ReusableFuture{T}"/>
     /// <seealso cref="ReusableFuture{T,T2}"/>
     /// <seealso cref="ReusableFuture{T,T2,T3,T4}"/>
-    public class ReusableFuture<T,T2,T3> {
+    public class ReusableFuture<T,T2,T3> : IReusableFuture {
         
         private volatile FutureState _state;
         private Action<T> _successCallback;
@@ -556,7 +570,7 @@ namespace Amilious.Threading {
                 _executeAfterCancel = true;
                 _executeInput = inputValue;
                 _executeInput2 = inputValue2;
-                Cancel();
+                _tokenSource?.Cancel();
                 return;
             }
             _state = FutureState.Processing;
@@ -582,7 +596,12 @@ namespace Amilious.Threading {
         /// the process was not being executed.</returns>
         /// </summary>
         public bool Cancel() {
-            if(_tokenSource == null) return false;
+            if(_tokenSource == null) {
+                //still call the cancel callback even if there was no running process.
+                CancelImpl();
+                return false;
+            }
+            _executeAfterCancel = false;
             _tokenSource?.Cancel();
             return true;
         }
@@ -620,7 +639,7 @@ namespace Amilious.Threading {
     /// <seealso cref="ReusableFuture{T}"/>
     /// <seealso cref="ReusableFuture{T,T2}"/>
     /// <seealso cref="ReusableFuture{T,T2,T3}"/>
-    public class ReusableFuture<T,T2,T3,T4> {
+    public class ReusableFuture<T,T2,T3,T4> : IReusableFuture {
         
         private volatile FutureState _state;
         private Action<T> _successCallback;
@@ -713,7 +732,7 @@ namespace Amilious.Threading {
                 _executeInput = inputValue;
                 _executeInput2 = inputValue2;
                 _executeInput3 = inputValue3;
-                Cancel();
+                _tokenSource?.Cancel();
                 return;
             }
             _state = FutureState.Processing;
@@ -739,7 +758,12 @@ namespace Amilious.Threading {
         /// the process was not being executed.</returns>
         /// </summary>
         public bool Cancel() {
-            if(_tokenSource == null) return false;
+            if(_tokenSource == null) {
+                //still call the cancel callback even if there was no running process.
+                CancelImpl();
+                return false;
+            }
+            _executeAfterCancel = false;
             _tokenSource?.Cancel();
             return true;
         }

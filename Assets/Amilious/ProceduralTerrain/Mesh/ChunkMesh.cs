@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using UnityEngine;
 using Amilious.Saving;
 using System.Threading;
@@ -15,6 +16,7 @@ namespace Amilious.ProceduralTerrain.Mesh {
 
         public const string PREFIX = "MeshLod{0}";
         public const string HAS_DATA = "HasData";
+        public const string NO_MESH_DATA_WARNING = "Trying to assign a mesh before it's data has been calculated.";
 
         # region Instance Variables
         public event Action UpdateCallback;
@@ -30,7 +32,7 @@ namespace Amilious.ProceduralTerrain.Mesh {
         private readonly Vector3[] _flatShadedVertices;
         private readonly Vector2[] _flatShadedUvs;
         private readonly Vector2[] _flatShadedUvs2;
-
+        private IReusableFuture _outSideFuture;
         private UnityEngine.Mesh _mesh;
         private int _meshId;
         private bool _bakedCollisionMesh;
@@ -70,22 +72,6 @@ namespace Amilious.ProceduralTerrain.Mesh {
         /// This property is used to check if the mesh has been generated.
         /// </summary>
         public bool HasMesh { get; private set; }
-        
-        #endregion
-
-        #region Private Properties
-        
-        /// <summary>
-        /// This property is used to check if the mesh is invalid.  If the
-        /// mesh is invalid a warning will be logged.
-        /// </summary>
-        private bool InvalidMesh {
-            get {
-                if(_mesh != null) return false;
-                Debug.LogWarning("Trying to access the ChunkMeshes mesh before it has been created.");
-                return true;
-            }
-        }
         
         #endregion
 
@@ -172,14 +158,35 @@ namespace Amilious.ProceduralTerrain.Mesh {
         /// <param name="heightMap">The height map that you want to use to generate the mesh.</param>
         /// <param name="applyHeight">If true the height map's height values will be applied,
         /// otherwise the heights will be set to zero.</param>
-        public void RequestMesh(NoiseMap heightMap, bool applyHeight = true) {
+        public void RequestMeshAsync(NoiseMap heightMap, bool applyHeight = true) {
             HasRequestedMesh = true;
             _meshRequester.Process(heightMap,applyHeight);
         }
 
+        /// <summary>
+        /// This method is used to request the mesh from an already running ReusableFuture's process.
+        /// </summary>
+        /// <param name="heightMap">The height map that you want to use to generate the mesh.</param>
+        /// <param name="future">The future that is executing the request.</param>
+        /// <param name="token">The futures cancellation token.</param>
+        /// <param name="applyHeight">If true the height map's height values will be applied,
+        /// otherwise the heights will be set to zero.</param>
+        /// <remarks>The ApplyLoadedMesh method should be called in the futures onSuccess method.</remarks>
+        public void RequestMesh(NoiseMap heightMap, IReusableFuture future, CancellationToken token, bool applyHeight = true) {
+            HasRequestedMesh = true;
+            _outSideFuture = future;
+            MeshRequest(heightMap, applyHeight, token);
+            token.ThrowIfCancellationRequested();
+            HasMeshData = true;
+        }
+        
+        /// <summary>
+        /// This method is used to cancel any of the futures that are running on this mesh.
+        /// </summary>
         public void CancelProcessing() {
             _meshRequester.Cancel();
             _collisionBaker.Cancel();
+            _outSideFuture?.Cancel();
         }
         
         /// <summary>
@@ -187,7 +194,13 @@ namespace Amilious.ProceduralTerrain.Mesh {
         /// </summary>
         /// <param name="meshFilter">The mesh filter that you want to apply the mesh to.</param>
         public void AssignTo(MeshFilter meshFilter) {
-            if(InvalidMesh) return;
+            if(!HasMeshData) {
+                Debug.LogWarning(NO_MESH_DATA_WARNING);
+                return;
+            }
+            //create the mesh if it has not been created yet
+            if(!HasMesh) ApplyChanges(true);
+            //set the mesh
             meshFilter.sharedMesh = _mesh;
         }
 
@@ -196,11 +209,18 @@ namespace Amilious.ProceduralTerrain.Mesh {
         /// </summary>
         /// <param name="meshCollider">The mesh collider that you want to apply the mesh to.</param>
         public void AssignTo(MeshCollider meshCollider) {
-            if(InvalidMesh) return;
+            if(!HasMeshData) {
+                Debug.LogWarning(NO_MESH_DATA_WARNING);
+                return;
+            }
+            //create the mesh if it has not been created yet
+            if(!HasMesh) ApplyChanges(true);
+            //bake the collision mesh
             if(!_bakedCollisionMesh && _meshSettings.BakeCollisionMeshes) {
                 _collisionBaker.Process(meshCollider);
                 return;
             }
+            //assign the mesh.
             meshCollider.sharedMesh = _mesh;
         }
         
@@ -211,11 +231,19 @@ namespace Amilious.ProceduralTerrain.Mesh {
         /// <returns>True if the method was executed or queued to the dispatcher, otherwise
         /// returns false if the mesh is invalid.</returns>
         public bool ApplyChanges(bool recalculateBounds=false) {
-            if(InvalidMesh) return false;
+            if(!HasMeshData) return false;
+            //if not running on the main thread dispatch this call this method again from the dispatcher.
             if(!Dispatcher.IsMainThread) {
                 Dispatcher.InvokeAsync(() => { ApplyChanges(recalculateBounds);});
                 return true;
             }
+            //generate the mesh if it does not exist
+            if(!HasMesh) {
+                _mesh ??= new UnityEngine.Mesh();
+                _meshId = _mesh.GetInstanceID();
+                HasMesh = true;
+            }
+            //update the mesh
             HasBeenUpdated = true;
             _mesh.vertices = UseFlatShading?_flatShadedVertices:vertices;
             _mesh.triangles = triangles;
@@ -298,23 +326,6 @@ namespace Amilious.ProceduralTerrain.Mesh {
             saveData.ClearPrefix();
             _bakedCollisionMesh = false;
             HasMeshData = true;
-            return true;
-        }
-        
-        /// <summary>
-        /// This method is used to apply the loaded mesh data.
-        /// </summary>
-        /// <returns>True if the mesh data was loaded and applied, otherwise
-        /// false.</returns>
-        public bool ApplyLoadedMesh() {
-            if(!HasMeshData || HasMesh) return false;
-            //if the mesh does not exist we need to create it.
-            _mesh ??= new UnityEngine.Mesh();
-            _meshId = _mesh.GetInstanceID();
-            //apply the changes to the mesh
-            ApplyChanges(true);
-            HasMesh = true;
-            HasBeenUpdated = false;
             return true;
         }
         

@@ -3,6 +3,7 @@ using UnityEngine;
 using Sirenix.OdinInspector;
 using System.Collections.Generic;
 using Amilious.ProceduralTerrain.Map;
+using UnityEngine.Serialization;
 
 namespace Amilious.ProceduralTerrain.Mesh {
     
@@ -26,6 +27,8 @@ namespace Amilious.ProceduralTerrain.Mesh {
         private bool useFlatShading;
         [SerializeField] 
         private bool bakeCollisionMeshes;
+        [SerializeField]
+        private bool calculateMeshDataOnLoad;
         [SerializeField, Required, TableList(AlwaysExpanded = true)]
         [ValidateInput(nameof(UniqueLod), "Each Lod must have a unique level of detail and visible distance.")]
         [ValidateInput(nameof(ContainsValues),"You must have at least one level of detail.")]
@@ -45,6 +48,12 @@ namespace Amilious.ProceduralTerrain.Mesh {
         #endregion
         
         #region Properties
+        
+        /// <summary>
+        /// If this property is true, the mesh data should be generated on the
+        /// same thread that the biome map is generated on.
+        /// </summary>
+        public bool CalculateMeshDataOnLoad { get => calculateMeshDataOnLoad; }
         
         /// <summary>
         /// This property is used to get the scale of the mesh.

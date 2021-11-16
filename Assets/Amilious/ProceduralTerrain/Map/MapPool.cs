@@ -110,8 +110,7 @@ namespace Amilious.ProceduralTerrain.Map {
         /// </summary>
         /// <param name="item">The <typeparamref name="T"/> that you want to return to the pool.</param>
         public void ReturnToPool(T item) {
-            if(item == null) return;
-            item.ReleaseToPool();
+            item?.ReleaseToPool();
         }
 
         /// <summary>

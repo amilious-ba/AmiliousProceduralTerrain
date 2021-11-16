@@ -21,8 +21,9 @@ MonoBehaviour:
   chunkUnloadDistance: 800
   useFlatShading: 0
   bakeCollisionMeshes: 1
+  calculateMeshDataOnLoad: 0
   chunkLevelsOfDetail:
   - levelOfDetail: 1
-    visibleDistance: 300
-  - levelOfDetail: 4
-    visibleDistance: 600
+    visibleDistance: 200
+  - levelOfDetail: 8
+    visibleDistance: 400
