@@ -18,7 +18,7 @@ namespace Amilious.ProceduralTerrain.Map.Components {
     /// </summary>
     public class Chunk : IMapComponent<Chunk> {
 
-        private const string CHUNK_POOLED = "Chunk (pooled)";
+        private const string CHUNK_POOLED = "Chunk (pooled)"; 
 
         #region Instance Variables
         
