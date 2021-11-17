@@ -1,4 +1,4 @@
-namespace Amilious.ProceduralTerrain.Mesh {
+namespace Amilious.ProceduralTerrain.Mesh.Enums {
     
     /// <summary>
     /// This enum is used to represent the different levels of detail.

@@ -1,15 +1,17 @@
 using System.Linq;
-using UnityEngine;
-using Amilious.Saving;
 using System.Threading;
-using Amilious.Threading;
 using Amilious.Core.Structs;
-using Amilious.ProceduralTerrain.Mesh;
 using Amilious.ProceduralTerrain.Biomes;
+using Amilious.ProceduralTerrain.Map.Enums;
+using Amilious.ProceduralTerrain.Mesh;
+using Amilious.ProceduralTerrain.Mesh.Enums;
 using Amilious.ProceduralTerrain.Saving;
 using Amilious.ProceduralTerrain.Textures;
+using Amilious.Saving;
+using Amilious.Threading;
+using UnityEngine;
 
-namespace Amilious.ProceduralTerrain.Map {
+namespace Amilious.ProceduralTerrain.Map.Components {
     
     /// <summary>
     /// This class will represent a chunk
@@ -17,7 +19,6 @@ namespace Amilious.ProceduralTerrain.Map {
     public class Chunk : IMapComponent<Chunk> {
 
         private const string CHUNK_POOLED = "Chunk (pooled)";
-        
 
         #region Instance Variables
         

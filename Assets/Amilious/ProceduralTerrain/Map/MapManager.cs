@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using UnityEngine;
 using Amilious.Random;
 using System.Diagnostics;
@@ -7,6 +8,8 @@ using Amilious.Threading;
 using Sirenix.OdinInspector;
 using Amilious.ProceduralTerrain.Mesh;
 using Amilious.ProceduralTerrain.Biomes;
+using Amilious.ProceduralTerrain.Map.Components;
+using Amilious.ProceduralTerrain.Map.Enums;
 using Amilious.ProceduralTerrain.Saving;
 
 namespace Amilious.ProceduralTerrain.Map {
@@ -200,16 +203,27 @@ namespace Amilious.ProceduralTerrain.Map {
         /// <summary>
         /// This method is used update visible chunks.
         /// </summary>
-        protected virtual void UpdateVisibleChunks() {
+        protected void UpdateVisibleChunks() {
             _updateSW.Restart();
             OnStartUpdate?.Invoke();
             OnUpdateVisible?.Invoke(new ChunkRange(_viewerChunk,_updateChunksRadius));
+            StartCoroutine(SpawnChunks(_viewerChunk));
+            OnEndUpdate?.Invoke();
+            _updateSW.Stop();
+            OnChunksUpdated?.Invoke(_mapPool.PoolInfo,_updateSW.ElapsedMilliseconds);
+        }
+
+        /// <summary>
+        /// This spawns the chunks that are not spawned in the radius around the given
+        /// viewer chunk.
+        /// </summary>
+        /// <param name="viewersChunk">The chunk the viewer is on.</param>
+        protected IEnumerator SpawnChunks(Vector2Int viewersChunk) {
             for(var xOff = - _updateChunksRadius; xOff <= _updateChunksRadius; xOff++)
             for(var yOff = -_updateChunksRadius; yOff <= _updateChunksRadius; yOff++) {
-                _mapPool.BarrowFromPool(new Vector2Int(_viewerChunk.x + xOff, _viewerChunk.y + yOff));
+                _mapPool.BarrowFromPool(new Vector2Int(viewersChunk.x + xOff, viewersChunk.y + yOff));
+                yield return null;
             }
-            OnEndUpdate?.Invoke();
-            OnChunksUpdated?.Invoke(_mapPool.PoolInfo,_updateSW.ElapsedMilliseconds);
         }
         
         /// <summary>
@@ -262,6 +276,6 @@ namespace Amilious.ProceduralTerrain.Map {
         }
 
         #endregion
-        
+
     }
 }

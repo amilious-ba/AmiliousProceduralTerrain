@@ -12,6 +12,7 @@ using Amilious.ProceduralTerrain.Noise;
 using Amilious.ProceduralTerrain.Sampling;
 using Amilious.ProceduralTerrain.Textures;
 using Amilious.ProceduralTerrain.Biomes.Blending;
+using Amilious.ProceduralTerrain.Biomes.Enums;
 #if UNITY_EDITOR
 using Sirenix.Utilities.Editor;
 #endif

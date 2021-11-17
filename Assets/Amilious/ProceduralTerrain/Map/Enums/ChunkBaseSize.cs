@@ -1,4 +1,4 @@
-namespace Amilious.ProceduralTerrain.Map {
+namespace Amilious.ProceduralTerrain.Map.Enums {
     
     /// <summary>
     /// This enum is used to represent a chunks base size.

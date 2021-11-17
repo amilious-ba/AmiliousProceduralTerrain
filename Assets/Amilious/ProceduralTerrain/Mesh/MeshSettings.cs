@@ -4,6 +4,8 @@ using Sirenix.OdinInspector;
 using System.Collections.Generic;
 using Amilious.Core.Structs;
 using Amilious.ProceduralTerrain.Map;
+using Amilious.ProceduralTerrain.Map.Enums;
+using Amilious.ProceduralTerrain.Mesh.Enums;
 using UnityEngine.Serialization;
 
 namespace Amilious.ProceduralTerrain.Mesh {
@@ -40,7 +42,7 @@ namespace Amilious.ProceduralTerrain.Mesh {
         [SerializeField, Tooltip("This distance should be greater than the max lod distance."), SuffixLabel("chunks")]
         private int unloadDistance = 600;
         [SerializeField, ValidateInput(nameof(ValidateColliderLOD),INVALID_COLLIDER_LOD)]
-        private LevelsOfDetail colliderLOD = Mesh.LevelsOfDetail.Max;
+        private LevelsOfDetail colliderLOD = Enums.LevelsOfDetail.Max;
         #endregion
         
         #region Instance Variables

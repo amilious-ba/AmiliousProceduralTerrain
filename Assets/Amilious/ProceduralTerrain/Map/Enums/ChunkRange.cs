@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace Amilious.ProceduralTerrain.Map {
+namespace Amilious.ProceduralTerrain.Map.Enums {
     
     /// <summary>
     /// This struct is used to represent a chunk range.

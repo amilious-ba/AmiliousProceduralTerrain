@@ -2,6 +2,7 @@ using System;
 using UnityEngine;
 using Amilious.ProceduralTerrain.Mesh;
 using Amilious.ProceduralTerrain.Biomes;
+using Amilious.ProceduralTerrain.Mesh.Enums;
 
 namespace Amilious.ProceduralTerrain.Textures {
     
