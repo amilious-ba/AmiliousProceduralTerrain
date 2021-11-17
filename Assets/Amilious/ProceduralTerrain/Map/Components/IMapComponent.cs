@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace Amilious.ProceduralTerrain.Map {
+namespace Amilious.ProceduralTerrain.Map.Components {
     
     /// <summary>
     /// This interface is used to make the map pool generic.  The inheriting

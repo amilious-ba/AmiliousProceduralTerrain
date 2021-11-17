@@ -2,6 +2,7 @@ using UnityEngine;
 using Amilious.Core.Structs;
 using Amilious.Core.Interfaces;
 using System.Collections.Concurrent;
+using Amilious.ProceduralTerrain.Map.Components;
 
 namespace Amilious.ProceduralTerrain.Map {
     

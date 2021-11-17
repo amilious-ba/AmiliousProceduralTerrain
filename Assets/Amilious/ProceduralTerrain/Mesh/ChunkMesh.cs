@@ -3,6 +3,7 @@ using System.IO;
 using UnityEngine;
 using Amilious.Saving;
 using System.Threading;
+using Amilious.ProceduralTerrain.Mesh.Enums;
 using Amilious.Threading;
 using Amilious.ProceduralTerrain.Noise;
 

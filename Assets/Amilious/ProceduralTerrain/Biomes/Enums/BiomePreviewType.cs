@@ -1,4 +1,4 @@
-namespace Amilious.ProceduralTerrain.Biomes {
+namespace Amilious.ProceduralTerrain.Biomes.Enums {
     
     /// <summary>
     /// This enum is used to select the biome preview type.

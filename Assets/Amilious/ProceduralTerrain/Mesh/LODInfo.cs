@@ -1,5 +1,6 @@
 using UnityEngine;
 using Amilious.Core.Interfaces;
+using Amilious.ProceduralTerrain.Mesh.Enums;
 using Sirenix.OdinInspector;
 
 namespace Amilious.ProceduralTerrain.Mesh {
