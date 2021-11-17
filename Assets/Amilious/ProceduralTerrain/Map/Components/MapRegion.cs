@@ -1,7 +1,8 @@
-using UnityEngine;
 using System.Collections.Generic;
+using Amilious.ProceduralTerrain.Map.Enums;
+using UnityEngine;
 
-namespace Amilious.ProceduralTerrain.Map {
+namespace Amilious.ProceduralTerrain.Map.Components {
     
     //this class will be used to store map data for a region.
     public class MapRegion : IMapComponent<MapRegion> {

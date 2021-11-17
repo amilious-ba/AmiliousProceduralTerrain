@@ -1,4 +1,4 @@
-namespace Amilious.ProceduralTerrain.Noise {
+namespace Amilious.ProceduralTerrain.Noise.Enum {
     
     /// <summary>
     /// This enum is used to indicate which preview type

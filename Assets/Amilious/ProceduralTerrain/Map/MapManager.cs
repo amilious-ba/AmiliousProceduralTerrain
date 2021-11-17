@@ -1,11 +1,15 @@
 using System;
+using System.Collections;
 using UnityEngine;
 using Amilious.Random;
 using System.Diagnostics;
+using Amilious.Core.Structs;
 using Amilious.Threading;
 using Sirenix.OdinInspector;
 using Amilious.ProceduralTerrain.Mesh;
 using Amilious.ProceduralTerrain.Biomes;
+using Amilious.ProceduralTerrain.Map.Components;
+using Amilious.ProceduralTerrain.Map.Enums;
 using Amilious.ProceduralTerrain.Saving;
 
 namespace Amilious.ProceduralTerrain.Map {
@@ -24,7 +28,7 @@ namespace Amilious.ProceduralTerrain.Map {
         [SerializeField, ShowIf(nameof(generateChunksAtStart))] private int chunkPoolSize = 100;
         [SerializeField, Tooltip("This is the distance the player needs to move before the chunk will update.")]
         private float chunkUpdateThreshold = 25f;
-        [SerializeField] private float colliderGenerationThreshold = 5;
+        [SerializeField, SuffixLabel("chunks")] private int colliderGenerationThreshold = 5;
         [SerializeField, Required] private string seed;
         [SerializeField] private bool applyHeight = true;
         [SerializeField, Required] private MeshSettings meshSettings;
@@ -74,7 +78,7 @@ namespace Amilious.ProceduralTerrain.Map {
         private Vector3 _viewerPosition;
         private Vector2Int _viewerChunk;
         private Vector2 _oldViewerPosition;
-        private float? _sqrColliderGenerationThreshold;
+        private DistanceValueInt? _colliderGenerationThreshold;
         private Seed? _seedStruct;
         private MapPool<Chunk> _mapPool;
         private readonly Stopwatch _updateSW = new Stopwatch();
@@ -88,10 +92,10 @@ namespace Amilious.ProceduralTerrain.Map {
         /// This property is used to get the squared distance from the viewer
         /// where colliders should be generated.
         /// </summary>
-        public float SqrColliderGenerationThreshold {
+        public DistanceValue ColliderGenerationThreshold {
             get {
-                _sqrColliderGenerationThreshold??= colliderGenerationThreshold * colliderGenerationThreshold;
-                return _sqrColliderGenerationThreshold.Value;
+                _colliderGenerationThreshold??= new DistanceValue(colliderGenerationThreshold, true);
+                return _colliderGenerationThreshold.Value;
             }
         }
 
@@ -135,6 +139,8 @@ namespace Amilious.ProceduralTerrain.Map {
         /// This property is used to get the viewer's position on the last update.
         /// </summary>
         public Vector3 ViewerPosition { get => _viewerPosition; }
+        
+        public Vector2Int ViewerChunk { get => _viewerChunk; }
         
         /// <summary>
         /// This property is used to get the map's <see cref="MapType"/>.
@@ -197,16 +203,27 @@ namespace Amilious.ProceduralTerrain.Map {
         /// <summary>
         /// This method is used update visible chunks.
         /// </summary>
-        protected virtual void UpdateVisibleChunks() {
+        protected void UpdateVisibleChunks() {
             _updateSW.Restart();
             OnStartUpdate?.Invoke();
             OnUpdateVisible?.Invoke(new ChunkRange(_viewerChunk,_updateChunksRadius));
+            StartCoroutine(SpawnChunks(_viewerChunk));
+            OnEndUpdate?.Invoke();
+            _updateSW.Stop();
+            OnChunksUpdated?.Invoke(_mapPool.PoolInfo,_updateSW.ElapsedMilliseconds);
+        }
+
+        /// <summary>
+        /// This spawns the chunks that are not spawned in the radius around the given
+        /// viewer chunk.
+        /// </summary>
+        /// <param name="viewersChunk">The chunk the viewer is on.</param>
+        protected IEnumerator SpawnChunks(Vector2Int viewersChunk) {
             for(var xOff = - _updateChunksRadius; xOff <= _updateChunksRadius; xOff++)
             for(var yOff = -_updateChunksRadius; yOff <= _updateChunksRadius; yOff++) {
-                _mapPool.BarrowFromPool(new Vector2Int(_viewerChunk.x + xOff, _viewerChunk.y + yOff));
+                _mapPool.BarrowFromPool(new Vector2Int(viewersChunk.x + xOff, viewersChunk.y + yOff));
+                yield return null;
             }
-            OnEndUpdate?.Invoke();
-            OnChunksUpdated?.Invoke(_mapPool.PoolInfo,_updateSW.ElapsedMilliseconds);
         }
         
         /// <summary>
@@ -229,7 +246,7 @@ namespace Amilious.ProceduralTerrain.Map {
                 new MapPool<Chunk>(this, chunkPoolSize):
                 new MapPool<Chunk>(this);
             _sqrChunkUpdateThreshold = chunkUpdateThreshold * chunkUpdateThreshold;
-            _updateChunksRadius = meshSettings.ChunksVisibleInViewDistance;
+            _updateChunksRadius = (int)meshSettings.MaxViewDistance[false];
             UpdateVisibleChunks();
         }
 
@@ -259,6 +276,6 @@ namespace Amilious.ProceduralTerrain.Map {
         }
 
         #endregion
-        
+
     }
 }

@@ -2,6 +2,8 @@ using System;
 using UnityEngine;
 using Amilious.Random;
 using System.Diagnostics;
+using Amilious.ProceduralTerrain.Noise.Enum;
+using Amilious.ProceduralTerrain.Noise.Libraries;
 using Sirenix.OdinInspector;
 using Amilious.ProceduralTerrain.Textures;
 

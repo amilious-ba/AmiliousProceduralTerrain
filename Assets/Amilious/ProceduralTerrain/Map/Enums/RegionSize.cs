@@ -1,4 +1,4 @@
-namespace Amilious.ProceduralTerrain.Map {
+namespace Amilious.ProceduralTerrain.Map.Enums {
     
     public enum RegionSize {
         

@@ -2,13 +2,23 @@ using System.Linq;
 using UnityEngine;
 using Sirenix.OdinInspector;
 using System.Collections.Generic;
+using Amilious.Core.Structs;
 using Amilious.ProceduralTerrain.Map;
+using Amilious.ProceduralTerrain.Map.Enums;
+using Amilious.ProceduralTerrain.Mesh.Enums;
 using UnityEngine.Serialization;
 
 namespace Amilious.ProceduralTerrain.Mesh {
     
     [CreateAssetMenu(menuName = "Amilious/Procedural Terrain/Mesh Settings", order = 0), HideMonoScript]
     public class MeshSettings : ScriptableObject {
+
+        #region Constants
+
+        private const string INVALID_COLLIDER_LOD =
+            "The collider's level of detail must be one of your chunk level of details";
+        
+        #endregion
         
         #region Inspector Values
         
@@ -16,33 +26,30 @@ namespace Amilious.ProceduralTerrain.Mesh {
         private ChunkBaseSize chunkBaseSize = ChunkBaseSize.Base64X64;
         [SerializeField] private RegionSize regionSize = RegionSize.Chunks8X8;
         [SerializeField] private TerrainPaintingMode paintingMode = TerrainPaintingMode.Material;
-        [SerializeField, ValidateInput(nameof(ValidateColliderLOD),
-             "The collider level of detail must be one of your chunk's lods.")]
-        private LevelsOfDetail colliderLOD = Mesh.LevelsOfDetail.Max;
         [SerializeField] private Material material;[SerializeField]
         private float meshScale = 1f;
-        [SerializeField, Tooltip("This distance should be greater than the max lod distance.")]
-        private float chunkUnloadDistance = 600;
+        
         [SerializeField,Tooltip("If ture the mesh will use more vertices so that it can be flat shaded.")]
         private bool useFlatShading;
         [SerializeField] 
         private bool bakeCollisionMeshes;
         [SerializeField]
         private bool calculateMeshDataOnLoad;
-        [SerializeField, Required, TableList(AlwaysExpanded = true)]
+        [Space(20), SerializeField, Required, TableList(AlwaysExpanded = true)]
         [ValidateInput(nameof(UniqueLod), "Each Lod must have a unique level of detail and visible distance.")]
         [ValidateInput(nameof(ContainsValues),"You must have at least one level of detail.")]
         private LODInfo[] chunkLevelsOfDetail;
-        
+        [SerializeField, Tooltip("This distance should be greater than the max lod distance."), SuffixLabel("chunks")]
+        private int unloadDistance = 600;
+        [SerializeField, ValidateInput(nameof(ValidateColliderLOD),INVALID_COLLIDER_LOD)]
+        private LevelsOfDetail colliderLOD = Enums.LevelsOfDetail.Max;
         #endregion
         
         #region Instance Variables
         
         private float? _meshWorldSize;
-        private float? _maxViewDistance;
-        private float? _maxViewDistanceSq;
-        private float? _chunkUnloadDistanceSq;
-        private int? _chunksVisibleInViewDistance;
+        private DistanceValueInt? _maxViewDistance;
+        private DistanceValueInt? _unloadDistance;
         private int? _colliderLODIndex;
 
         #endregion
@@ -103,9 +110,9 @@ namespace Amilious.ProceduralTerrain.Mesh {
         /// <summary>
         /// This property is used to get the max view distance.
         /// </summary>
-        public float MaxViewDistance {
+        public DistanceValue MaxViewDistance {
             get {
-                _maxViewDistance ??= chunkLevelsOfDetail.Max(x => x.VisibleDistanceThreshold);
+                _maxViewDistance ??= new DistanceValue(chunkLevelsOfDetail.Max(x => x.Distance),true);
                 return _maxViewDistance.Value;
             }
         }
@@ -116,37 +123,12 @@ namespace Amilious.ProceduralTerrain.Mesh {
         public TerrainPaintingMode PaintingMode { get => paintingMode; }
         
         /// <summary>
-        /// This property is used to get the max view distance squared.
+        /// This property contains the distance that chunks should be unloaded.
         /// </summary>
-        public float MaxViewDistanceSq {
+        public DistanceValue UnloadDistance {
             get {
-                _maxViewDistanceSq ??= MaxViewDistance * MaxViewDistance;
-                return _maxViewDistanceSq.Value;
-            }
-        }
-        
-        /// <summary>
-        /// This property is used to get the chunk's unload distance.
-        /// </summary>
-        public float ChunkUnloadDistance { get => chunkUnloadDistance; }
-
-        /// <summary>
-        /// This property is used to get the chunks unload distance squared.
-        /// </summary>
-        public float ChunkUnloadDistanceSq {
-            get {
-                _chunkUnloadDistanceSq ??= chunkUnloadDistance * chunkUnloadDistance;
-                return _chunkUnloadDistanceSq.Value;
-            }
-        }
-        
-        /// <summary>
-        /// This property is used to get the number of chunks visible in the view distance.
-        /// </summary>
-        public int ChunksVisibleInViewDistance {
-            get {
-                _chunksVisibleInViewDistance ??= (int)Mathf.Round(MaxViewDistance / MeshWorldSize);
-                return _chunksVisibleInViewDistance.Value;
+                _unloadDistance ??= new DistanceValue(unloadDistance, true);
+                return _unloadDistance.Value;
             }
         }
 
@@ -191,7 +173,7 @@ namespace Amilious.ProceduralTerrain.Mesh {
         protected virtual bool UniqueLod(LODInfo[] lods) {
             if(lods == null) return true;
             var uniqueLods = lods.Select(x => x.LevelsOfDetail).Distinct().Count() == lods.Length;
-            var uniqueDistances = lods.Select(x => x.VisibleDistanceThreshold).Distinct().Count() == lods.Length;
+            var uniqueDistances = lods.Select(x => x.Distance).Distinct().Count() == lods.Length;
             return uniqueLods && uniqueDistances;
         }
 

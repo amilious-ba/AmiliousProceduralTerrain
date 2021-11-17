@@ -1,26 +1,26 @@
 using System.Linq;
-using UnityEngine;
-using Amilious.Saving;
 using System.Threading;
-using Amilious.Threading;
-using Sirenix.OdinInspector;
-using Amilious.ProceduralTerrain.Mesh;
+using Amilious.Core.Structs;
 using Amilious.ProceduralTerrain.Biomes;
+using Amilious.ProceduralTerrain.Map.Enums;
+using Amilious.ProceduralTerrain.Mesh;
+using Amilious.ProceduralTerrain.Mesh.Enums;
 using Amilious.ProceduralTerrain.Saving;
 using Amilious.ProceduralTerrain.Textures;
+using Amilious.Saving;
+using Amilious.Threading;
+using UnityEngine;
 
-namespace Amilious.ProceduralTerrain.Map {
+namespace Amilious.ProceduralTerrain.Map.Components {
     
     /// <summary>
     /// This class will represent a chunk
     /// </summary>
-    [HideMonoScript]
     public class Chunk : IMapComponent<Chunk> {
 
         private const string CHUNK_POOLED = "Chunk (pooled)";
 
         #region Instance Variables
-        
         
         private readonly MapManager _mapManager;
         private GameObject _gameObject;
@@ -39,8 +39,7 @@ namespace Amilious.ProceduralTerrain.Map {
         private int _previousLODIndex = -1;
         private bool _heightMapReceived;
         private Vector2 _sampleCenter;
-        private Vector2 _position;
-        private Bounds _bounds;
+        //private Vector2 _position;
         private bool _hasSetCollider;
         private Texture2D _previewTexture;
         private bool _startedToRelease;
@@ -57,6 +56,8 @@ namespace Amilious.ProceduralTerrain.Map {
         private int _updateLODIndex;
         private int _updateOldLODIndex;
         private ChunkMesh _updateLODMesh;
+        private Vector2 _floatCoord;
+        private DistanceValue? _distanceFromViewerChunk;
         private float _updateDistFromViewerSq;
         private bool _updateWasVisible;
         private bool _updateVisible;
@@ -123,7 +124,8 @@ namespace Amilious.ProceduralTerrain.Map {
         
         /// <summary>
         /// This property is used to get the chunk's transform position.  It can also
-        /// be used to protected set the transforms position.
+        /// be used to protected set the transforms position.  This property insures that
+        /// setting or getting the Transform's position is thread safe.
         /// </summary>
         public Vector3 TransformPosition {
             get => _transformPosition;
@@ -207,12 +209,10 @@ namespace Amilious.ProceduralTerrain.Map {
         public void Setup(Vector2Int chunkId) {
             Id = chunkId;
             _saveData = _mapSaver.NewChunkSaveData(Id);
-            var floatCoord = new Vector2(Id.x, Id.y);
-            _sampleCenter = floatCoord * _meshSettings.MeshWorldSize / _meshSettings.MeshScale;
-            _position = floatCoord * _meshSettings.MeshWorldSize;
-            _bounds = new Bounds(_position, Vector3.one * _meshSettings.MeshWorldSize);
+            _floatCoord = new Vector2(Id.x, Id.y) * _meshSettings.MeshWorldSize;
+            _sampleCenter = _floatCoord / _meshSettings.MeshScale;
             Name = $"Chunk ({Id.x},{Id.y})";
-            TransformPosition = new Vector3(_position.x, 0, _position.y);
+            TransformPosition = new Vector3(_floatCoord.x, 0, _floatCoord.y);
             _loader.Process();
         }
 
@@ -300,6 +300,15 @@ namespace Amilious.ProceduralTerrain.Map {
         }
 
         /// <summary>
+        /// This property is used to get the distance from the viewer's chunk.  This
+        /// value is cleared at the end of each update.
+        /// </summary>
+        private DistanceValue Distance{ get {
+            _distanceFromViewerChunk??= new DistanceValue(0, (Id - _mapManager.ViewerChunk).sqrMagnitude);
+            return _distanceFromViewerChunk.Value;
+        }}
+        
+        /// <summary>
         /// This is a helper method that can be used to call the update chunk from within this class.
         /// </summary>
         private void UpdateChunk() => UpdateChunk(ChunkRange.maxRange);
@@ -320,9 +329,9 @@ namespace Amilious.ProceduralTerrain.Map {
                 return;
             }
             _updated = true;
-            _updateDistFromViewerSq = _bounds.SqrDistance(_mapManager.ViewerPositionXZ);
+            _updateDistFromViewerSq = Distance[true];
             _updateWasVisible =  _isActive;
-            _updateVisible = _updateDistFromViewerSq <= _meshSettings.MaxViewDistanceSq;
+            _updateVisible = _updateDistFromViewerSq <= _meshSettings.MaxViewDistance[true];
             if(_updateVisible) UpdateLOD(_updateDistFromViewerSq);
             if(_updateWasVisible == _updateVisible) return;
             Active = _updateVisible;
@@ -333,9 +342,11 @@ namespace Amilious.ProceduralTerrain.Map {
         /// This method is called when the <see cref="MapManager"/> is ending the update cycle.
         /// </summary>
         public void ValidateNonUpdatedChunk() {
-            if(!IsInUse || _updated || _startedToRelease) { _updated = false; return; }
+            if(!IsInUse || _updated || _startedToRelease) { _updated = false;
+                _distanceFromViewerChunk = null; return; }
             _updated = false;
-            if(_bounds.SqrDistance(_mapManager.ViewerPositionXZ) < _meshSettings.ChunkUnloadDistanceSq) return;
+            if(Distance[true] < _meshSettings.UnloadDistance[true]) return;
+            _distanceFromViewerChunk = null;
             if(_startedToRelease) return;
             _mapPool.ReturnToPool(this);
         }
@@ -349,7 +360,7 @@ namespace Amilious.ProceduralTerrain.Map {
         private void UpdateLOD(float distanceFromViewerSq) {
             _updateLODIndex = 0;
             for(var i = 0; i < _detailLevels.Length - 1; i++) {
-                if(distanceFromViewerSq > _detailLevels[i].SqrVisibleDistanceThreshold)
+                if(distanceFromViewerSq > _detailLevels[i].DistanceSq)
                     _updateLODIndex = i + 1;
                 else break;
             }
@@ -428,11 +439,11 @@ namespace Amilious.ProceduralTerrain.Map {
         /// </summary>
         public void UpdateCollisionMesh() {
             if(!IsInUse || !_isActive || _hasSetCollider) return;
-            _updateDistFromViewerSq = _bounds.SqrDistance(_mapManager.ViewerPositionXZ);
-            if(_updateDistFromViewerSq < _detailLevels[_meshSettings.ColliderLODIndex].SqrVisibleDistanceThreshold)
+            _updateDistFromViewerSq = Distance[true];
+            if(_updateDistFromViewerSq < _detailLevels[_meshSettings.ColliderLODIndex].DistanceSq)
                 if(!_lodMeshes[_meshSettings.ColliderLODIndex].HasRequestedMesh)
                     _lodMeshes[_meshSettings.ColliderLODIndex].RequestMeshAsync(_biomeMap.HeightMap, _mapManager.ApplyHeight);
-            if(_updateDistFromViewerSq > _mapManager.SqrColliderGenerationThreshold) return;
+            if(_updateDistFromViewerSq > _mapManager.ColliderGenerationThreshold[true]) return;
             if(!_lodMeshes[_meshSettings.ColliderLODIndex].HasMeshData) return;
             _lodMeshes[_meshSettings.ColliderLODIndex].AssignTo(_meshCollider);
             _hasSetCollider = true;

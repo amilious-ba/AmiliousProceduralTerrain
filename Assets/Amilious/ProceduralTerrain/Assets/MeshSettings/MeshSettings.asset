@@ -15,15 +15,15 @@ MonoBehaviour:
   chunkBaseSize: 64
   regionSize: 8
   paintingMode: 2
-  colliderLOD: 1
   material: {fileID: 2100000, guid: f605b618f9b22b94e82de92114f88b75, type: 2}
   meshScale: 1
-  chunkUnloadDistance: 800
   useFlatShading: 0
   bakeCollisionMeshes: 1
   calculateMeshDataOnLoad: 0
   chunkLevelsOfDetail:
   - levelOfDetail: 1
-    visibleDistance: 200
+    distance: 3
   - levelOfDetail: 8
-    visibleDistance: 400
+    distance: 6
+  unloadDistance: 12
+  colliderLOD: 1

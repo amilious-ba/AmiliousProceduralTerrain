@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.Threading;
+using Amilious.ProceduralTerrain.Mesh.Enums;
 using Amilious.ProceduralTerrain.Noise;
 
 namespace Amilious.ProceduralTerrain.Mesh {
