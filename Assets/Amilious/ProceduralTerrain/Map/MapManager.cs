@@ -2,6 +2,7 @@ using System;
 using UnityEngine;
 using Amilious.Random;
 using System.Diagnostics;
+using Amilious.Core.Structs;
 using Amilious.Threading;
 using Sirenix.OdinInspector;
 using Amilious.ProceduralTerrain.Mesh;
@@ -74,7 +75,7 @@ namespace Amilious.ProceduralTerrain.Map {
         private Vector3 _viewerPosition;
         private Vector2Int _viewerChunk;
         private Vector2 _oldViewerPosition;
-        private float? _sqrColliderGenerationThreshold;
+        private DistanceValue? _colliderGenerationThreshold;
         private Seed? _seedStruct;
         private MapPool<Chunk> _mapPool;
         private readonly Stopwatch _updateSW = new Stopwatch();
@@ -88,10 +89,10 @@ namespace Amilious.ProceduralTerrain.Map {
         /// This property is used to get the squared distance from the viewer
         /// where colliders should be generated.
         /// </summary>
-        public float SqrColliderGenerationThreshold {
+        public DistanceValue ColliderGenerationThreshold {
             get {
-                _sqrColliderGenerationThreshold??= colliderGenerationThreshold * colliderGenerationThreshold;
-                return _sqrColliderGenerationThreshold.Value;
+                _colliderGenerationThreshold??= new DistanceValue(colliderGenerationThreshold, true);
+                return _colliderGenerationThreshold.Value;
             }
         }
 

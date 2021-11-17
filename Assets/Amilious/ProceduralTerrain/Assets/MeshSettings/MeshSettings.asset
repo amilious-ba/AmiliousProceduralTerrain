@@ -18,7 +18,7 @@ MonoBehaviour:
   colliderLOD: 1
   material: {fileID: 2100000, guid: f605b618f9b22b94e82de92114f88b75, type: 2}
   meshScale: 1
-  chunkUnloadDistance: 800
+  chunkUnloadDistance: 600
   useFlatShading: 0
   bakeCollisionMeshes: 1
   calculateMeshDataOnLoad: 0

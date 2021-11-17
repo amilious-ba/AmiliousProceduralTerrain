@@ -322,7 +322,7 @@ namespace Amilious.ProceduralTerrain.Map {
             _updated = true;
             _updateDistFromViewerSq = _bounds.SqrDistance(_mapManager.ViewerPositionXZ);
             _updateWasVisible =  _isActive;
-            _updateVisible = _updateDistFromViewerSq <= _meshSettings.MaxViewDistanceSq;
+            _updateVisible = _updateDistFromViewerSq <= _meshSettings.MaxViewDistance[true];
             if(_updateVisible) UpdateLOD(_updateDistFromViewerSq);
             if(_updateWasVisible == _updateVisible) return;
             Active = _updateVisible;
@@ -335,7 +335,7 @@ namespace Amilious.ProceduralTerrain.Map {
         public void ValidateNonUpdatedChunk() {
             if(!IsInUse || _updated || _startedToRelease) { _updated = false; return; }
             _updated = false;
-            if(_bounds.SqrDistance(_mapManager.ViewerPositionXZ) < _meshSettings.ChunkUnloadDistanceSq) return;
+            if(_bounds.SqrDistance(_mapManager.ViewerPositionXZ) < _meshSettings.UnloadDistance[true]) return;
             if(_startedToRelease) return;
             _mapPool.ReturnToPool(this);
         }
@@ -349,7 +349,7 @@ namespace Amilious.ProceduralTerrain.Map {
         private void UpdateLOD(float distanceFromViewerSq) {
             _updateLODIndex = 0;
             for(var i = 0; i < _detailLevels.Length - 1; i++) {
-                if(distanceFromViewerSq > _detailLevels[i].SqrVisibleDistanceThreshold)
+                if(distanceFromViewerSq > _detailLevels[i].DistanceSq)
                     _updateLODIndex = i + 1;
                 else break;
             }
@@ -429,10 +429,10 @@ namespace Amilious.ProceduralTerrain.Map {
         public void UpdateCollisionMesh() {
             if(!IsInUse || !_isActive || _hasSetCollider) return;
             _updateDistFromViewerSq = _bounds.SqrDistance(_mapManager.ViewerPositionXZ);
-            if(_updateDistFromViewerSq < _detailLevels[_meshSettings.ColliderLODIndex].SqrVisibleDistanceThreshold)
+            if(_updateDistFromViewerSq < _detailLevels[_meshSettings.ColliderLODIndex].DistanceSq)
                 if(!_lodMeshes[_meshSettings.ColliderLODIndex].HasRequestedMesh)
                     _lodMeshes[_meshSettings.ColliderLODIndex].RequestMeshAsync(_biomeMap.HeightMap, _mapManager.ApplyHeight);
-            if(_updateDistFromViewerSq > _mapManager.SqrColliderGenerationThreshold) return;
+            if(_updateDistFromViewerSq > _mapManager.ColliderGenerationThreshold[true]) return;
             if(!_lodMeshes[_meshSettings.ColliderLODIndex].HasMeshData) return;
             _lodMeshes[_meshSettings.ColliderLODIndex].AssignTo(_meshCollider);
             _hasSetCollider = true;
