@@ -158,7 +158,7 @@ MonoBehaviour:
   generateChunksAtStart: 1
   chunkPoolSize: 500
   chunkUpdateThreshold: 25
-  colliderGenerationThreshold: 200
+  colliderGenerationThreshold: 5
   seed: seedless3
   applyHeight: 1
   meshSettings: {fileID: 11400000, guid: c85bb7093536c6143ab491a4846c8ebc, type: 2}

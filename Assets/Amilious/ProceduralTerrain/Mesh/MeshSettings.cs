@@ -37,8 +37,8 @@ namespace Amilious.ProceduralTerrain.Mesh {
         [ValidateInput(nameof(UniqueLod), "Each Lod must have a unique level of detail and visible distance.")]
         [ValidateInput(nameof(ContainsValues),"You must have at least one level of detail.")]
         private LODInfo[] chunkLevelsOfDetail;
-        [SerializeField, Tooltip("This distance should be greater than the max lod distance.")]
-        private float unloadDistance = 600;
+        [SerializeField, Tooltip("This distance should be greater than the max lod distance."), SuffixLabel("chunks")]
+        private int unloadDistance = 600;
         [SerializeField, ValidateInput(nameof(ValidateColliderLOD),INVALID_COLLIDER_LOD)]
         private LevelsOfDetail colliderLOD = Mesh.LevelsOfDetail.Max;
         #endregion
@@ -46,9 +46,8 @@ namespace Amilious.ProceduralTerrain.Mesh {
         #region Instance Variables
         
         private float? _meshWorldSize;
-        private DistanceValue? _maxViewDistance;
-        private DistanceValue? _unloadDistance;
-        private int? _chunksVisibleInViewDistance;
+        private DistanceValueInt? _maxViewDistance;
+        private DistanceValueInt? _unloadDistance;
         private int? _colliderLODIndex;
 
         #endregion
@@ -128,16 +127,6 @@ namespace Amilious.ProceduralTerrain.Mesh {
             get {
                 _unloadDistance ??= new DistanceValue(unloadDistance, true);
                 return _unloadDistance.Value;
-            }
-        }
-        
-        /// <summary>
-        /// This property is used to get the number of chunks visible in the view distance.
-        /// </summary>
-        public int ChunksVisibleInViewDistance {
-            get {
-                _chunksVisibleInViewDistance ??= (int)Mathf.Round(MaxViewDistance[false] / MeshWorldSize);
-                return _chunksVisibleInViewDistance.Value;
             }
         }
 

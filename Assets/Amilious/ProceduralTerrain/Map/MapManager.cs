@@ -25,7 +25,7 @@ namespace Amilious.ProceduralTerrain.Map {
         [SerializeField, ShowIf(nameof(generateChunksAtStart))] private int chunkPoolSize = 100;
         [SerializeField, Tooltip("This is the distance the player needs to move before the chunk will update.")]
         private float chunkUpdateThreshold = 25f;
-        [SerializeField] private float colliderGenerationThreshold = 5;
+        [SerializeField, SuffixLabel("chunks")] private int colliderGenerationThreshold = 5;
         [SerializeField, Required] private string seed;
         [SerializeField] private bool applyHeight = true;
         [SerializeField, Required] private MeshSettings meshSettings;
@@ -75,7 +75,7 @@ namespace Amilious.ProceduralTerrain.Map {
         private Vector3 _viewerPosition;
         private Vector2Int _viewerChunk;
         private Vector2 _oldViewerPosition;
-        private DistanceValue? _colliderGenerationThreshold;
+        private DistanceValueInt? _colliderGenerationThreshold;
         private Seed? _seedStruct;
         private MapPool<Chunk> _mapPool;
         private readonly Stopwatch _updateSW = new Stopwatch();
@@ -136,6 +136,8 @@ namespace Amilious.ProceduralTerrain.Map {
         /// This property is used to get the viewer's position on the last update.
         /// </summary>
         public Vector3 ViewerPosition { get => _viewerPosition; }
+        
+        public Vector2Int ViewerChunk { get => _viewerChunk; }
         
         /// <summary>
         /// This property is used to get the map's <see cref="MapType"/>.
@@ -230,7 +232,7 @@ namespace Amilious.ProceduralTerrain.Map {
                 new MapPool<Chunk>(this, chunkPoolSize):
                 new MapPool<Chunk>(this);
             _sqrChunkUpdateThreshold = chunkUpdateThreshold * chunkUpdateThreshold;
-            _updateChunksRadius = meshSettings.ChunksVisibleInViewDistance;
+            _updateChunksRadius = (int)meshSettings.MaxViewDistance[false];
             UpdateVisibleChunks();
         }
 

@@ -40,7 +40,7 @@ namespace Amilious.ProceduralTerrain.Map {
         private bool _heightMapReceived;
         private Vector2 _sampleCenter;
         private Vector2 _position;
-        private Bounds _bounds;
+        //private Bounds _bounds;
         private bool _hasSetCollider;
         private Texture2D _previewTexture;
         private bool _startedToRelease;
@@ -210,7 +210,7 @@ namespace Amilious.ProceduralTerrain.Map {
             var floatCoord = new Vector2(Id.x, Id.y);
             _sampleCenter = floatCoord * _meshSettings.MeshWorldSize / _meshSettings.MeshScale;
             _position = floatCoord * _meshSettings.MeshWorldSize;
-            _bounds = new Bounds(_position, Vector3.one * _meshSettings.MeshWorldSize);
+            //_bounds = new Bounds(_position, Vector3.one * _meshSettings.MeshWorldSize);
             Name = $"Chunk ({Id.x},{Id.y})";
             TransformPosition = new Vector3(_position.x, 0, _position.y);
             _loader.Process();
@@ -299,6 +299,10 @@ namespace Amilious.ProceduralTerrain.Map {
             _mapPool.EnqueueItem(this);
         }
 
+        private float CalculateChunkDistanceSq(Vector2 to) {
+            return (Id - to).sqrMagnitude;
+        }
+        
         /// <summary>
         /// This is a helper method that can be used to call the update chunk from within this class.
         /// </summary>
@@ -320,7 +324,7 @@ namespace Amilious.ProceduralTerrain.Map {
                 return;
             }
             _updated = true;
-            _updateDistFromViewerSq = _bounds.SqrDistance(_mapManager.ViewerPositionXZ);
+            _updateDistFromViewerSq = CalculateChunkDistanceSq(_mapManager.ViewerChunk);
             _updateWasVisible =  _isActive;
             _updateVisible = _updateDistFromViewerSq <= _meshSettings.MaxViewDistance[true];
             if(_updateVisible) UpdateLOD(_updateDistFromViewerSq);
@@ -335,7 +339,7 @@ namespace Amilious.ProceduralTerrain.Map {
         public void ValidateNonUpdatedChunk() {
             if(!IsInUse || _updated || _startedToRelease) { _updated = false; return; }
             _updated = false;
-            if(_bounds.SqrDistance(_mapManager.ViewerPositionXZ) < _meshSettings.UnloadDistance[true]) return;
+            if(CalculateChunkDistanceSq(_mapManager.ViewerChunk) < _meshSettings.UnloadDistance[true]) return;
             if(_startedToRelease) return;
             _mapPool.ReturnToPool(this);
         }
@@ -428,7 +432,7 @@ namespace Amilious.ProceduralTerrain.Map {
         /// </summary>
         public void UpdateCollisionMesh() {
             if(!IsInUse || !_isActive || _hasSetCollider) return;
-            _updateDistFromViewerSq = _bounds.SqrDistance(_mapManager.ViewerPositionXZ);
+            _updateDistFromViewerSq = CalculateChunkDistanceSq(_mapManager.ViewerChunk);
             if(_updateDistFromViewerSq < _detailLevels[_meshSettings.ColliderLODIndex].DistanceSq)
                 if(!_lodMeshes[_meshSettings.ColliderLODIndex].HasRequestedMesh)
                     _lodMeshes[_meshSettings.ColliderLODIndex].RequestMeshAsync(_biomeMap.HeightMap, _mapManager.ApplyHeight);

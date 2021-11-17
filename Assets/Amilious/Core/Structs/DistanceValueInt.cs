@@ -5,26 +5,22 @@ using Amilious.Core.Interfaces;
 
 namespace Amilious.Core.Structs {
     
-    /// <summary>
-    /// This class is used to represent a distance threshold 
-    /// </summary>
     [Serializable, InlineProperty]
-    public struct DistanceValue : IDistanceProvider<float> {
+    public struct DistanceValueInt : IDistanceProvider<int> {
         
         [SerializeField, InlineProperty, HideLabel]
-        private float distance;
-        [DisplayAsString]
-        private float? _distanceSq;
+        private int distance;
+        private int? _distanceSq;
         
         /// <summary>
         /// This property contains the distance.
         /// </summary>
-        public float Distance { get => distance; }
+        public int Distance { get => distance; }
 
         /// <summary>
         /// This property contains the distance squared.
         /// </summary>
-        public float DistanceSq {
+        public int DistanceSq {
             get {
                 _distanceSq ??= distance * distance;
                 return _distanceSq.Value;
@@ -36,7 +32,7 @@ namespace Amilious.Core.Structs {
         /// </summary>
         /// <param name="squared">If true this will return the squared distance, otherwise
         /// it will return the normal distance.</param>
-        public float this[bool squared] => squared?DistanceSq:Distance;
+        public int this[bool squared] => squared?DistanceSq:Distance;
 
         /// <summary>
         /// This constructor is used to create a new DistanceProvider.
@@ -44,7 +40,7 @@ namespace Amilious.Core.Structs {
         /// <param name="distance">The distance not squared.</param>
         /// <param name="calculateSq">If true the squared distance will be calculated
         /// in the constructor.</param>
-        public DistanceValue(float distance, bool calculateSq = false) {
+        public DistanceValueInt(int distance, bool calculateSq = false) {
             this.distance = distance;
             if(calculateSq) _distanceSq = distance * distance;
             else _distanceSq = null;
@@ -55,16 +51,16 @@ namespace Amilious.Core.Structs {
         /// </summary>
         /// <param name="maxDistance">The max distance not squared.</param>
         /// <param name="maxDistanceSq">The max distance squared.</param>
-        public DistanceValue(float maxDistance, float maxDistanceSq) {
+        public DistanceValueInt(int maxDistance, int maxDistanceSq) {
             distance = maxDistance;
             _distanceSq = maxDistanceSq;
         }
 
         /// <summary>
-        /// This method is used to check if this is equal to the provided value.
+        /// This method is used to check if this is equal to the provided value. 
         /// </summary>
-        /// <param name="other">The value that you want to compare.</param>
-        /// <returns>True if the provided value is equal to this, otherwise false.</returns>
+        /// <param name="other">The value you want to compare.</param>
+        /// <returns>True if the provided value is equal to this value.</returns>
         public bool Equals(IDistanceProvider<float> other) {
             return other.Distance == Distance;
         }
@@ -72,8 +68,8 @@ namespace Amilious.Core.Structs {
         /// <summary>
         /// This method is used to check if this is equal to the provided value.
         /// </summary>
-        /// <param name="other">The value that you want to compare.</param>
-        /// <returns>True if the provided value is equal to this, otherwise false.</returns>
+        /// <param name="other">The value you want to compare.</param>
+        /// <returns>True if the provided value is equal to this value.</returns>
         public bool Equals(IDistanceProvider<int> other) {
             return other.Distance == Distance;
         }
@@ -85,7 +81,8 @@ namespace Amilious.Core.Structs {
         /// <returns>True if the provided object is a <see cref="IDistanceProvider{T}"/> and
         /// its distance is equal.</returns>
         public override bool Equals(object obj) {
-            return obj is IDistanceProvider<float> other && Equals(other);
+            return obj is IDistanceProvider<int> other && Equals(other) ||
+                   obj is IDistanceProvider<float> other2 && Equals(other2);
         }
 
         /// <summary>
@@ -100,15 +97,15 @@ namespace Amilious.Core.Structs {
         /// <param name="a">The first value.</param>
         /// <param name="b">The second value.</param>
         /// <returns>True if the values are equal.</returns>
-        public static bool operator == (DistanceValue a, IDistanceProvider<float> b) => a.Equals(b);
-
+        public static bool operator == (DistanceValueInt a, IDistanceProvider<int> b) => a.Equals(b);
+        
         /// <summary>
         /// This operator is used to check if the two distance values are equal.
         /// </summary>
         /// <param name="a">The first value.</param>
         /// <param name="b">The second value.</param>
         /// <returns>True if the values are equal.</returns>
-        public static bool operator ==(DistanceValue a, IDistanceProvider<int> b) => a.Equals(b);
+        public static bool operator == (DistanceValueInt a, IDistanceProvider<float> b) => a.Equals(b);
 
         /// <summary>
         /// This operator is used to check if the two provided values are not equal.
@@ -116,7 +113,7 @@ namespace Amilious.Core.Structs {
         /// <param name="a">The first value.</param>
         /// <param name="b">The second value.</param>
         /// <returns>True if the values are not equal.</returns>
-        public static bool operator !=(DistanceValue a, IDistanceProvider<float> b) => !(a == b);
+        public static bool operator !=(DistanceValueInt a, IDistanceProvider<int> b) => !(a == b);
 
         /// <summary>
         /// This operator is used to check if the two provided values are not equal.
@@ -124,17 +121,16 @@ namespace Amilious.Core.Structs {
         /// <param name="a">The first value.</param>
         /// <param name="b">The second value.</param>
         /// <returns>True if the values are not equal.</returns>
-        public static bool operator !=(DistanceValue a, IDistanceProvider<int> b) => !(a == b);
-        
+        public static bool operator !=(DistanceValueInt a, IDistanceProvider<float> b) => !(a == b);
+
         /// <summary>
-        /// This operator is used to implicitly cast a DistanceValue into a DistanceValueInt.
+        /// This operator is used to implicitly cast a DistanceValueInt into a DistanceValue.
         /// </summary>
         /// <param name="value">The value that you want to cast.</param>
         /// <returns>The casted value.</returns>
-        public static implicit operator DistanceValueInt(DistanceValue value) {
-            return new DistanceValueInt((int)value.Distance, (int)value.DistanceSq);
+        public static implicit operator DistanceValue(DistanceValueInt value) {
+            return new DistanceValue(value.distance, value.DistanceSq);
         }
         
     }
-    
 }
