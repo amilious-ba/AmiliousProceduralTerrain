@@ -21,7 +21,7 @@ namespace Amilious.ValueAdds
 		#region Public Instance Variables
 		
 		// Check if Player has New Input System
-		[ValidateInput("@hasNewInputSystem", "New Input System is not installed", InfoMessageType.Error)]
+		[ValidateInput("@IsInputSystemEnabled", "@inputSystemMessage", InfoMessageType.Error)]
 		public float lookSpeed   = 5f;
 		public float moveSpeed   = 5f;
 		public float sprintSpeed = 50f;
@@ -39,8 +39,8 @@ namespace Amilious.ValueAdds
 		private Vector2    flyInput;
 		private Vector2    mousePosition;
 		
-		private float m_yaw;
-		private float m_pitch;
+		private float yaw;
+		private float pitch;
 
 		private float sprintInput;
 		private float rotateInput;
@@ -48,13 +48,30 @@ namespace Amilious.ValueAdds
 		private float mouseX;
 		private float mouseY;
 		
-		private bool m_inputCaptured;
-		
-		private bool hasReachedLimit;
-		
-		private bool hasNewInputSystem;
-		
+		private bool   inputCaptured;
+		private bool   limitReached;
 
+		#endregion
+
+		#region InputSystemValidation
+
+		private bool   v_NewInputSystem;
+		private string inputSystemMessage;
+		public bool IsInputSystemEnabled
+		{
+			get
+			{
+				if (!v_NewInputSystem) return false;
+#if ENABLE_INPUT_SYSTEM
+					return true;
+#else
+				inputSystemMessage = "New Input system is disabled";
+				return false;
+#endif
+			}
+		}
+		
+		
 		#endregion
 
 		#region Event Functions
@@ -82,7 +99,7 @@ namespace Amilious.ValueAdds
 		/// </summary>
 		private void OnValidate()
 		{
-			hasNewInputSystem = AmiliousValidator.ValidatePackage("inputsystem");
+			v_NewInputSystem = AmilliousValidator.ValidatePackage("inputsystem");
 
 			if (Application.isPlaying)
 				enabled = enableInputCapture;
@@ -117,23 +134,27 @@ namespace Amilious.ValueAdds
 
 		#endregion
 
+		#region Private Methods
+
+		
+
 		/// <summary>
 		/// When player is holding RightMouse
 		/// </summary>
 		private void CaptureInput()
 		{
-			m_inputCaptured  = true;
+			inputCaptured  = true;
 
 			// Set the rotation of Camera
 			var eulerAngles = transform.eulerAngles;
-			m_yaw   = eulerAngles.y;
-			m_pitch = eulerAngles.x;
+			yaw   = eulerAngles.y;
+			pitch = eulerAngles.x;
 		}
 
 		/// <summary>
 		/// This method is for if player has canceled holding MouserRight
 		/// </summary>
-		private void ReleaseInput() => m_inputCaptured  = false;
+		private void ReleaseInput() => inputCaptured  = false;
 
 		/// <summary>
 		/// called when the application loses or gains focus
@@ -141,7 +162,7 @@ namespace Amilious.ValueAdds
 		/// <param name="focus">if gameObjects have focus</param>
 		private void OnApplicationFocus(bool focus)
 		{
-			if (m_inputCaptured && !focus)
+			if (inputCaptured && !focus)
 				ReleaseInput();
 		}
 		
@@ -152,7 +173,7 @@ namespace Amilious.ValueAdds
 		/// <returns></returns>
 		private bool InCapture()
 		{
-			if (!m_inputCaptured)
+			if (!inputCaptured)
 			{
 				// Check if player is rotating 
 				if (holdRightMouseCapture && rotateInput > 0)
@@ -160,7 +181,7 @@ namespace Amilious.ValueAdds
 			}
 
 			// check if player is holdingMouse or rotating
-			switch (m_inputCaptured)
+			switch (inputCaptured)
 			{
 				case false:
 				case true when !holdRightMouseCapture || !(rotateInput > 0): return true;
@@ -181,12 +202,12 @@ namespace Amilious.ValueAdds
 			float rotFwd    = mouseY * Time.deltaTime;
 
 			// Apply speed to rotation
-			m_yaw   = (m_yaw + lookSpeed * rotStrafe) % 360f;
-			m_pitch = (m_pitch - lookSpeed * rotFwd) % 360f;
+			yaw   = (yaw + lookSpeed * rotStrafe) % 360f;
+			pitch = (pitch - lookSpeed * rotFwd) % 360f;
 
 			// Set the rotation in Quaternion
-			transform.rotation = Quaternion.AngleAxis(m_yaw, Vector3.up) *
-			                     Quaternion.AngleAxis(m_pitch, Vector3.right);
+			transform.rotation = Quaternion.AngleAxis(yaw, Vector3.up) *
+			                     Quaternion.AngleAxis(pitch, Vector3.right);
 			
 			// Set the "real" rotation of camera by eulerAngles
 			transform.eulerAngles = new Vector3(transform.eulerAngles.x, transform.eulerAngles.y, 0);
@@ -210,8 +231,9 @@ namespace Amilious.ValueAdds
 			transform.position += transform.forward * forward + transform.right * right + Vector3.up * up;
 		}
 
+		#endregion
 
-		#region CameraActions
+		#region CameraActions Interface
 		
 		/// <summary>
 		/// This applies only to the new Input system

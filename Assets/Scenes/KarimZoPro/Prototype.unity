@@ -204,7 +204,6 @@ MonoBehaviour:
   moveSpeed: 30
   sprintSpeed: 80
   enableInputCapture: 1
-  lockAndHideCursor: 0
   holdRightMouseCapture: 1
 --- !u!114 &85997998
 MonoBehaviour:
