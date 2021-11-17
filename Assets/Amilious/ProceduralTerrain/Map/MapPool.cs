@@ -90,20 +90,26 @@ namespace Amilious.ProceduralTerrain.Map {
         /// if one exists in the pool, otherwise it will create a new <typeparamref name="T"/>.
         /// </summary>
         /// <param name="itemId">This id of the <typeparamref name="T"/> that you want to load.</param>
-        /// <returns>The existing, loaded, or generated <typeparamref name="T"/> with the given itemId.</returns>
-        public T BarrowFromPool(Vector2Int itemId) {
+        /// <param name="item">The existing, loaded, or generated <typeparamref name="T"/> with the given itemId.</param>
+        /// <returns>True if the item was not loaded and was loaded, otherwise returns false if the item was already
+        /// loaded.</returns>
+        public bool BarrowFromPool(Vector2Int itemId, out T item) {
             //if the item is already loaded return it.
-            if(_loadedItems.TryGetValue(itemId, out var existing)) return existing;
+            if(_loadedItems.TryGetValue(itemId, out var existing)) {
+                item = existing;
+                return false;
+            }
             //try to get an available item
-            _poolQueue.TryDequeue(out var item);
+            _poolQueue.TryDequeue(out var newItem);
             //if the item is null create a new one.
-            item ??= _referenceItem.CreateMapComponent(_manager, this);
+            newItem ??= _referenceItem.CreateMapComponent(_manager, this);
             //setup the item
-            item.PullFromPool();
-            item.Setup(itemId);
-            _loadedItems[itemId] = item;
+            newItem.PullFromPool();
+            newItem.Setup(itemId);
+            _loadedItems[itemId] = newItem;
             //return the item
-            return item;
+            item = newItem;
+            return true;
         }
 
         /// <summary>

@@ -102,7 +102,7 @@ namespace Amilious.ProceduralTerrain.Map.Components {
             get => _isActive;
             protected set {
                 Dispatcher.InvokeAsync(()=> {
-                    _gameObject.SetActive(value);
+                    if(_gameObject!=null)_gameObject.SetActive(value);
                     _isActive = value;
                 });
             }
@@ -116,7 +116,7 @@ namespace Amilious.ProceduralTerrain.Map.Components {
             get => _name;
             protected set {
                 Dispatcher.InvokeAsync(()=> {
-                    _gameObject.name = value;
+                    if(_gameObject!=null) _gameObject.name = value;
                     _name = value;
                 });
             }
@@ -131,7 +131,8 @@ namespace Amilious.ProceduralTerrain.Map.Components {
             get => _transformPosition;
             set {
                 Dispatcher.InvokeAsync(() => {
-                    _gameObject.transform.position = value;
+                    if(_gameObject!=null&&_gameObject.transform!=null)
+                        _gameObject.transform.position = value;
                     _transformPosition = value;
                 });
             }
@@ -342,12 +343,9 @@ namespace Amilious.ProceduralTerrain.Map.Components {
         /// This method is called when the <see cref="MapManager"/> is ending the update cycle.
         /// </summary>
         public void ValidateNonUpdatedChunk() {
-            if(!IsInUse || _updated || _startedToRelease) { _updated = false;
-                _distanceFromViewerChunk = null; return; }
+            if(!IsInUse || _updated || _startedToRelease) { _updated = false;return; }
             _updated = false;
             if(Distance[true] < _meshSettings.UnloadDistance[true]) return;
-            _distanceFromViewerChunk = null;
-            if(_startedToRelease) return;
             _mapPool.ReturnToPool(this);
         }
 
@@ -382,17 +380,14 @@ namespace Amilious.ProceduralTerrain.Map.Components {
         /// </summary>
         private void OnLoadComplete() {
             if(!_appliedMeshMaterial) {
-                _meshRenderer.material = _meshSettings.Material;
+                if(_meshRenderer!=null)_meshRenderer.material = _meshSettings.Material;
                 _appliedMeshMaterial = true;
             }
             if(_meshSettings.PaintingMode != TerrainPaintingMode.Material) {
                 _previewTexture = _biomeMap.GenerateTexture(_preparedColors,1);
-                _meshRenderer.material.mainTexture = _previewTexture;
+                if(_meshRenderer!=null)_meshRenderer.material.mainTexture = _previewTexture;
             }
             _heightMapReceived = true;
-            /*if((_mapSaver.SavingEnabled && _mapSaver.SaveMeshData)||_meshSettings.CalculateMeshDataOnLoad) {
-                foreach(var mesh in _lodMeshes) mesh.ApplyChanges();
-            }*/
             UpdateChunk();
             onChunkLoaded?.Invoke(Id);
         }
@@ -438,7 +433,9 @@ namespace Amilious.ProceduralTerrain.Map.Components {
         /// This method is used to handle the collision mesh.
         /// </summary>
         public void UpdateCollisionMesh() {
-            if(!IsInUse || !_isActive || _hasSetCollider) return;
+            if(!IsInUse) return;
+            _distanceFromViewerChunk = null;
+            if(!_isActive || _hasSetCollider) return;
             _updateDistFromViewerSq = Distance[true];
             if(_updateDistFromViewerSq < _detailLevels[_meshSettings.ColliderLODIndex].DistanceSq)
                 if(!_lodMeshes[_meshSettings.ColliderLODIndex].HasRequestedMesh)

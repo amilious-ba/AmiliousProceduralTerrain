@@ -69,15 +69,17 @@ namespace Amilious.Core.Interfaces {
         /// This property is used to get the number of checked out objects in the pool.
         /// </summary>
         public int CheckedOut { get; }
-        
+
         /// <summary>
         /// This method is used to pull an item from the available items in the pool, or create a new
         /// item if there are no available items.
         /// </summary>
         /// <param name="itemId">A key that is used for setting up the object as it is pulled
-        /// from the pool.</param>
-        /// <returns>The <see cref="T"/> that was created or pulled from the pool.</returns>
-        T BarrowFromPool(T2 itemId);
+        ///     from the pool.</param>
+        /// <param name="item">The <see cref="T"/> that was created or pulled from the pool.</param>
+        /// <returns>True if the item was not loaded and is now loaded, otherwise returns false
+        /// if the item was already loaded.</returns>
+        bool BarrowFromPool(T2 itemId, out T item);
         
         /// <summary>
         /// This method is used to add or return a <see cref="T"/> to the pool.

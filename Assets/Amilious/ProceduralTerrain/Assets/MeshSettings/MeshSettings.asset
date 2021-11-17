@@ -22,8 +22,8 @@ MonoBehaviour:
   calculateMeshDataOnLoad: 0
   chunkLevelsOfDetail:
   - levelOfDetail: 1
-    distance: 3
+    distance: 4
   - levelOfDetail: 8
-    distance: 6
+    distance: 8
   unloadDistance: 12
   colliderLOD: 1

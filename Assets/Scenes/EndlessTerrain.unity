@@ -164,6 +164,12 @@ MonoBehaviour:
   meshSettings: {fileID: 11400000, guid: c85bb7093536c6143ab491a4846c8ebc, type: 2}
   biomeSettings: {fileID: 11400000, guid: d73a9940739c7184abef7790a4f2521b, type: 2}
   viewer: {fileID: 1687258585}
+  useCoroutine: 1
+  stopBeforeStarting: 1
+  spawnedChunksPerUpdate: 1
+  onlyCountUnloadedChunks: 1
+  waitBetweenUpdates: 0
+  timeBetweenUpdates: 0.1
 --- !u!4 &142136125
 Transform:
   m_ObjectHideFlags: 0
