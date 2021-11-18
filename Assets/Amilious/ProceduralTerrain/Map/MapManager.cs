@@ -11,6 +11,7 @@ using Amilious.ProceduralTerrain.Biomes;
 using Amilious.ProceduralTerrain.Map.Components;
 using Amilious.ProceduralTerrain.Map.Enums;
 using Amilious.ProceduralTerrain.Saving;
+using UnityEngine.Serialization;
 
 namespace Amilious.ProceduralTerrain.Map {
     
@@ -34,6 +35,17 @@ namespace Amilious.ProceduralTerrain.Map {
         [SerializeField, Required] private MeshSettings meshSettings;
         [SerializeField, Required] private BiomeSettings biomeSettings;
         [SerializeField] private Transform viewer;
+
+        [Title("Chunk Spawn Coroutine Settings")] [SerializeField]
+        private bool useCoroutine;
+        [SerializeField]
+        private bool stopBeforeStarting;
+        [SerializeField, Min(1)]
+        private int spawnedChunksPerUpdate;
+        [SerializeField] private bool onlyCountUnloadedChunks;
+        [SerializeField] private bool waitBetweenUpdates;
+        [SerializeField, ShowIf(nameof(waitBetweenUpdates)), SuffixLabel("seconds")]
+        private float timeBetweenUpdates = 0.1f;
 
         #endregion
 
@@ -199,6 +211,8 @@ namespace Amilious.ProceduralTerrain.Map {
         #endregion
 
         #region Protected Methods
+
+        private Coroutine _spawnCoroutine;
         
         /// <summary>
         /// This method is used update visible chunks.
@@ -207,7 +221,17 @@ namespace Amilious.ProceduralTerrain.Map {
             _updateSW.Restart();
             OnStartUpdate?.Invoke();
             OnUpdateVisible?.Invoke(new ChunkRange(_viewerChunk,_updateChunksRadius));
-            StartCoroutine(SpawnChunks(_viewerChunk));
+            if(useCoroutine) {
+                if(_spawnCoroutine != null && stopBeforeStarting) StopCoroutine(_spawnCoroutine);
+                _spawnCoroutine = StartCoroutine(SpawnChunks(_viewerChunk));
+            }else {
+                for(var xOff = - _updateChunksRadius; xOff <= _updateChunksRadius; xOff++)
+                for(var yOff = -_updateChunksRadius; yOff <= _updateChunksRadius; yOff++) {
+                    _mapPool.BarrowFromPool(new Vector2Int(_viewerChunk.x + xOff,
+                        _viewerChunk.y + yOff), out _);
+                }
+            }
+
             OnEndUpdate?.Invoke();
             _updateSW.Stop();
             OnChunksUpdated?.Invoke(_mapPool.PoolInfo,_updateSW.ElapsedMilliseconds);
@@ -219,10 +243,14 @@ namespace Amilious.ProceduralTerrain.Map {
         /// </summary>
         /// <param name="viewersChunk">The chunk the viewer is on.</param>
         protected IEnumerator SpawnChunks(Vector2Int viewersChunk) {
+            var x = 0;
+            var waitTime = waitBetweenUpdates? new WaitForSeconds(timeBetweenUpdates):null;
             for(var xOff = - _updateChunksRadius; xOff <= _updateChunksRadius; xOff++)
             for(var yOff = -_updateChunksRadius; yOff <= _updateChunksRadius; yOff++) {
-                _mapPool.BarrowFromPool(new Vector2Int(viewersChunk.x + xOff, viewersChunk.y + yOff));
-                yield return null;
+                if(_mapPool.BarrowFromPool(new Vector2Int(viewersChunk.x + xOff, 
+                    viewersChunk.y + yOff), out _)) x++; else if(!onlyCountUnloadedChunks) x++;
+                if(x < spawnedChunksPerUpdate) continue;
+                x = 0; yield return waitTime;
             }
         }
         

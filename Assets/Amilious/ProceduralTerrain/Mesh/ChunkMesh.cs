@@ -1,5 +1,4 @@
 using System;
-using System.IO;
 using UnityEngine;
 using Amilious.Saving;
 using System.Threading;
@@ -202,7 +201,7 @@ namespace Amilious.ProceduralTerrain.Mesh {
             //create the mesh if it has not been created yet
             if(!HasMesh) ApplyChanges(true);
             //set the mesh
-            meshFilter.sharedMesh = _mesh;
+            if(meshFilter!=null) meshFilter.sharedMesh = _mesh;
         }
 
         /// <summary>
@@ -222,7 +221,7 @@ namespace Amilious.ProceduralTerrain.Mesh {
                 return;
             }
             //assign the mesh.
-            meshCollider.sharedMesh = _mesh;
+            if(meshCollider!=null)meshCollider.sharedMesh = _mesh;
         }
         
         /// <summary>
