@@ -1,10 +1,7 @@
-using System;
-using System.Runtime.Remoting.Messaging;
 using Amilious.ProceduralTerrain.Map;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using Sirenix.OdinInspector;
-using UnityEditor;
 
 namespace Amilious.ValueAdds
 {
@@ -14,11 +11,21 @@ namespace Amilious.ValueAdds
 		
 		// Check if Player has New Input System
 		[ValidateInput("@IsInputSystemEnabled", "@inputSystemMessage", InfoMessageType.Error)]
+		[MinMaxSlider(-80,80, true)]
+		[TabGroup("General")]
+		public Vector2 rotationLimit;
+		[TabGroup("General")]
+		public bool canCapture = true;
+		
+		[TabGroup("Speed")]
+		[Range(0,20)]
 		public float lookSpeed   = 5f;
+		[TabGroup("Speed")]
+		[Range(0,100)]
 		public float moveSpeed   = 5f;
+		[TabGroup("Speed")]
+		[Range(0,200)]
 		public float sprintSpeed = 50f;
-		public float rotationLimit = 30f;
-		public bool  holdRightMouseCapture = true;
 
 		#endregion
 		
@@ -73,7 +80,7 @@ namespace Amilious.ValueAdds
 		/// This function is called just after the object is enabled
 		/// </summary>
 		private void OnEnable() {
-			if (!holdRightMouseCapture) CaptureInput();
+			if (!canCapture) CaptureInput();
 		}
 
 		/// <summary>
@@ -140,14 +147,14 @@ namespace Amilious.ValueAdds
 		private bool InCapture() {
 			if (!inputCaptured) {
 				// Check if player is rotating 
-				if (holdRightMouseCapture && rotateInput > 0)
+				if (canCapture && rotateInput > 0)
 					CaptureInput();
 			}
 
 			// check if player is holdingMouse or rotating
 			switch (inputCaptured) {
 				case false:
-				case true when !holdRightMouseCapture || !(rotateInput > 0): return true;
+				case true when !canCapture || !(rotateInput > 0): return true;
 				case true:
 					ReleaseInput();
 					break;
@@ -173,9 +180,8 @@ namespace Amilious.ValueAdds
 			Quaternion rot = Quaternion.AngleAxis(yaw,Vector3.up) * Quaternion.AngleAxis(pitch,Vector3.right);
 
 			Vector3 camAngle = rot.eulerAngles;
-			camAngle   = new Vector3(camAngle.x, camAngle.y, 0);
 			camAngle.x = camAngle.x > 180 ? camAngle.x-360 : camAngle.x;
-			camAngle.x = Mathf.Clamp(camAngle.x, -rotationLimit, rotationLimit);
+			camAngle.x = Mathf.Clamp(camAngle.x, rotationLimit.x, rotationLimit.y);
 			
 			transform.rotation = Quaternion.Euler(camAngle);
 		}
