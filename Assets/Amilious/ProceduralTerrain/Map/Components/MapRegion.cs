@@ -7,6 +7,9 @@ namespace Amilious.ProceduralTerrain.Map.Components {
     //this class will be used to store map data for a region.
     public class MapRegion : IMapComponent<MapRegion> {
 
+        private MapManager _mapManager;
+        private MapPool<MapRegion> _mapPool;
+
         #region Properties
         
         /// <summary>
@@ -17,7 +20,7 @@ namespace Amilious.ProceduralTerrain.Map.Components {
         /// <summary>
         /// The regions id.
         /// </summary>
-        public Vector2Int Id { get; }
+        public Vector2Int Id { get; private set; }
         
         public bool HasProcessedRelease { get; }
         
@@ -27,14 +30,11 @@ namespace Amilious.ProceduralTerrain.Map.Components {
         
         #region Constructor
         
-        /// <summary>
-        /// This constructor is used to generate a region.
-        /// </summary>
-        /// <param name="regionSize">The size of the region.</param>
-        /// <param name="regionId">The region's id.</param>
-        public MapRegion(RegionSize regionSize, Vector2Int regionId) {
-            RegionSize = regionSize;
-            Id = regionId;
+        
+        public MapRegion(MapManager mapManager, MapPool<MapRegion> mapPool) {
+            _mapManager = mapManager;
+            _mapPool = mapPool;
+            RegionSize = mapManager.MeshSettings.RegionSize;
         }
 
         /// <summary>
@@ -119,19 +119,19 @@ namespace Amilious.ProceduralTerrain.Map.Components {
         }
 
         public MapRegion CreateMapComponent(MapManager mapManager, MapPool<MapRegion> mapPool) {
-            throw new System.NotImplementedException();
+            return new MapRegion(mapManager, mapPool);
         }
 
         public void PullFromPool(bool setActive = false) {
-            throw new System.NotImplementedException();
+            
         }
 
-        public void Setup(Vector2Int itemId) {
-            throw new System.NotImplementedException();
+        public void Setup(Vector2Int regionId) {
+            Id = regionId;
         }
 
         public void ReleaseToPool() {
-            throw new System.NotImplementedException();
+            
         }
 
     }

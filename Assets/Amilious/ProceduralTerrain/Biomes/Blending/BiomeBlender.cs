@@ -64,7 +64,6 @@ namespace Amilious.ProceduralTerrain.Biomes.Blending {
             position.y *= -1;
             // Get the list of data points in range.
             
-            //TODO: do this in compute shader
             var points = positionIsCenter? 
                 _gatherer.GetPointsFromChunkCenter(seed, position, token):
                     _gatherer.GetPointsFromChunkBase(seed,position, token);

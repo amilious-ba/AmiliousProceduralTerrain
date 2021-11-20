@@ -3,6 +3,7 @@ using System.Collections;
 using UnityEngine;
 using Amilious.Random;
 using System.Diagnostics;
+using Amilious.Core.Extensions;
 using Amilious.Core.Structs;
 using Amilious.Threading;
 using Sirenix.OdinInspector;
@@ -285,7 +286,7 @@ namespace Amilious.ProceduralTerrain.Map {
             if(viewer == null) return;
             //get the player position
             _viewerPosition = viewer.position;
-            _viewerPositionXZ = new Vector2(_viewerPosition.x, _viewerPosition.z);
+            _viewerPositionXZ = _viewerPosition.GetXZ();
             var vChunk = ChunkAtPoint(_viewerPositionXZ);
             if(vChunk != _viewerChunk) {
                 OnViewerChangedChunk?.Invoke(viewer,_viewerChunk,vChunk);
