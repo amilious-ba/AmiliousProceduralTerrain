@@ -66,7 +66,7 @@ namespace Amilious.Core.Extensions {
             if(transform.parent == null) return "/" + transform.name;
             return transform.parent.GetPath() + "/" + transform.name;
         }
-        
+
     }
     
     

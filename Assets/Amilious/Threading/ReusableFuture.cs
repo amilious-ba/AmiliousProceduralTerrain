@@ -1,6 +1,6 @@
 using System;
-using System.Threading;
 using UnityEngine;
+using System.Threading;
 
 namespace Amilious.Threading {
 
@@ -112,6 +112,8 @@ namespace Amilious.Threading {
                     CancelImpl();
                 }
                 catch(Exception e) {
+                    //if cancellation was requested ignore errors.
+                    if(_tokenSource.IsCancellationRequested) CancelImpl();
                     // Directly call the Impl version to avoid the state validation of the public method
                     FailImpl(e);
                 }finally {
@@ -269,6 +271,8 @@ namespace Amilious.Threading {
                     CancelImpl();
                 }
                 catch(Exception e) {
+                    //if cancellation was requested ignore errors.
+                    if(_tokenSource.IsCancellationRequested) CancelImpl();
                     // Directly call the Impl version to avoid the state validation of the public method
                     FailImpl(e);
                 }finally {
@@ -423,7 +427,10 @@ namespace Amilious.Threading {
                     AssignImpl(_processMethod(inputValue,_tokenSource.Token));
                     _tokenSource.Token.ThrowIfCancellationRequested();
                 }catch(OperationCanceledException) {CancelImpl();
-                }catch(Exception e) {FailImpl(e);
+                }catch(Exception e) {
+                    //if cancellation was requested ignore errors.
+                    if(_tokenSource.IsCancellationRequested) CancelImpl();
+                    FailImpl(e);
                 }finally {
                     _tokenSource.Dispose();
                     _tokenSource = null;
@@ -581,7 +588,10 @@ namespace Amilious.Threading {
                     AssignImpl(_processMethod(inputValue,inputValue2,_tokenSource.Token));
                     _tokenSource.Token.ThrowIfCancellationRequested();
                 }catch(OperationCanceledException) {CancelImpl();
-                }catch(Exception e) {FailImpl(e);
+                }catch(Exception e) {
+                    //if cancellation was requested ignore errors.
+                    if(_tokenSource.IsCancellationRequested) CancelImpl();
+                    FailImpl(e);
                 }finally {
                     _tokenSource.Dispose();
                     _tokenSource = null;
@@ -743,7 +753,10 @@ namespace Amilious.Threading {
                     AssignImpl(_processMethod(inputValue,inputValue2,inputValue3,_tokenSource.Token));
                     _tokenSource.Token.ThrowIfCancellationRequested();
                 }catch(OperationCanceledException) {CancelImpl();
-                }catch(Exception e) {FailImpl(e);
+                }catch(Exception e) {
+                    //if cancellation was requested ignore errors.
+                    if(_tokenSource.IsCancellationRequested) CancelImpl();
+                    FailImpl(e);
                 }finally {
                     _tokenSource.Dispose();
                     _tokenSource = null;

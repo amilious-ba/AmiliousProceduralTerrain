@@ -47,6 +47,17 @@ namespace Amilious.Core.Extensions {
             return new Vector2(Mathf.Round(v2.x), Mathf.Round(v2.y));
         }
         
+        /// <summary>
+        /// This method is used to get the values from the <see cref="Vector2Int"/>
+        /// </summary>
+        /// <param name="vector2Int">The <see cref="Vector2Int"/> that you want to get the values for.</param>
+        /// <param name="x">The x value.</param>
+        /// <param name="y">The y value.</param>
+        public static void GetValues(this Vector2Int vector2Int, out int x, out int y) {
+            x = vector2Int.x;
+            y = vector2Int.y;
+        }
+        
     }
     
     

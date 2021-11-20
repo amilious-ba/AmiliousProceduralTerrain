@@ -4,7 +4,7 @@ using System.Text;
 
 namespace Amilious.Random {
     
-    [System.Serializable]
+    [Serializable]
     public struct Seed {
 
         private string _name;

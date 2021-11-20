@@ -1,15 +1,15 @@
 using System.Linq;
-using System.Threading;
-using Amilious.Core.Structs;
-using Amilious.ProceduralTerrain.Biomes;
-using Amilious.ProceduralTerrain.Map.Enums;
-using Amilious.ProceduralTerrain.Mesh;
-using Amilious.ProceduralTerrain.Mesh.Enums;
-using Amilious.ProceduralTerrain.Saving;
-using Amilious.ProceduralTerrain.Textures;
-using Amilious.Saving;
-using Amilious.Threading;
 using UnityEngine;
+using Amilious.Saving;
+using System.Threading;
+using Amilious.Threading;
+using Amilious.Core.Structs;
+using Amilious.ProceduralTerrain.Mesh;
+using Amilious.ProceduralTerrain.Saving;
+using Amilious.ProceduralTerrain.Biomes;
+using Amilious.ProceduralTerrain.Textures;
+using Amilious.ProceduralTerrain.Map.Enums;
+using Amilious.ProceduralTerrain.Mesh.Enums;
 
 namespace Amilious.ProceduralTerrain.Map.Components {
     
@@ -32,6 +32,7 @@ namespace Amilious.ProceduralTerrain.Map.Components {
         private readonly LODInfo[] _detailLevels;
         private readonly BiomeMap _biomeMap;
         private readonly Color[] _preparedColors;
+        private Texture2D _previewTexture;
         private readonly MapSaver _mapSaver;
         private readonly MapPool<Chunk> _mapPool;
         private readonly ReusableFuture _loader;
@@ -39,9 +40,7 @@ namespace Amilious.ProceduralTerrain.Map.Components {
         private int _previousLODIndex = -1;
         private bool _heightMapReceived;
         private Vector2 _sampleCenter;
-        //private Vector2 _position;
         private bool _hasSetCollider;
-        private Texture2D _previewTexture;
         private bool _startedToRelease;
         private bool _updated;
         private bool _isActive = true;
@@ -49,6 +48,7 @@ namespace Amilious.ProceduralTerrain.Map.Components {
         private string _name;
         private bool _appliedMeshMaterial;
         private SaveData _saveData;
+        private readonly int _numCancels;
         //###############################################################
         //update methods variables if the update calls are
         //moved to a separate thead these values will need to be local to
@@ -61,9 +61,12 @@ namespace Amilious.ProceduralTerrain.Map.Components {
         private float _updateDistFromViewerSq;
         private bool _updateWasVisible;
         private bool _updateVisible;
+        private int _cancelCalls;
         //###############################################################
         #endregion
 
+        #region Events
+        
         /// <summary>
         /// This event is triggered when a chunks visibility changes.
         /// </summary>
@@ -87,6 +90,19 @@ namespace Amilious.ProceduralTerrain.Map.Components {
         /// </summary>
         /// ReSharper disable once UnassignedField.Global
         public static OnChunkSavedDelegate onChunkSaved;
+        
+        #endregion
+        
+        #region Properties
+        
+        /// <summary>
+        /// This property is used to get the distance from the viewer's chunk.  This
+        /// value is cleared at the end of each update.
+        /// </summary>
+        private DistanceValue Distance{ get {
+            _distanceFromViewerChunk??= new DistanceValue(0, (Id - _mapManager.ViewerChunk).sqrMagnitude);
+            return _distanceFromViewerChunk.Value;
+        }}
         
         /// <summary>
         /// This property contains true if the chunk is being used,
@@ -148,7 +164,11 @@ namespace Amilious.ProceduralTerrain.Map.Components {
         /// </summary>
         public bool HasBeenUpdated => _lodMeshes.Any(x => x.HasBeenUpdated) 
                 || _biomeMap.HasBeenUpdated || _biomeMap.HeightMap.HasBeenUpdated;
+        
+        #endregion
 
+        #region Constructors
+        
         /// <summary>
         /// This is only used for the reference version
         /// </summary>
@@ -186,14 +206,15 @@ namespace Amilious.ProceduralTerrain.Map.Components {
                 if(i == _meshSettings.ColliderLODIndex)
                     _lodMeshes[i].UpdateCallback += UpdateCollisionMesh;
             }
+            _numCancels = _lodMeshes.Length+1;
             //get the manager
             _mapManager = mapManager;
             //setup loader
             _loader = new ReusableFuture();
-            _loader.OnProcess(ProcessLoad).OnSuccess(OnLoadComplete);
+            _loader.OnProcess(ProcessLoad).OnSuccess(OnLoadComplete).OnCancel(FutureCancel,false);
             //setup saver
             _saver = new ReusableFuture<bool, bool>();
-            _saver.OnProcess(ProcessSave).OnSuccess(SaveComplete);
+            _saver.OnProcess(ProcessSave).OnSuccess(SaveComplete).OnCancel(FutureCancel,false);
             //subscribe to the events
             _mapManager.OnUpdateVisible += UpdateChunk;
             _mapManager.OnEndUpdate += ValidateNonUpdatedChunk;
@@ -202,6 +223,20 @@ namespace Amilious.ProceduralTerrain.Map.Components {
             if(!IsInUse) Active = false;
         }
 
+        #endregion
+        
+        #region Pool Methods
+
+        /// <summary>
+        /// This method is used by the MapPool to create a new chunk.
+        /// </summary>
+        /// <param name="mapManager">The map manager to assign to the chunk.</param>
+        /// <param name="mapPool">The chunks map pool.</param>
+        /// <returns>The newly created chunk.</returns>
+        public Chunk CreateMapComponent(MapManager mapManager, MapPool<Chunk> mapPool) {
+            return new Chunk(mapManager, mapPool);
+        }
+        
         /// <summary>
         /// This method is used to update the chunk to be used as a
         /// specified chunk.
@@ -228,6 +263,61 @@ namespace Amilious.ProceduralTerrain.Map.Components {
             if(setActive) Active = true;
         }
 
+        /// <summary>
+        /// This method is used to dispose of a chunk and add it back
+        /// to the chunk pool.
+        /// </summary>
+        public void ReleaseToPool() {
+            if(_startedToRelease) return;
+            _startedToRelease = true;
+            _cancelCalls = 0;
+            //cancel current actions
+            _loader.Cancel();
+            //save if saving is enabled
+            if(_mapSaver.SavingEnabled&&HasBeenUpdated) {
+                _saver.Process(true);
+                return;
+            }
+            //if not saving
+            SendToPool();
+        }
+        
+        /// <summary>
+        /// This method should only be called from <see cref="ReleaseToPool"/> or
+        /// <see cref="SaveComplete"/>.  If you want to return the object to the
+        /// <see cref="MapPool{T}"/> see <see cref="ReleaseToPool"/>.
+        /// </summary>
+        private void SendToPool() {
+            Active = false;
+            Name = CHUNK_POOLED;
+            //reset the mesh values
+            foreach(var mesh in _lodMeshes) mesh.Reset(FutureCancel);
+            //the reset and cancellation methods will call the FutureCancel method and
+            //that is were this process continues.
+        }
+
+        /// <summary>
+        /// This method is called when any futures related to this chunk are canceled.
+        /// </summary>
+        private void FutureCancel() {
+            if(!_startedToRelease) return;
+            _cancelCalls++;
+            if(_cancelCalls != _numCancels) return;
+            //this used to be in the send to pool method ///////
+            _previousLODIndex = -1;
+            _hasSetCollider = false;
+            _heightMapReceived = false;
+            //return to pool
+            IsInUse = false;
+            _startedToRelease = false;
+            _mapPool.EnqueueItem(this);
+            ////////////////////////////////////////////////////
+        }
+        
+        #endregion
+        
+        #region Saving
+        
         /// <summary>
         /// This method is called after the save process has been
         /// successfully completed.
@@ -263,51 +353,72 @@ namespace Amilious.ProceduralTerrain.Map.Components {
             return releaseFromPool;
         }
 
+        #endregion
+        
+        #region Loading
+        
         /// <summary>
-        /// This method is used to dispose of a chunk and add it back
-        /// to the chunk pool.
+        /// This method is called after the load process has been completed
+        /// successfully.
         /// </summary>
-        public void ReleaseToPool() {
-            if(_startedToRelease) return;
-            _startedToRelease = true;
-            //cancel current actions
-            _loader.Cancel();
-            //save if saving is enabled
-            if(_mapSaver.SavingEnabled&&HasBeenUpdated) {
-                _saver.Process(true);
-                return;
+        private void OnLoadComplete() {
+            if(!_appliedMeshMaterial) {
+                if(_meshRenderer!=null)_meshRenderer.material = _meshSettings.Material;
+                _appliedMeshMaterial = true;
             }
-            //if not saving
-            SendToPool();
+            if(_meshSettings.PaintingMode != TerrainPaintingMode.Material) {
+                _previewTexture = _biomeMap.GenerateTexture(_preparedColors,1);
+                if(_meshRenderer!=null)_meshRenderer.material.mainTexture = _previewTexture;
+            }
+            _heightMapReceived = true;
+            UpdateChunk();
+            onChunkLoaded?.Invoke(Id);
         }
 
         /// <summary>
-        /// This method should only be called from <see cref="ReleaseToPool"/> or
-        /// <see cref="SaveComplete"/>.  If you want to return the object to the
-        /// <see cref="MapPool{T}"/> see <see cref="ReleaseToPool"/>.
+        /// This method is executed from the loader.
         /// </summary>
-        private void SendToPool() {
-            Active = false;
-            Name = CHUNK_POOLED;
-            //reset the mesh values
-            foreach(var mesh in _lodMeshes) mesh.Reset();
-            _previousLODIndex = -1;
-            _hasSetCollider = false;
-            _heightMapReceived = false;
-            //return to pool
-            IsInUse = false;
-            _startedToRelease = false;
-            _mapPool.EnqueueItem(this);
+        /// <param name="token">This is a cancellation token that can be used to
+        /// check if the load operation has been canceled.</param>
+        /// <returns>True if everything was processed correctly, otherwise an error
+        /// will be thrown if false.</returns>
+        private bool ProcessLoad(CancellationToken token) {
+            //try to load or generate biome data
+            if(_mapSaver.SavingEnabled && _mapManager.MapSaver.LoadData(Id, out _saveData)) {
+                //the save data was found so load the data
+                _biomeMap.Load(_saveData);
+                if(_mapSaver.SaveMeshData) {
+                    foreach(var mesh in _lodMeshes) {
+                        token.ThrowIfCancellationRequested();
+                        mesh.Load(_saveData);
+                    }
+                }
+            }else {
+                //nothing has been loaded so generate new
+                token.ThrowIfCancellationRequested();
+                _biomeMap.Generate(_sampleCenter, token);
+                if(_mapSaver.SaveOnGenerate) {
+                    //save the generated data
+                    _biomeMap.Save(_saveData);
+                    _mapSaver.SaveData(Id, _saveData);
+                }
+                //generate the mesh data using the same process
+                if(_meshSettings.CalculateMeshDataOnLoad) {
+                    foreach(var mesh in _lodMeshes) {
+                        token.ThrowIfCancellationRequested();
+                        mesh.RequestMesh(_biomeMap.HeightMap, _loader, token, _mapManager.ApplyHeight);
+                    }
+                }
+            }
+            //generate texture
+            token.ThrowIfCancellationRequested();
+            _biomeMap.GenerateTextureColors(_preparedColors, _meshSettings.PaintingMode, 1);
+            return true;
         }
-
-        /// <summary>
-        /// This property is used to get the distance from the viewer's chunk.  This
-        /// value is cleared at the end of each update.
-        /// </summary>
-        private DistanceValue Distance{ get {
-            _distanceFromViewerChunk??= new DistanceValue(0, (Id - _mapManager.ViewerChunk).sqrMagnitude);
-            return _distanceFromViewerChunk.Value;
-        }}
+        
+        #endregion
+        
+        #region Update Methods
         
         /// <summary>
         /// This is a helper method that can be used to call the update chunk from within this class.
@@ -348,6 +459,25 @@ namespace Amilious.ProceduralTerrain.Map.Components {
             if(Distance[true] < _meshSettings.UnloadDistance[true]) return;
             _mapPool.ReturnToPool(this);
         }
+        
+        /// <summary>
+        /// This method is used to handle the collision mesh.
+        /// </summary>
+        public void UpdateCollisionMesh() {
+            if(!IsInUse) return;
+            _distanceFromViewerChunk = null;
+            if(!_isActive || _hasSetCollider) return;
+            _updateDistFromViewerSq = Distance[true];
+            if(_updateDistFromViewerSq < _detailLevels[_meshSettings.ColliderLODIndex].DistanceSq)
+                if(!_lodMeshes[_meshSettings.ColliderLODIndex].HasRequestedMesh)
+                    _lodMeshes[_meshSettings.ColliderLODIndex].RequestMeshAsync(_biomeMap.HeightMap, _mapManager.ApplyHeight);
+            if(_updateDistFromViewerSq > _mapManager.ColliderGenerationThreshold[true]) return;
+            if(!_lodMeshes[_meshSettings.ColliderLODIndex].HasMeshData) return;
+            _lodMeshes[_meshSettings.ColliderLODIndex].AssignTo(_meshCollider);
+            _hasSetCollider = true;
+        }
+        
+        #endregion
 
         /// <summary>
         /// This method is used to update the chunks level of detail.
@@ -374,86 +504,5 @@ namespace Amilious.ProceduralTerrain.Map.Components {
             }
         }
 
-        /// <summary>
-        /// This method is called after the load process has been completed
-        /// successfully.
-        /// </summary>
-        private void OnLoadComplete() {
-            if(!_appliedMeshMaterial) {
-                if(_meshRenderer!=null)_meshRenderer.material = _meshSettings.Material;
-                _appliedMeshMaterial = true;
-            }
-            if(_meshSettings.PaintingMode != TerrainPaintingMode.Material) {
-                _previewTexture = _biomeMap.GenerateTexture(_preparedColors,1);
-                if(_meshRenderer!=null)_meshRenderer.material.mainTexture = _previewTexture;
-            }
-            _heightMapReceived = true;
-            UpdateChunk();
-            onChunkLoaded?.Invoke(Id);
-        }
-
-        /// <summary>
-        /// This method is executed from the loader.
-        /// </summary>
-        /// <param name="token">This is a cancellation token that can be used to
-        /// check if the load operation has been canceled.</param>
-        /// <returns>True if everything was processed correctly, otherwise an error
-        /// will be thrown if false.</returns>
-        private bool ProcessLoad(CancellationToken token) {
-            //try to load or generate biome data
-            if(_mapSaver.SavingEnabled && _mapManager.MapSaver.LoadData(Id, out _saveData)) {
-                //the save data was found so load the data
-                _biomeMap.Load(_saveData);
-                if(_mapSaver.SaveMeshData) {
-                    foreach(var mesh in _lodMeshes) {
-                        token.ThrowIfCancellationRequested();
-                        mesh.Load(_saveData);
-                    }
-                }
-            }else {
-                //nothing has been loaded so generate new
-                _biomeMap.Generate(_sampleCenter, token);
-                if(_mapSaver.SaveOnGenerate) {
-                    //save the generated data
-                    _biomeMap.Save(_saveData);
-                    _mapSaver.SaveData(Id, _saveData);
-                }
-                //generate the mesh data using the same process
-                if(_meshSettings.CalculateMeshDataOnLoad) {
-                    foreach(var mesh in _lodMeshes) 
-                        mesh.RequestMesh(_biomeMap.HeightMap, _loader,token,_mapManager.ApplyHeight);
-                }
-            }
-            //generate texture
-            _biomeMap.GenerateTextureColors(_preparedColors, _meshSettings.PaintingMode, 1);
-            return true;
-        }
-
-        /// <summary>
-        /// This method is used to handle the collision mesh.
-        /// </summary>
-        public void UpdateCollisionMesh() {
-            if(!IsInUse) return;
-            _distanceFromViewerChunk = null;
-            if(!_isActive || _hasSetCollider) return;
-            _updateDistFromViewerSq = Distance[true];
-            if(_updateDistFromViewerSq < _detailLevels[_meshSettings.ColliderLODIndex].DistanceSq)
-                if(!_lodMeshes[_meshSettings.ColliderLODIndex].HasRequestedMesh)
-                    _lodMeshes[_meshSettings.ColliderLODIndex].RequestMeshAsync(_biomeMap.HeightMap, _mapManager.ApplyHeight);
-            if(_updateDistFromViewerSq > _mapManager.ColliderGenerationThreshold[true]) return;
-            if(!_lodMeshes[_meshSettings.ColliderLODIndex].HasMeshData) return;
-            _lodMeshes[_meshSettings.ColliderLODIndex].AssignTo(_meshCollider);
-            _hasSetCollider = true;
-        }
-
-        /// <summary>
-        /// This method is used by the MapPool to create a new chunk.
-        /// </summary>
-        /// <param name="mapManager">The map manager to assign to the chunk.</param>
-        /// <param name="mapPool">The chunks map pool.</param>
-        /// <returns>The newly created chunk.</returns>
-        public Chunk CreateMapComponent(MapManager mapManager, MapPool<Chunk> mapPool) {
-            return new Chunk(mapManager, mapPool);
-        }
     }
 }
