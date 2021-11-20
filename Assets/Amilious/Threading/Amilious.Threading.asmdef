@@ -1,3 +1,16 @@
 {
-	"name": "Amilious.Threading"
+    "name": "Amilious.Threading",
+    "rootNamespace": "",
+    "references": [
+        "GUID:1ec970ca9884e4b4f88d9aa10fca554f"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
 }
