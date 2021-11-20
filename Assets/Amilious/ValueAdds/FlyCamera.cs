@@ -1,3 +1,4 @@
+using System;
 using Amilious.ProceduralTerrain.Map;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -32,18 +33,25 @@ namespace Amilious.ValueAdds
 		#region Private Instance Variables
 		
 		private MapManager mapManager;
+		
 		private Vector2    moveInput;
 		private Vector2    flyInput;
 		private Vector2    mousePosition;
-		private float      yaw;
-		private float      pitch;
-		private float      sprintInput;
-		private float      rotateInput;
-		private float      mouseX;
-		private float      mouseY;
-		private bool       inputCaptured;
-		private bool       limitReached;
-		private bool       v_NewInputSystem;
+		
+		private float sprintInput;
+		private float rotateInput;
+		private float yaw;
+		private float pitch;
+		private float mouseX;
+		private float mouseY;
+		
+		private bool inputCaptured;
+		private bool limitReached;
+		private bool v_NewInputSystem;
+		private bool isMoving;
+		private bool isFlying;
+		private bool isRotating;
+		
 		private string     inputSystemMessage = "";
 		
 		#endregion
@@ -118,11 +126,10 @@ namespace Amilious.ValueAdds
 		/// </summary>
 		private void CaptureInput() {
 			inputCaptured = true;
-
-			// Set the rotation of Camera
-			var eulerAngles = transform.eulerAngles;
-			yaw   = eulerAngles.y;
-			pitch = eulerAngles.x;
+			
+			Vector3 eulerAngles  = transform.eulerAngles;
+			yaw   = eulerAngles .y;
+			pitch = eulerAngles .x;
 		}
 
 
@@ -147,19 +154,16 @@ namespace Amilious.ValueAdds
 		private bool InCapture() {
 			if (!inputCaptured) {
 				// Check if player is rotating 
-				if (canCapture && rotateInput > 0)
+				if (canCapture && isRotating)
 					CaptureInput();
 			}
 
 			// check if player is holdingMouse or rotating
 			switch (inputCaptured) {
 				case false:
-				case true when !canCapture || !(rotateInput > 0): return true;
-				case true:
-					ReleaseInput();
-					break;
+				case true when !canCapture || !(isRotating): return true;
+				case true: ReleaseInput(); break;
 			}
-
 			return false;
 		}
 
@@ -168,29 +172,35 @@ namespace Amilious.ValueAdds
 		/// This function is used for updating the rotation of the camera
 		/// </summary>
 		private void RotationHandler() {
+			if (mouseX == 0 && mouseY == 0) return;
 			
 			// Apply speed to rotation
 			float rotStrafe = mouseX * Time.deltaTime;
 			float rotFwd    = mouseY * Time.deltaTime;
+
 			
-			// Apply speed to rotation
+			Vector3 eulerAngles = transform.eulerAngles;
+			yaw   = eulerAngles .y;
+			pitch = eulerAngles .x;
+			
 			yaw   = (yaw + lookSpeed * rotStrafe) % 360f;
 			pitch = (pitch - lookSpeed * rotFwd) % 360f;
+			
+			Quaternion rot = Quaternion.AngleAxis(yaw, Vector3.up) * Quaternion.AngleAxis(pitch, Vector3.right);
 
-			Quaternion rot = Quaternion.AngleAxis(yaw,Vector3.up) * Quaternion.AngleAxis(pitch,Vector3.right);
-
-			Vector3 camAngle = rot.eulerAngles;
+			Vector2 camAngle = rot.eulerAngles;
 			camAngle.x = camAngle.x > 180 ? camAngle.x-360 : camAngle.x;
 			camAngle.x = Mathf.Clamp(camAngle.x, rotationLimit.x, rotationLimit.y);
 			
 			transform.rotation = Quaternion.Euler(camAngle);
 		}
-
-
+		
 		/// <summary>
 		/// This function is used for updating the movement of the camera
 		/// </summary>
 		private void MovementHandler() {
+			if (!isMoving && !isFlying) return;
+			
 			// check if sprinting
 			float speed = Time.deltaTime * (sprintInput > 0 ? sprintSpeed : moveSpeed);
 
@@ -212,10 +222,21 @@ namespace Amilious.ValueAdds
 		/// Gets different values from the InputValue
 		/// </summary>
 		/// <param name="value">The values you get from the user input</param>
-		public void OnMove(InputValue value) => moveInput = value.Get<Vector2>();
-		public void OnFly(InputValue value) => flyInput = value.Get<Vector2>();
+		public void OnMove(InputValue value) {
+			moveInput = value.Get<Vector2>();
+			isMoving  = moveInput.x != 0 || moveInput.y != 0;
+		}
+
+		public void OnFly(InputValue value) {
+			flyInput = value.Get<Vector2>();
+			isFlying = flyInput.x != 0 || flyInput.y != 0;
+		}
+
 		public void OnSprint(InputValue value) => sprintInput = value.Get<float>();
-		public void OnRotate(InputValue value) => rotateInput = value.Get<float>();
+		public void OnRotate(InputValue value) {
+			rotateInput = value.Get<float>();
+			isRotating  = rotateInput > 0;
+		}
 		public void OnMouseX(InputValue value) => mouseX = value.Get<float>();
 		public void OnMouseY(InputValue value) => mouseY = value.Get<float>();
 
