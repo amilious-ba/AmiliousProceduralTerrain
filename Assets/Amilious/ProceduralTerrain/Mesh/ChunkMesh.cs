@@ -2,9 +2,9 @@ using System;
 using UnityEngine;
 using Amilious.Saving;
 using System.Threading;
-using Amilious.ProceduralTerrain.Mesh.Enums;
 using Amilious.Threading;
 using Amilious.ProceduralTerrain.Noise;
+using Amilious.ProceduralTerrain.Mesh.Enums;
 
 namespace Amilious.ProceduralTerrain.Mesh {
     
@@ -39,6 +39,9 @@ namespace Amilious.ProceduralTerrain.Mesh {
         private readonly MeshSettings _meshSettings;
         private readonly ReusableFuture<bool,NoiseMap,bool> _meshRequester;
         private readonly ReusableFuture<MeshCollider,MeshCollider> _collisionBaker;
+        private bool _resetting;
+        private int _cancelCalls;
+        private Action _resetCallback;
         #endregion
 
         #region Public Properties
@@ -87,10 +90,12 @@ namespace Amilious.ProceduralTerrain.Mesh {
             SkipStep = (int)levelOfDetail;
             //setup the mesh requester
             _meshRequester = new ReusableFuture<bool, NoiseMap, bool>();
-            _meshRequester.OnSuccess(MeshReceived).OnProcess(MeshRequest);
+            _meshRequester.OnSuccess(MeshReceived)
+                .OnProcess(MeshRequest).OnCancel(OnCancel, false);
             //setup the collision baker
             _collisionBaker = new ReusableFuture<MeshCollider,MeshCollider>();
-            _collisionBaker.OnProcess(BakeCollisionMesh).OnSuccess(CollisionMeshBaked);
+            _collisionBaker.OnProcess(BakeCollisionMesh)
+                .OnSuccess(CollisionMeshBaked).OnCancel(OnCancel, false);
             UseFlatShading = meshSettings.UseFlatShading;
             LevelOfDetail = levelOfDetail;
             var numVertsPerLine = meshSettings.VertsPerLine;
@@ -143,13 +148,29 @@ namespace Amilious.ProceduralTerrain.Mesh {
         /// This method is used to reset the mesh.  This clears the loading variables
         /// so that the mesh can be used for a new chunk.
         /// </summary>
-        public void Reset() {
-            CancelProcessing();
+        public void Reset(Action resetCallback) {
+            if(_resetting) return;
+            _resetting = true;
+            _cancelCalls = 0;
+            _resetCallback = resetCallback;
+            _meshRequester.Cancel();
+            _collisionBaker.Cancel();
+            _outSideFuture?.Cancel();
+            //complete on cancel
+        }
+
+        private void OnCancel() {
+            if(!_resetting) return;
+            _cancelCalls++;
+            if(_cancelCalls != 2) return;
+            //reset complete
             HasRequestedMesh = false;
             HasMeshData = false;
             HasMesh = false;
             _bakedCollisionMesh = false;
             HasBeenUpdated = false;
+            _resetting = false;
+            _resetCallback?.Invoke();
         }
 
         /// <summary>
@@ -178,15 +199,6 @@ namespace Amilious.ProceduralTerrain.Mesh {
             MeshRequest(heightMap, applyHeight, token);
             token.ThrowIfCancellationRequested();
             HasMeshData = true;
-        }
-        
-        /// <summary>
-        /// This method is used to cancel any of the futures that are running on this mesh.
-        /// </summary>
-        public void CancelProcessing() {
-            _meshRequester.Cancel();
-            _collisionBaker.Cancel();
-            _outSideFuture?.Cancel();
         }
         
         /// <summary>
@@ -264,7 +276,9 @@ namespace Amilious.ProceduralTerrain.Mesh {
                 FlatShading ();
             } else {
                 BakeNormals ();
-                ProcessEdgeConnectionVertices();
+                //this should not be done if max lod
+                if(LevelOfDetail != LevelsOfDetail.High)
+                    ProcessEdgeConnectionVertices();
             }
         }
 

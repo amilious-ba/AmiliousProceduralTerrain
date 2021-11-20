@@ -17,5 +17,16 @@ namespace Amilious.Core.Extensions {
             return new SerializableVector2Int(vector2Int);
         }
         
+        /// <summary>
+        /// This method is used to get the values from the <see cref="Vector2"/>
+        /// </summary>
+        /// <param name="vector2">The <see cref="Vector2"/> that you want to get the values for.</param>
+        /// <param name="x">The x value.</param>
+        /// <param name="y">The y value.</param>
+        public static void GetValues(this Vector2 vector2, out float x, out float y) {
+            x = vector2.x;
+            y = vector2.y;
+        }
+        
     }
 }

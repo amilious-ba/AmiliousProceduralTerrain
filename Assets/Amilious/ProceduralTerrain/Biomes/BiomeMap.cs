@@ -111,33 +111,24 @@ namespace Amilious.ProceduralTerrain.Biomes {
         /// </summary>
         /// <param name="position">The position the generated map is for.</param>
         /// <param name="token">A cancellation token that can be used to cancel the generation.</param>
-        /// <seealso cref="Generate(UnityEngine.Vector2)"/>
-        public virtual void Generate(Vector2 position, CancellationToken token) {
+        public virtual void Generate(Vector2 position, CancellationToken? token = null) {
             Position = position;
             HeightMap.ResetPosition(position);
+            //create the token if it does not exist
+            if(!token.HasValue) {
+                _tokenSource?.Dispose();
+                _tokenSource = new CancellationTokenSource();
+                token = _tokenSource.Token;
+            }
             //generate the map
-            if(BiomeSettings.UsingBiomeBlending) GenerateBlendedMap(token);
-            else GenerateNonBlendedMap(token);
-            GenerateHeightMap();
+            if(BiomeSettings.UsingBiomeBlending) GenerateBlendedMap(token.Value);
+            else GenerateNonBlendedMap(token.Value);
+            GenerateHeightMap(token.Value);
             HasBeenUpdated = true;
+            _tokenSource?.Dispose();
         }
-        
-        /// <summary>
-        /// This method is used to generate the <see cref="BiomeMap"/>..
-        /// </summary>
-        /// <param name="position">The position the generated map is for.</param>
-        /// <seealso cref="Generate(UnityEngine.Vector2,System.Threading.CancellationToken)"/>
-        public virtual void Generate(Vector2 position) {
-            Position = position;
-            HeightMap.ResetPosition(position);
-            //generate the map
-            var tokenSource = new CancellationTokenSource();
-            if(BiomeSettings.UsingBiomeBlending) GenerateBlendedMap(tokenSource.Token);
-            else GenerateNonBlendedMap(tokenSource.Token);
-            GenerateHeightMap();
-            HasBeenUpdated = true;
-            tokenSource.Dispose();
-        }
+
+        private CancellationTokenSource _tokenSource;
 
         /// <summary>
         /// This method is used to save the <see cref="BiomeMap"/>.
@@ -226,7 +217,7 @@ namespace Amilious.ProceduralTerrain.Biomes {
         /// <summary>
         /// This method is used to generate a height map using this biome map.
         /// </summary>
-        protected virtual void GenerateHeightMap() {
+        protected virtual void GenerateHeightMap(CancellationToken token) {
             var centerX = HeightMap.Position.x;
             var centerY = -HeightMap.Position.y;
             if(IsPositionCentered) {
@@ -237,8 +228,10 @@ namespace Amilious.ProceduralTerrain.Biomes {
             foreach(var key in HeightMap) {
                 var heightValue = 0f;
                 foreach(var biome in weights.Keys) {
+                    token.ThrowIfCancellationRequested();
                     if(weights[biome][key.x, key.y] == 0) continue;
                     var info = BiomeSettings.GetBiome(biome);
+                    if(info == null) return;
                     var rawHeight = info.noiseSettings.NoiseAtPoint(key.x + centerX, key.y + centerY, Seed);
                     var lerp = Mathf.InverseLerp(-1, 1, rawHeight);
                     heightValue += Mathf.Lerp(info.minHeight,info.maxHeight,lerp) * weights[biome][key.x,key.y];

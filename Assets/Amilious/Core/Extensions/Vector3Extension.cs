@@ -35,8 +35,7 @@ namespace Amilious.Core.Extensions {
         /// <param name="swap">If true the values will be swapped.</param>
         /// <returns>The resulting Vector3.</returns>
         public static Vector3 SwapXY(this Vector3 vector3, bool swap = true) {
-            return !swap ? new Vector3(vector3.x, vector3.y, vector3.z) : 
-                new Vector3(vector3.y, vector3.x, vector3.z);
+            return !swap ? vector3 : new Vector3(vector3.y, vector3.x, vector3.z);
         }
         
         /// <summary>
@@ -46,8 +45,7 @@ namespace Amilious.Core.Extensions {
         /// <param name="swap">If true the values will be swapped.</param>
         /// <returns>The resulting Vector3.</returns>
         public static Vector3 SwapXZ(this Vector3 vector3, bool swap = true) {
-            return !swap ? new Vector3(vector3.x, vector3.y, vector3.z) : 
-                new Vector3(vector3.z, vector3.y, vector3.x);
+            return !swap ? vector3 : new Vector3(vector3.z, vector3.y, vector3.x);
         }
         
         /// <summary>
@@ -57,8 +55,7 @@ namespace Amilious.Core.Extensions {
         /// <param name="swap">If true the values will be swapped.</param>
         /// <returns>The resulting Vector3.</returns>
         public static Vector3 SwapYZ(this Vector3 vector3, bool swap = true) {
-            return !swap ? new Vector3(vector3.x, vector3.y, vector3.z) : 
-                new Vector3(vector3.x, vector3.z, vector3.y);
+            return !swap ? vector3 : new Vector3(vector3.x, vector3.z, vector3.y);
         }
         
         /// <summary>
@@ -100,6 +97,39 @@ namespace Amilious.Core.Extensions {
             };
             if(offset.HasValue) result += offset.Value;
             return result;
+        }
+
+        /// <summary>
+        /// This method is used to get the values from the <see cref="Vector3"/>
+        /// </summary>
+        /// <param name="vector3">The <see cref="Vector3"/> that you want to get the values for.</param>
+        /// <param name="x">The x value.</param>
+        /// <param name="y">The y value.</param>
+        /// <param name="z">The z value.</param>
+        public static void GetValues(this Vector3 vector3, out float x, out float y, out float z) {
+            x = vector3.x;
+            y = vector3.y;
+            z = vector3.z;
+        }
+
+        /// <summary>
+        /// This method is used to get a <see cref="Vector2"/> containing the x position as x and
+        /// the z position as y.
+        /// </summary>
+        /// <param name="vector3">The <see cref="Vector3"/> that you want to get the x and z positions form.</param>
+        /// <returns>The vector's position as x = x and y = z.</returns>
+        public static Vector2 GetXZ(this Vector3 vector3) {
+            return new Vector2(vector3.x, vector3.z);
+        }
+
+        /// <summary>
+        /// This method is used to get a <see cref="Vector2"/> containing the y position as x and the
+        /// z position as y.
+        /// </summary>
+        /// <param name="vector3">The <see cref="Vector3"/> that you want to get the y and z positions from.</param>
+        /// <returns>The vector's position as x = y and y = z.</returns>
+        public static Vector2 GetYZ(this Vector3 vector3) {
+            return new Vector2(vector3.y, vector3.z);
         }
         
     }
