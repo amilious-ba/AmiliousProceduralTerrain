@@ -39,10 +39,13 @@ namespace Amilious.ProceduralTerrain.Mesh {
         [ValidateInput(nameof(UniqueLod), "Each Lod must have a unique level of detail and visible distance.")]
         [ValidateInput(nameof(ContainsValues),"You must have at least one level of detail.")]
         private LODInfo[] chunkLevelsOfDetail;
-        [SerializeField, Tooltip("This distance should be greater than the max lod distance."), SuffixLabel("chunks")]
-        private int unloadDistance = 600;
         [SerializeField, ValidateInput(nameof(ValidateColliderLOD),INVALID_COLLIDER_LOD)]
         private LevelsOfDetail colliderLOD = Enums.LevelsOfDetail.Max;
+        [SerializeField, SuffixLabel("chunks")] 
+        private int colliderSize = 4;
+        [SerializeField, Tooltip("This distance should be greater than the max lod distance."), SuffixLabel("chunks")]
+        private int unloadDistance = 12;
+        
         #endregion
         
         #region Instance Variables
@@ -55,6 +58,12 @@ namespace Amilious.ProceduralTerrain.Mesh {
         #endregion
         
         #region Properties
+
+        /// <summary>
+        /// This property is used to get the max distance from the
+        /// player where chunks should have colliders.
+        /// </summary>
+        public int ColliderSize { get => colliderSize; }
         
         /// <summary>
         /// If this property is true, the mesh data should be generated on the

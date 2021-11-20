@@ -1,18 +1,18 @@
 using System;
-using System.Collections;
 using UnityEngine;
 using Amilious.Random;
+using System.Collections;
 using System.Diagnostics;
-using Amilious.Core.Extensions;
-using Amilious.Core.Structs;
+using Amilious.Core;
 using Amilious.Threading;
+using Amilious.Core.Structs;
 using Sirenix.OdinInspector;
+using Amilious.Core.Extensions;
 using Amilious.ProceduralTerrain.Mesh;
-using Amilious.ProceduralTerrain.Biomes;
-using Amilious.ProceduralTerrain.Map.Components;
-using Amilious.ProceduralTerrain.Map.Enums;
 using Amilious.ProceduralTerrain.Saving;
-using UnityEngine.Serialization;
+using Amilious.ProceduralTerrain.Biomes;
+using Amilious.ProceduralTerrain.Map.Enums;
+using Amilious.ProceduralTerrain.Map.Components;
 
 namespace Amilious.ProceduralTerrain.Map {
     
@@ -23,31 +23,46 @@ namespace Amilious.ProceduralTerrain.Map {
     [RequireComponent(typeof(Dispatcher), typeof(MapSaver)), HideMonoScript]
     public class MapManager : MonoBehaviour {
 
+        public const string TAB_GROUP = "Tab Group";
+        public const string TAB_A = "Chunk Settings";
+        public const string TAB_A_H1 = "Tab Group/Chunk Settings/H1";
+        public const string TAB_A_H2 = "Tab Group/Chunk Settings/H2";
+        public const string TAB_B = "Region Settings";
+        
         #region Inspector Values
         
         [SerializeField] private MapType mapType = MapType.EndlessChunkBased;
-        [SerializeField] private bool generateChunksAtStart;
-        [SerializeField, ShowIf(nameof(generateChunksAtStart))] private int chunkPoolSize = 100;
-        [SerializeField, Tooltip("This is the distance the player needs to move before the chunk will update.")]
-        private float chunkUpdateThreshold = 25f;
-        [SerializeField, SuffixLabel("chunks")] private int colliderGenerationThreshold = 5;
-        [SerializeField, Required] private string seed;
-        [SerializeField] private bool applyHeight = true;
         [SerializeField, Required] private MeshSettings meshSettings;
         [SerializeField, Required] private BiomeSettings biomeSettings;
         [SerializeField] private Transform viewer;
-
-        [Title("Chunk Spawn Coroutine Settings")] [SerializeField]
+        [SerializeField, Required] private string seed;
+        [SerializeField] private bool applyHeight = true;
+        
+        [SerializeField, TabGroup(TAB_GROUP,TAB_A), LabelText("Pregenerate")] private bool generateChunksAtStart;
+        [SerializeField, TabGroup(TAB_GROUP,TAB_A), ShowIf(nameof(generateChunksAtStart)), SuffixLabel("chunks"), LabelText("Pool Size")] 
+        private int chunkPoolSize = 100;
+        [SerializeField, TabGroup(TAB_GROUP,TAB_A), SuffixLabel("meters"), LabelText("Update Distance"), 
+         Tooltip("This is the distance the player needs to move before the chunk will update.")]
+        private float chunkUpdateThreshold = 25f;
+        [Title("Chunk Spawn Coroutine Settings")] [SerializeField, TabGroup(TAB_GROUP,TAB_A)]
         private bool useCoroutine;
-        [SerializeField]
+        [SerializeField, TabGroup(TAB_GROUP,TAB_A)]
         private bool stopBeforeStarting;
-        [SerializeField, Min(1)]
-        private int spawnedChunksPerUpdate;
-        [SerializeField] private bool onlyCountUnloadedChunks;
-        [SerializeField] private bool waitBetweenUpdates;
-        [SerializeField, ShowIf(nameof(waitBetweenUpdates)), SuffixLabel("seconds")]
+        [SerializeField, Min(1), TabGroup(TAB_GROUP,TAB_A), SuffixLabel("chunks"), LabelText("Spawns Per Update")]
+        private int spawnedChunksPerUpdate = 1;
+        [SerializeField, HorizontalGroup(TAB_A_H2,.5f), LabelWidth(115), LabelText("Ignore Loaded")] 
+        private bool onlyCountUnloadedChunks;
+        [SerializeField, HorizontalGroup(TAB_A_H2,.5f), LabelWidth(85), LabelText("Wait Between")] 
+        private bool waitBetweenUpdates;
+        [SerializeField, TabGroup(TAB_GROUP,TAB_A), ShowIf(nameof(waitBetweenUpdates)), SuffixLabel("seconds")]
         private float timeBetweenUpdates = 0.1f;
 
+        [SerializeField, TabGroup(TAB_GROUP, TAB_B), LabelText("Pregenerate")]
+        [InfoBox("Regions are not currently being used.", VisibleIf = nameof(NotUsingRegions))]
+        private bool pregenerateRegions;
+        [SerializeField, TabGroup(TAB_GROUP, TAB_B), LabelText("Pool Size"), SuffixLabel("regions")]
+        private int regionPoolSize = 20;
+        
         #endregion
 
         #region Events
@@ -100,6 +115,13 @@ namespace Amilious.ProceduralTerrain.Map {
         #endregion
         
         #region Properties
+
+        /// <summary>
+        /// This property returns true if the map manager is using regions.
+        /// </summary>
+        public bool UsingRegions => mapType == MapType.EndlessRegionBased || mapType == MapType.SetSizeRegionBased;
+
+        public bool NotUsingRegions => !UsingRegions;
         
         /// <summary>
         /// This property is used to get the squared distance from the viewer
@@ -107,7 +129,7 @@ namespace Amilious.ProceduralTerrain.Map {
         /// </summary>
         public DistanceValue ColliderGenerationThreshold {
             get {
-                _colliderGenerationThreshold??= new DistanceValue(colliderGenerationThreshold, true);
+                _colliderGenerationThreshold??= new DistanceValue(MeshSettings.ColliderSize, true);
                 return _colliderGenerationThreshold.Value;
             }
         }
