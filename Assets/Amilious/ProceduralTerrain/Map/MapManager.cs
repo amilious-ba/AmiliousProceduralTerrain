@@ -25,7 +25,7 @@ namespace Amilious.ProceduralTerrain.Map {
 
         #region Inspector Values
         
-        [SerializeField] private MapType mapType = MapType.PreGenerated;
+        [SerializeField] private MapType mapType = MapType.EndlessChunkBased;
         [SerializeField] private bool generateChunksAtStart;
         [SerializeField, ShowIf(nameof(generateChunksAtStart))] private int chunkPoolSize = 100;
         [SerializeField, Tooltip("This is the distance the player needs to move before the chunk will update.")]
