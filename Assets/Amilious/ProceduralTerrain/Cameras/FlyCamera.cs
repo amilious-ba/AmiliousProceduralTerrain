@@ -8,27 +8,26 @@ using UnityEngine.InputSystem;
 namespace Amilious.ProceduralTerrain.Cameras {
 	
 	public class FlyCamera : MonoBehaviour, ICameraActions {
+
+		public const string TAB_A = "General";
+		public const string TAB_B = "Speed";
 		
 		#region Public Instance Variables
 		
-		// Check if Player has New Input System
 		#if UNITY_EDITOR
-		[ValidateInput("@IsInputSystemEnabled", "@_inputSystemMessage", InfoMessageType.Error)]
+		// Check if Player has New Input System
+		[ValidateInput("@IsInputSystemEnabled", "@_inputSystemMessage")]
 		#endif
-		[MinMaxSlider(-80,80, true)]
-		[TabGroup("General")]
+		[MinMaxSlider(-80,80, true), TabGroup(TAB_A)]
 		public Vector2 rotationLimit;
-		[TabGroup("General")]
+		[TabGroup(TAB_A)]
 		public bool canCapture = true;
 		
-		[TabGroup("Speed")]
-		[Range(0,20)]
+		[TabGroup(TAB_B), Range(0,20)]
 		public float lookSpeed   = 5f;
-		[TabGroup("Speed")]
-		[Range(0,100)]
+		[TabGroup(TAB_B), Range(0,100)]
 		public float moveSpeed   = 5f;
-		[TabGroup("Speed")]
-		[Range(0,200)]
+		[TabGroup(TAB_B), Range(0,200)]
 		public float sprintSpeed = 50f;
 
 		#endregion
