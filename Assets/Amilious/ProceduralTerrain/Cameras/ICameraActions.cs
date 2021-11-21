@@ -1,9 +1,8 @@
 ﻿using UnityEngine.InputSystem;
 
-namespace Amilious.ValueAdds
-{
-	public interface ICameraActions
-	{
+namespace Amilious.ProceduralTerrain.Cameras {
+	
+	public interface ICameraActions {
 		void OnMove(InputValue value);
 		void OnFly(InputValue value);
 		void OnSprint(InputValue value);

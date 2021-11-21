@@ -1,0 +1,18 @@
+{
+    "name": "Amilious.ProceduralTerrain.Cameras",
+    "rootNamespace": "",
+    "references": [
+        "GUID:b00ad303fe8a3584db02d21c279b240f",
+        "GUID:75469ad4d38634e559750d17036d5f7c",
+        "GUID:1ec970ca9884e4b4f88d9aa10fca554f"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

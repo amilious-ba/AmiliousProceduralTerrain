@@ -1,18 +1,19 @@
-using UnityEngine;
-using Sirenix.OdinInspector;
-using UnityEngine.InputSystem;
 using Amilious.Core.Extensions;
 using Amilious.ProceduralTerrain.Map;
+using Amilious.ValueAdds;
+using Sirenix.OdinInspector;
+using UnityEngine;
+using UnityEngine.InputSystem;
 
-namespace Amilious.ValueAdds
-{
+namespace Amilious.ProceduralTerrain.Cameras {
+	
 	public class FlyCamera : MonoBehaviour, ICameraActions {
 		
 		#region Public Instance Variables
 		
 		// Check if Player has New Input System
 		#if UNITY_EDITOR
-		[ValidateInput("@IsInputSystemEnabled", "@inputSystemMessage", InfoMessageType.Error)]
+		[ValidateInput("@IsInputSystemEnabled", "@_inputSystemMessage", InfoMessageType.Error)]
 		#endif
 		[MinMaxSlider(-80,80, true)]
 		[TabGroup("General")]
