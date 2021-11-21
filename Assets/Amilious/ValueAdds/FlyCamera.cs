@@ -1,8 +1,8 @@
-using System;
-using Amilious.ProceduralTerrain.Map;
 using UnityEngine;
-using UnityEngine.InputSystem;
 using Sirenix.OdinInspector;
+using UnityEngine.InputSystem;
+using Amilious.Core.Extensions;
+using Amilious.ProceduralTerrain.Map;
 
 namespace Amilious.ValueAdds
 {
@@ -11,7 +11,9 @@ namespace Amilious.ValueAdds
 		#region Public Instance Variables
 		
 		// Check if Player has New Input System
+		#if UNITY_EDITOR
 		[ValidateInput("@IsInputSystemEnabled", "@inputSystemMessage", InfoMessageType.Error)]
+		#endif
 		[MinMaxSlider(-80,80, true)]
 		[TabGroup("General")]
 		public Vector2 rotationLimit;
@@ -32,49 +34,48 @@ namespace Amilious.ValueAdds
 		
 		#region Private Instance Variables
 		
-		private MapManager mapManager;
+		private MapManager _mapManager;
 		
-		private Vector2    moveInput;
-		private Vector2    flyInput;
-		private Vector2    mousePosition;
+		private Vector2 _moveInput;
+		private Vector2 _flyInput;
 		
-		private float sprintInput;
-		private float rotateInput;
-		private float yaw;
-		private float pitch;
-		private float mouseX;
-		private float mouseY;
+		private float _sprintInput;
+		private float _rotateInput;
+		private float _yaw;
+		private float _pitch;
+		private float _mouseX;
+		private float _mouseY;
 		
-		private bool inputCaptured;
-		private bool limitReached;
-		private bool v_NewInputSystem;
-		private bool isMoving;
-		private bool isFlying;
-		private bool isRotating;
+		private bool _inputCaptured;
+		private bool _vNewInputSystem;
+		private bool _isMoving;
+		private bool _isFlying;
+		private bool _isRotating;
 		
-		private string     inputSystemMessage = "";
+		private string _inputSystemMessage = "";
 		
 		#endregion
+		#region Inspector Validation
 
-		#region Validations
-
+		#if UNITY_EDITOR
 		public bool IsInputSystemEnabled {
 			get {
-				if (v_NewInputSystem) {
-#if ENABLE_INPUT_SYSTEM
+				if (_vNewInputSystem) {
+					#if ENABLE_INPUT_SYSTEM
 					return true;
-#else
+					#else
 					inputSystemMessage = "New Input System is disabled";
 					Debug.LogError(inputSystemMessage);
 					return false;
-#endif
+					#endif
 				}
-				inputSystemMessage = "New Input System is not installed";
-				Debug.LogError(inputSystemMessage);
+				_inputSystemMessage = "New Input System is not installed";
+				Debug.LogError(_inputSystemMessage);
 				return false;
 			}
 		}
-
+		
+		#endif
 		#endregion
 
 		#region Event Functions
@@ -82,7 +83,7 @@ namespace Amilious.ValueAdds
 		/// <summary>
 		/// This method is always called before any Start functions 
 		/// </summary>
-		private void Awake() => mapManager = FindObjectOfType<MapManager>();
+		private void Awake() => _mapManager = FindObjectOfType<MapManager>();
 
 		/// <summary>
 		/// This function is called just after the object is enabled
@@ -94,12 +95,12 @@ namespace Amilious.ValueAdds
 		/// <summary>
 		/// Unity calls when the script is loaded or a value changes in the Inspector.
 		/// </summary>
-		private void OnValidate() => v_NewInputSystem = AmiliousValidator.ValidatePackage("inputsystem");
+		private void OnValidate() => _vNewInputSystem = AmiliousValidator.ValidatePackage("inputsystem");
 
 		/// <summary>
 		/// Start is called before the first frame update only if the script instance is enabled
 		/// </summary>
-		private void Start() => mapManager.SetViewer(transform);
+		private void Start() => _mapManager.SetViewer(transform);
 
 		/// <summary>
 		/// Update is called every frame, if the MonoBehaviour is enabled
@@ -125,25 +126,22 @@ namespace Amilious.ValueAdds
 		/// When player is holding RightMouse
 		/// </summary>
 		private void CaptureInput() {
-			inputCaptured = true;
-			
-			Vector3 eulerAngles  = transform.eulerAngles;
-			yaw   = eulerAngles .y;
-			pitch = eulerAngles .x;
+			_inputCaptured = true;
+			transform.eulerAngles.GetXYValues(out _pitch,out _yaw);
 		}
 
 
 		/// <summary>
 		/// This method is for if player has canceled holding MouserRight
 		/// </summary>
-		private void ReleaseInput() => inputCaptured = false;
+		private void ReleaseInput() => _inputCaptured = false;
 
 		/// <summary>
 		/// called when the application loses or gains focus
 		/// </summary>
 		/// <param name="focus">if gameObjects have focus</param>
 		private void OnApplicationFocus(bool focus) {
-			if (inputCaptured && !focus) ReleaseInput();
+			if (_inputCaptured && !focus) ReleaseInput();
 		}
 
 
@@ -152,16 +150,15 @@ namespace Amilious.ValueAdds
 		/// </summary>
 		/// <returns></returns>
 		private bool InCapture() {
-			if (!inputCaptured) {
+			if (!_inputCaptured) {
 				// Check if player is rotating 
-				if (canCapture && isRotating)
-					CaptureInput();
+				if (canCapture && _isRotating) CaptureInput();
 			}
 
 			// check if player is holdingMouse or rotating
-			switch (inputCaptured) {
+			switch (_inputCaptured) {
 				case false:
-				case true when !canCapture || !(isRotating): return true;
+				case true when !canCapture || !(_isRotating): return true;
 				case true: ReleaseInput(); break;
 			}
 			return false;
@@ -172,21 +169,18 @@ namespace Amilious.ValueAdds
 		/// This function is used for updating the rotation of the camera
 		/// </summary>
 		private void RotationHandler() {
-			if (mouseX == 0 && mouseY == 0) return;
+			if (_mouseX == 0 && _mouseY == 0) return;
 			
 			// Apply speed to rotation
-			float rotStrafe = mouseX * Time.deltaTime;
-			float rotFwd    = mouseY * Time.deltaTime;
-
+			var rotStrafe = _mouseX * Time.deltaTime;
+			var rotFwd    = _mouseY * Time.deltaTime;
 			
-			Vector3 eulerAngles = transform.eulerAngles;
-			yaw   = eulerAngles .y;
-			pitch = eulerAngles .x;
+			transform.eulerAngles.GetXYValues(out _pitch, out _yaw);
 			
-			yaw   = (yaw + lookSpeed * rotStrafe) % 360f;
-			pitch = (pitch - lookSpeed * rotFwd) % 360f;
+			_yaw   = (_yaw + lookSpeed * rotStrafe) % 360f;
+			_pitch = (_pitch - lookSpeed * rotFwd) % 360f;
 			
-			Quaternion rot = Quaternion.AngleAxis(yaw, Vector3.up) * Quaternion.AngleAxis(pitch, Vector3.right);
+			var rot = Quaternion.AngleAxis(_yaw, Vector3.up) * Quaternion.AngleAxis(_pitch, Vector3.right);
 
 			Vector2 camAngle = rot.eulerAngles;
 			camAngle.x = camAngle.x > 180 ? camAngle.x-360 : camAngle.x;
@@ -199,15 +193,15 @@ namespace Amilious.ValueAdds
 		/// This function is used for updating the movement of the camera
 		/// </summary>
 		private void MovementHandler() {
-			if (!isMoving && !isFlying) return;
+			if (!_isMoving && !_isFlying) return;
 			
 			// check if sprinting
-			float speed = Time.deltaTime * (sprintInput > 0 ? sprintSpeed : moveSpeed);
+			var speed = Time.deltaTime * (_sprintInput > 0 ? sprintSpeed : moveSpeed);
 
 			// get movementInput and speed
-			float forward = speed * moveInput.y;
-			float right   = speed * moveInput.x;
-			float up      = speed * (flyInput.y - flyInput.x);
+			var forward = speed * _moveInput.y;
+			var right   = speed * _moveInput.x;
+			var up      = speed * (_flyInput.y - _flyInput.x);
 
 			// set movement
 			transform.position += transform.forward * forward + transform.right * right + Vector3.up * up;
@@ -223,22 +217,25 @@ namespace Amilious.ValueAdds
 		/// </summary>
 		/// <param name="value">The values you get from the user input</param>
 		public void OnMove(InputValue value) {
-			moveInput = value.Get<Vector2>();
-			isMoving  = moveInput.x != 0 || moveInput.y != 0;
+			_moveInput = value.Get<Vector2>();
+			_isMoving  = _moveInput.x != 0 || _moveInput.y != 0;
 		}
 
 		public void OnFly(InputValue value) {
-			flyInput = value.Get<Vector2>();
-			isFlying = flyInput.x != 0 || flyInput.y != 0;
+			_flyInput = value.Get<Vector2>();
+			_isFlying = _flyInput.x != 0 || _flyInput.y != 0;
 		}
 
-		public void OnSprint(InputValue value) => sprintInput = value.Get<float>();
+		public void OnSprint(InputValue value) => _sprintInput = value.Get<float>();
+		
 		public void OnRotate(InputValue value) {
-			rotateInput = value.Get<float>();
-			isRotating  = rotateInput > 0;
+			_rotateInput = value.Get<float>();
+			_isRotating  = _rotateInput > 0;
 		}
-		public void OnMouseX(InputValue value) => mouseX = value.Get<float>();
-		public void OnMouseY(InputValue value) => mouseY = value.Get<float>();
+		
+		public void OnMouseX(InputValue value) => _mouseX = value.Get<float>();
+		
+		public void OnMouseY(InputValue value) => _mouseY = value.Get<float>();
 
 		#endregion
 	}

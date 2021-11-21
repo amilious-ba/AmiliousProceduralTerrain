@@ -102,12 +102,45 @@ namespace Amilious.Core.Extensions {
         /// <summary>
         /// This method is used to get the values from the <see cref="Vector3"/>
         /// </summary>
-        /// <param name="vector3">The <see cref="Vector3"/> that you want to get the values for.</param>
+        /// <param name="vector3">The <see cref="Vector3"/> that you want to get the values from.</param>
         /// <param name="x">The x value.</param>
         /// <param name="y">The y value.</param>
         /// <param name="z">The z value.</param>
         public static void GetValues(this Vector3 vector3, out float x, out float y, out float z) {
             x = vector3.x;
+            y = vector3.y;
+            z = vector3.z;
+        }
+
+        /// <summary>
+        /// This method is used to get the x and y values from the <see cref="Vector3"/>
+        /// </summary>
+        /// <param name="vector3">The <see cref="Vector3"/> that you want to get the values from.</param>
+        /// <param name="x">The x value.</param>
+        /// <param name="y">The y value.</param>
+        public static void GetXYValues(this Vector3 vector3, out float x, out float y) {
+            x = vector3.x;
+            y = vector3.y;
+        }
+
+        /// <summary>
+        /// This method is used to get the x and z values from the <see cref="Vector3"/>
+        /// </summary>
+        /// <param name="vector3">The <see cref="Vector3"/> that you want to get the values from.</param>
+        /// <param name="x">The x value.</param>
+        /// <param name="z">The z value.</param>
+        public static void GetXZValues(this Vector3 vector3, out float x, out float z) {
+            x = vector3.x;
+            z = vector3.z;
+        }
+
+        /// <summary>
+        /// This method is used to get the y and z values from the <see cref="Vector3"/>
+        /// </summary>
+        /// <param name="vector3">The <see cref="Vector3"/> that you want to get the values from.</param>
+        /// <param name="y">The y value.</param>
+        /// <param name="z">The z value.</param>
+        public static void GetYZValues(this Vector3 vector3, out float y, out float z) {
             y = vector3.y;
             z = vector3.z;
         }

@@ -59,6 +59,39 @@ namespace Amilious.Core.Extensions {
             y = vector3Int.y;
             z = vector3Int.z;
         }
+        
+        /// <summary>
+        /// This method is used to get the x and y values from the <see cref="Vector3Int"/>
+        /// </summary>
+        /// <param name="vector3Int">The <see cref="Vector3Int"/> that you want to get the values from.</param>
+        /// <param name="x">The x value.</param>
+        /// <param name="y">The y value.</param>
+        public static void GetXYValues(this Vector3Int vector3Int, out int x, out int y) {
+            x = vector3Int.x;
+            y = vector3Int.y;
+        }
+
+        /// <summary>
+        /// This method is used to get the x and z values from the <see cref="Vector3Int"/>
+        /// </summary>
+        /// <param name="vector3Int">The <see cref="Vector3Int"/> that you want to get the values from.</param>
+        /// <param name="x">The x value.</param>
+        /// <param name="z">The z value.</param>
+        public static void GetXZValues(this Vector3Int vector3Int, out int x, out int z) {
+            x = vector3Int.x;
+            z = vector3Int.z;
+        }
+
+        /// <summary>
+        /// This method is used to get the y and z values from the <see cref="Vector3Int"/>
+        /// </summary>
+        /// <param name="vector3Int">The <see cref="Vector3Int"/> that you want to get the values from.</param>
+        /// <param name="y">The y value.</param>
+        /// <param name="z">The z value.</param>
+        public static void GetYZValues(this Vector3Int vector3Int, out int y, out int z) {
+            y = vector3Int.y;
+            z = vector3Int.z;
+        }
 
         /// <summary>
         /// This method is used to get a <see cref="Vector2Int"/> containing the x position as x and
