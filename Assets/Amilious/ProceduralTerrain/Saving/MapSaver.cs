@@ -107,34 +107,34 @@ namespace Amilious.ProceduralTerrain.Saving {
         }
 
         /// <summary>
-        /// This method is used to create a <see cref="SaveData"/> for the given chunkId.
+        /// This method is used to create a <see cref="SaveData"/> for the given itemId.
         /// </summary>
-        /// <param name="chunkId">The chunk id you want to use with the <see cref="SaveData"/>.</param>
-        /// <returns>A new <see cref="SaveData"/> created for the chunk with the given chunkId.</returns>
-        public virtual SaveData NewChunkSaveData(Vector2Int chunkId) {
-            return new SaveData(GetSaveFile(chunkId));
+        /// <param name="itemId">The item id you want to use with the <see cref="SaveData"/>.</param>
+        /// <returns>A new <see cref="SaveData"/> created for the chunk with the given itemId.</returns>
+        public virtual SaveData NewChunkSaveData(Vector2Int itemId) {
+            return new SaveData(GetSaveFile(itemId));
         }
 
         /// <summary>
-        /// This method is used to save the chunk with the provided values.
+        /// This method is used to save the item with the provided values.
         /// </summary>
-        /// <param name="chunkId">The id of the chunk that you want to save.</param>
-        /// <param name="saveData">The <see cref="SaveData"/> for the given chunk.</param>
-        /// <returns>True if the chunk <see cref="SaveData"/> was saved, otherwise
+        /// <param name="itemId">The id of the item that you want to save.</param>
+        /// <param name="saveData">The <see cref="SaveData"/> for the given item.</param>
+        /// <returns>True if the item <see cref="SaveData"/> was saved, otherwise
         /// returns false.</returns>
-        public virtual bool SaveData(Vector2Int chunkId, SaveData saveData) {
-            return SavingSystem.SaveFile(GetSaveFile(chunkId), saveData.DataDictionary);
+        public virtual bool SaveData(Vector2Int itemId, SaveData saveData) {
+            return SavingSystem.SaveFile(GetSaveFile(itemId), saveData.DataDictionary);
         }
 
         /// <summary>
-        /// This method is used to load the chunk with the provided values.
+        /// This method is used to load the item with the provided values.
         /// </summary>
-        /// <param name="chunkId">The id of the chunk that you want to save.</param>
-        /// <param name="saveData">The <see cref="SaveData"/> for the given chunk.</param>
-        /// <returns>True if the chunk <see cref="SaveData"/> was loaded, otherwise
+        /// <param name="itemId">The id of the item that you want to save.</param>
+        /// <param name="saveData">The <see cref="SaveData"/> for the given item.</param>
+        /// <returns>True if the item <see cref="SaveData"/> was loaded, otherwise
         /// returns false.</returns>
-        public virtual bool LoadData(Vector2Int chunkId, out SaveData saveData) {
-            var saveFile = GetSaveFile(chunkId);
+        public virtual bool LoadData(Vector2Int itemId, out SaveData saveData) {
+            var saveFile = GetSaveFile(itemId);
             var rawData = SavingSystem.LoadFile(saveFile);
             saveData = new SaveData(saveFile, rawData);
             return rawData.Keys.Count != 0;
@@ -145,12 +145,12 @@ namespace Amilious.ProceduralTerrain.Saving {
         #region Protected Methods
         
         /// <summary>
-        /// This method is use to get the save file for the given chunkId.
+        /// This method is use to get the save file for the given itemId.
         /// </summary>
-        /// <param name="chunkId">The chunk id for the save file.</param>
-        /// <returns>The save file for the given chunkId.</returns>
-        protected virtual string GetSaveFile(Vector2Int chunkId) {
-            return Path.Combine(saveFolder,$"{chunkId.x}_{chunkId.y}");
+        /// <param name="itemId">The chunk id for the save file.</param>
+        /// <returns>The save file for the given itemId.</returns>
+        protected virtual string GetSaveFile(Vector2Int itemId) {
+            return Path.Combine(saveFolder,$"{itemId.x}_{itemId.y}");
         }
         
         /// <summary>
