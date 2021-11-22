@@ -1,3 +1,4 @@
+using System.Threading.Tasks;
 using Amilious.Core.Structs;
 using TMPro;
 using UnityEngine;
@@ -93,20 +94,10 @@ namespace Amilious.ProceduralTerrain.Debugging {
         /// <param name="chunkPoolInfo">The chunk pool.</param>
         /// <param name="ms">The update time in milliseconds.</param>
         protected virtual void ChunksUpdated(PoolInfo chunkPoolInfo, long ms) {
-            if(_lastPoolSize < 0 || _lastPoolSize != chunkPoolInfo.Size) {
-                _lastPoolSize = chunkPoolInfo.Size;
-                SetText(chunkPoolSize, _lastPoolSize);
-            }
-            if(_lastLoadChunks < 0 || _lastLoadChunks != chunkPoolInfo.CheckedOut) {
-                _lastLoadChunks = chunkPoolInfo.CheckedOut;
-                SetText(loadedChunks, _lastLoadChunks);
-            }
-
-            if(_lastPoolChunks < 0 || _lastPoolChunks != chunkPoolInfo.Available) {
-                _lastLoadChunks = chunkPoolInfo.Available;
-                SetText(availableChunks, _lastLoadChunks);
-            }
-
+            CheckSetText(ref _lastPoolSize, chunkPoolInfo.Size, chunkPoolSize);
+            CheckSetText(ref _lastLoadChunks, chunkPoolInfo.CheckedOut, loadedChunks);
+            CheckSetText(ref _lastPoolChunks, chunkPoolInfo.Available, availableChunks);
+            
             if(_lastMs>-1 && ms ==_lastMs) return;
             _lastMs = ms;
             SetText(lastChunkUpdateTime,string.Format(MS_STRING,_lastMs));
@@ -114,31 +105,30 @@ namespace Amilious.ProceduralTerrain.Debugging {
             var lerp = Mathf.InverseLerp(GOOD_MS_TIME, BAD_MS_TIME, _lastMs);
             lastChunkUpdateTime.color = Color.Lerp(Color.green, Color.red, lerp);
         }
-
+        
+        
         /// <summary>
-        /// This method is used to set a fields text.
+        /// This method is used for checking before we the text is set
         /// </summary>
-        /// <param name="field">The field you want to update the text for.</param>
-        /// <param name="value">The value you want to set the field text to.</param>
-        protected static void SetText(TMP_Text field, string value) {
-            if(field != null) field.text = value;
+        /// <param name="fieldToCheckOrWrite">The field we want to check or write</param>
+        /// <param name="newValue">The new value from chunkPool info</param>
+        /// <param name="textField">The text we want to display</param>
+        private void CheckSetText(ref int fieldToCheckOrWrite, int newValue, TMP_Text textField) {
+            if (fieldToCheckOrWrite < 0 || fieldToCheckOrWrite != newValue) {
+                fieldToCheckOrWrite = newValue;
+                SetText(textField, fieldToCheckOrWrite);
+            }
         }
-
-        /// <summary>
-        /// This method is used to set a fields text.
-        /// </summary>
-        /// <param name="field">The field you want to update the text for.</param>
-        /// <param name="value">The value you want to set the field text to.</param>
-        protected static void SetText(TMP_Text field, int value) => SetText(field, value.ToString());
         
         /// <summary>
         /// This method is used to set a fields text.
         /// </summary>
         /// <param name="field">The field you want to update the text for.</param>
         /// <param name="value">The value you want to set the field text to.</param>
-        protected static void SetText(TMP_Text field, long value) => SetText(field, value.ToString());
+        private static void SetText<T>(TMP_Text field, T value) {
+            if(field != null) field.text = value.ToString();
+        }
         
         #endregion
-        
     }
 }
