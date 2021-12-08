@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using Amilious.ProceduralTerrain.Map.Enums;
+using Amilious.Threading;
 using UnityEngine;
 
 namespace Amilious.ProceduralTerrain.Map.Components {
@@ -9,6 +10,7 @@ namespace Amilious.ProceduralTerrain.Map.Components {
 
         private MapManager _mapManager;
         private MapPool<MapRegion> _mapPool;
+        private readonly ReusableFuture _loader;
 
         #region Properties
         
@@ -118,6 +120,13 @@ namespace Amilious.ProceduralTerrain.Map.Components {
             return (int)regionSize / 2;
         }
 
+        /// <summary>
+        /// This method is used by the pool to create a new map region.
+        /// </summary>
+        /// <param name="mapManager">The map manager.</param>
+        /// <param name="mapPool">The map pool that the created <see cref="MapRegion"/> will
+        /// belong to.</param>
+        /// <returns>The created <see cref="MapRegion"/>.</returns>
         public MapRegion CreateMapComponent(MapManager mapManager, MapPool<MapRegion> mapPool) {
             return new MapRegion(mapManager, mapPool);
         }

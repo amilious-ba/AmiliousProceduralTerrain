@@ -1,9 +1,10 @@
 using System;
 using UnityEngine;
 using System.Threading;
-using Amilious.Core;
 
 namespace Amilious.Threading {
+    
+//######################################################################################################################
 
     /// <summary>
     /// This class is used to execute a process on a background thread.
@@ -13,6 +14,8 @@ namespace Amilious.Threading {
     /// <seealso cref="ReusableFuture{T,T2,T3}"/>
     /// <seealso cref="ReusableFuture{T,T2,T3,T4}"/>
     public class ReusableFuture : IReusableFuture {
+        
+        #region Instance Varriables 
         
         private volatile FutureState _state;
         private Action _successCallback;
@@ -25,12 +28,19 @@ namespace Amilious.Threading {
         private bool _executeAfterCancel;
         private CancellationTokenSource _tokenSource;
         
+        #endregion
+        
+        #region Properties
+        
         /// <summary>
         /// Gets the state of the ReusableFuture.
         /// </summary>
         public FutureState State { get { return _state; } }
         
-
+        #endregion
+        
+        #region Constructors
+        
         /// <summary>
         /// Initializes a new instance of the <see cref="ReusableFuture"/> class.
         /// </summary>
@@ -38,6 +48,47 @@ namespace Amilious.Threading {
             _state = FutureState.Pending;
         }
 
+        /// <summary>
+        /// This constructor is used to create a new reusable future using the passed
+        /// callbacks.
+        /// </summary>
+        /// <param name="onProcess">The method that is called to execute the task.</param>
+        /// <param name="onSuccess">The method to call on success.</param>
+        /// <param name="onError">The method to call on error.</param>
+        /// <param name="onCancel">The method to call on cancel.</param>
+        /// <param name="successMT">If true the success method will be called from the main thread.</param>
+        /// <param name="errorMT">If true the error method will be called from the main thread.</param>
+        /// <param name="cancelMT">If true the cancel method will be called from the main thread.</param>
+        public ReusableFuture(Func<CancellationToken, bool> onProcess, Action onSuccess = null, 
+            Action<Exception> onError = null, Action onCancel = null, bool successMT = true,
+            bool errorMT = true, bool cancelMT = true) {
+            _state = FutureState.Pending;
+            if(onProcess != null) OnProcess(onProcess);
+            if(onSuccess != null) OnSuccess(onSuccess, successMT);
+            if(onError != null) OnError(onError, errorMT);
+            if(onCancel != null) OnCancel(onCancel, cancelMT);
+        }
+
+        /// <summary>
+        /// This constructor is used to create a new reusable future using the passed callbacks.
+        /// </summary>
+        /// <param name="onProcess">The method that is called to execute the task.</param>
+        /// <param name="onSuccess">The method to call on success.</param>
+        /// <param name="onCancel">The method to call on cancel.</param>
+        /// <param name="successMT">If true the success method will be called from the main thread.</param>
+        /// <param name="cancelMT">If true the cancel method will be called from the main thread.</param>
+        public ReusableFuture(Func<CancellationToken, bool> onProcess, Action onSuccess, Action onCancel,
+            bool successMT = true, bool cancelMT = true) {
+            _state = FutureState.Pending;
+            if(onProcess != null) OnProcess(onProcess);
+            if(onSuccess != null) OnSuccess(onSuccess, successMT);
+            if(onCancel != null) OnCancel(onCancel, cancelMT);
+        }
+
+        #endregion
+        
+        #region Public Methods
+        
         /// <summary>
         /// Adds a new callback to invoke if the ReusableFuture value is retrieved successfully.
         /// </summary>
@@ -92,9 +143,8 @@ namespace Amilious.Threading {
         /// <remarks>This will cancel a previous process if it is still being executed.</remarks>
         /// </summary>
         public void Process() {
-            if(_processMethod == null) {
+            if(_processMethod == null)
                 throw new InvalidOperationException("Cannot process a future that has no process assigned.");
-            }
             if(_state == FutureState.Processing) {
                 _executeAfterCancel = true;
                 Cancel();
@@ -108,8 +158,7 @@ namespace Amilious.Threading {
                     // Directly call the Impl version to avoid the state validation of the public method
                     AssignImpl(_processMethod(_tokenSource.Token));
                     _tokenSource.Token.ThrowIfCancellationRequested();
-                }
-                catch(OperationCanceledException) {
+                } catch(OperationCanceledException) {
                     CancelImpl();
                 }
                 catch(Exception e) {
@@ -141,6 +190,15 @@ namespace Amilious.Threading {
             return true;
         }
 
+        #endregion
+
+        #region Private Methods
+        
+        /// <summary>
+        /// This method is called on completion of the task.
+        /// </summary>
+        /// <param name="success">Contains true if the task was completed
+        /// successfully.</param>
         private void AssignImpl(bool success) {
             if(!success)FailImpl(new InvalidOperationException("The result was false."));
             _state = FutureState.Success;
@@ -149,6 +207,10 @@ namespace Amilious.Threading {
             else _successCallback.Invoke();
         }
 
+        /// <summary>
+        /// This method is called when the task throws an error.
+        /// </summary>
+        /// <param name="error">The thrown error.</param>
         private void FailImpl(Exception error) {
             _state = FutureState.Error;
             if(_errorCallback == null) return;
@@ -156,13 +218,22 @@ namespace Amilious.Threading {
             else _errorCallback.Invoke(error);
         }
 
+        /// <summary>
+        /// This method is called when the task is cancelled.
+        /// </summary>
         private void CancelImpl() {
             _state = FutureState.Canceled;
             if(_cancelCallback == null) return;
             if(_cancelMain) Dispatcher.InvokeAsync(_cancelCallback);
             else _cancelCallback.Invoke();
         }
+        
+        #endregion
+        
     }
+    
+//######################################################################################################################
+//######################################################################################################################
     
     /// <summary>
     /// This class is used to execute a process on a background thread.
@@ -173,6 +244,8 @@ namespace Amilious.Threading {
     /// <seealso cref="ReusableFuture{T,T2,T3}"/>
     /// <seealso cref="ReusableFuture{T,T2,T3,T4}"/>
     public class ReusableFuture<T> : IReusableFuture {
+        
+        #region Instance Variables
         
         private volatile FutureState _state;
         private Action<T> _successCallback;
@@ -185,10 +258,18 @@ namespace Amilious.Threading {
         private bool _executeAfterCancel;
         private CancellationTokenSource _tokenSource;
         
+        #endregion
+        
+        #region Properties
+        
         /// <summary>
         /// Gets the state of the ReusableFuture.
         /// </summary>
         public FutureState State { get { return _state; } }
+        
+        #endregion
+        
+        #region Constructors
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ReusableFuture{T}"/> class.
@@ -196,6 +277,47 @@ namespace Amilious.Threading {
         public ReusableFuture() {
             _state = FutureState.Pending;
         }
+        
+        /// <summary>
+        /// This constructor is used to create a new reusable future using the passed
+        /// callbacks.
+        /// </summary>
+        /// <param name="onProcess">The method that is called to execute the task.</param>
+        /// <param name="onSuccess">The method to call on success.</param>
+        /// <param name="onError">The method to call on error.</param>
+        /// <param name="onCancel">The method to call on cancel.</param>
+        /// <param name="successMT">If true the success method will be called from the main thread.</param>
+        /// <param name="errorMT">If true the error method will be called from the main thread.</param>
+        /// <param name="cancelMT">If true the cancel method will be called from the main thread.</param>
+        public ReusableFuture(Func<CancellationToken,T> onProcess, Action<T> onSuccess = null, 
+            Action<Exception> onError = null, Action onCancel = null, bool successMT = true,
+            bool errorMT = true, bool cancelMT = true) {
+            _state = FutureState.Pending;
+            if(onProcess != null) OnProcess(onProcess);
+            if(onSuccess != null) OnSuccess(onSuccess, successMT);
+            if(onError != null) OnError(onError, errorMT);
+            if(onCancel != null) OnCancel(onCancel, cancelMT);
+        }
+
+        /// <summary>
+        /// This constructor is used to create a new reusable future using the passed callbacks.
+        /// </summary>
+        /// <param name="onProcess">The method that is called to execute the task.</param>
+        /// <param name="onSuccess">The method to call on success.</param>
+        /// <param name="onCancel">The method to call on cancel.</param>
+        /// <param name="successMT">If true the success method will be called from the main thread.</param>
+        /// <param name="cancelMT">If true the cancel method will be called from the main thread.</param>
+        public ReusableFuture(Func<CancellationToken,T> onProcess, Action<T> onSuccess, Action onCancel,
+            bool successMT = true, bool cancelMT = true) {
+            _state = FutureState.Pending;
+            if(onProcess != null) OnProcess(onProcess);
+            if(onSuccess != null) OnSuccess(onSuccess, successMT);
+            if(onCancel != null) OnCancel(onCancel, cancelMT);
+        }
+        
+        #endregion
+        
+        #region Public Methods
 
         /// <summary>
         /// Adds a new callback to invoke if the ReusableFuture value is retrieved successfully.
@@ -298,7 +420,15 @@ namespace Amilious.Threading {
             _tokenSource?.Cancel();
             return true;
         }
+        
+        #endregion
+        
+        #region Private Methods
 
+        /// <summary>
+        /// This method is called on completion of the task.
+        /// </summary>
+        /// <param name="value">The tasks result.</param>
         private void AssignImpl(T value) {
             _state = FutureState.Success;
             if(_successCallback == null) return;
@@ -306,6 +436,10 @@ namespace Amilious.Threading {
             else _successCallback.Invoke(value);
         }
 
+        /// <summary>
+        /// This method is called when the task throws an error.
+        /// </summary>
+        /// <param name="error">The thrown error.</param>
         private void FailImpl(Exception error) {
             _state = FutureState.Error;
             if(_errorCallback == null) return;
@@ -313,13 +447,22 @@ namespace Amilious.Threading {
             else _errorCallback.Invoke(error);
         }
 
+        /// <summary>
+        /// This method is called when the task is cancelled.
+        /// </summary>
         private void CancelImpl() {
             _state = FutureState.Canceled;
             if(_cancelCallback == null) return;
             if(_cancelMain) Dispatcher.InvokeAsync(_cancelCallback);
             else _cancelCallback.Invoke();
         }
+        
+        #endregion
+        
     }
+    
+//######################################################################################################################
+//######################################################################################################################
     
     /// <summary>
     /// This class is used to execute a process on a background thread.
@@ -331,6 +474,8 @@ namespace Amilious.Threading {
     /// <seealso cref="ReusableFuture{T,T2,T3}"/>
     /// <seealso cref="ReusableFuture{T,T2,T3,T4}"/>
     public class ReusableFuture<T,T2> : IReusableFuture {
+        
+        #region Instance Variables
         
         private volatile FutureState _state;
         private Action<T> _successCallback;
@@ -344,10 +489,18 @@ namespace Amilious.Threading {
         private T2 _executeInput;
         private CancellationTokenSource _tokenSource;
         
+        #endregion
+        
+        #region Properties
+        
         /// <summary>
         /// Gets the state of the ReusableFuture.
         /// </summary>
         public FutureState State { get { return _state; } }
+        
+        #endregion
+        
+        #region Constructors
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ReusableFuture{T,T2}"/> class.
@@ -355,7 +508,48 @@ namespace Amilious.Threading {
         public ReusableFuture() {
             _state = FutureState.Pending;
         }
+        
+        /// <summary>
+        /// This constructor is used to create a new reusable future using the passed
+        /// callbacks.
+        /// </summary>
+        /// <param name="onProcess">The method that is called to execute the task.</param>
+        /// <param name="onSuccess">The method to call on success.</param>
+        /// <param name="onError">The method to call on error.</param>
+        /// <param name="onCancel">The method to call on cancel.</param>
+        /// <param name="successMT">If true the success method will be called from the main thread.</param>
+        /// <param name="errorMT">If true the error method will be called from the main thread.</param>
+        /// <param name="cancelMT">If true the cancel method will be called from the main thread.</param>
+        public ReusableFuture(Func<T2,CancellationToken,T> onProcess, Action<T> onSuccess, 
+            Action<Exception> onError = null, Action onCancel = null, bool successMT = true,
+            bool errorMT = true, bool cancelMT = true) {
+            _state = FutureState.Pending;
+            if(onProcess != null) OnProcess(onProcess);
+            if(onSuccess != null) OnSuccess(onSuccess, successMT);
+            if(onError != null) OnError(onError, errorMT);
+            if(onCancel != null) OnCancel(onCancel, cancelMT);
+        }
 
+        /// <summary>
+        /// This constructor is used to create a new reusable future using the passed callbacks.
+        /// </summary>
+        /// <param name="onProcess">The method that is called to execute the task.</param>
+        /// <param name="onSuccess">The method to call on success.</param>
+        /// <param name="onCancel">The method to call on cancel.</param>
+        /// <param name="successMT">If true the success method will be called from the main thread.</param>
+        /// <param name="cancelMT">If true the cancel method will be called from the main thread.</param>
+        public ReusableFuture(Func<T2,CancellationToken,T> onProcess, Action<T> onSuccess, Action onCancel,
+            bool successMT = true, bool cancelMT = true) {
+            _state = FutureState.Pending;
+            if(onProcess != null) OnProcess(onProcess);
+            if(onSuccess != null) OnSuccess(onSuccess, successMT);
+            if(onCancel != null) OnCancel(onCancel, cancelMT);
+        }
+
+        #endregion
+        
+        #region Public Methods
+        
         /// <summary>
         /// Adds a new callback to invoke if the ReusableFuture value is retrieved successfully.
         /// </summary>
@@ -456,6 +650,14 @@ namespace Amilious.Threading {
             return true;
         }
 
+        #endregion
+        
+        #region Private Methods
+        
+        /// <summary>
+        /// This method is called on completion of the task.
+        /// </summary>
+        /// <param name="value">The tasks result.</param>
         private void AssignImpl(T value) {
             _state = FutureState.Success;
             if(_successCallback == null) return;
@@ -463,6 +665,10 @@ namespace Amilious.Threading {
             else _successCallback.Invoke(value);
         }
 
+        /// <summary>
+        /// This method is called when the task throws an error.
+        /// </summary>
+        /// <param name="error">The thrown error.</param>
         private void FailImpl(Exception error) {
             _state = FutureState.Error;
             if(_errorCallback == null) return;
@@ -470,13 +676,22 @@ namespace Amilious.Threading {
             else _errorCallback.Invoke(error);
         }
 
+        /// <summary>
+        /// This method is called when the task is cancelled.
+        /// </summary>
         private void CancelImpl() {
             _state = FutureState.Canceled;
             if(_cancelCallback == null) return;
             if(_cancelMain) Dispatcher.InvokeAsync(_cancelCallback);
             else _cancelCallback.Invoke();
         }
+        
+        #endregion
+        
     }
+    
+//######################################################################################################################
+//######################################################################################################################
     
     /// <summary>
     /// This class is used to execute a process on a background thread.
@@ -489,6 +704,8 @@ namespace Amilious.Threading {
     /// <seealso cref="ReusableFuture{T,T2}"/>
     /// <seealso cref="ReusableFuture{T,T2,T3,T4}"/>
     public class ReusableFuture<T,T2,T3> : IReusableFuture {
+        
+        #region Instance Variables
         
         private volatile FutureState _state;
         private Action<T> _successCallback;
@@ -503,18 +720,67 @@ namespace Amilious.Threading {
         private T3 _executeInput2;
         private CancellationTokenSource _tokenSource;
         
+        #endregion
+        
+        #region Properties
+        
         /// <summary>
         /// Gets the state of the ReusableFuture.
         /// </summary>
         public FutureState State { get { return _state; } }
 
+        #endregion
+        
+        #region Constructors
+        
         /// <summary>
         /// Initializes a new instance of the <see cref="ReusableFuture{T,T2,T3}"/> class.
         /// </summary>
         public ReusableFuture() {
             _state = FutureState.Pending;
         }
+        
+        /// <summary>
+        /// This constructor is used to create a new reusable future using the passed
+        /// callbacks.
+        /// </summary>
+        /// <param name="onProcess">The method that is called to execute the task.</param>
+        /// <param name="onSuccess">The method to call on success.</param>
+        /// <param name="onError">The method to call on error.</param>
+        /// <param name="onCancel">The method to call on cancel.</param>
+        /// <param name="successMT">If true the success method will be called from the main thread.</param>
+        /// <param name="errorMT">If true the error method will be called from the main thread.</param>
+        /// <param name="cancelMT">If true the cancel method will be called from the main thread.</param>
+        public ReusableFuture(Func<T2,T3,CancellationToken,T> onProcess, Action<T> onSuccess, 
+            Action<Exception> onError = null, Action onCancel = null, bool successMT = true,
+            bool errorMT = true, bool cancelMT = true) {
+            _state = FutureState.Pending;
+            if(onProcess != null) OnProcess(onProcess);
+            if(onSuccess != null) OnSuccess(onSuccess, successMT);
+            if(onError != null) OnError(onError, errorMT);
+            if(onCancel != null) OnCancel(onCancel, cancelMT);
+        }
 
+        /// <summary>
+        /// This constructor is used to create a new reusable future using the passed callbacks.
+        /// </summary>
+        /// <param name="onProcess">The method that is called to execute the task.</param>
+        /// <param name="onSuccess">The method to call on success.</param>
+        /// <param name="onCancel">The method to call on cancel.</param>
+        /// <param name="successMT">If true the success method will be called from the main thread.</param>
+        /// <param name="cancelMT">If true the cancel method will be called from the main thread.</param>
+        public ReusableFuture(Func<T2,T3,CancellationToken,T> onProcess, Action<T> onSuccess, Action onCancel,
+            bool successMT = true, bool cancelMT = true) {
+            _state = FutureState.Pending;
+            if(onProcess != null) OnProcess(onProcess);
+            if(onSuccess != null) OnSuccess(onSuccess, successMT);
+            if(onCancel != null) OnCancel(onCancel, cancelMT);
+        }
+
+        #endregion
+        
+        #region Public Methods
+        
         /// <summary>
         /// Adds a new callback to invoke if the ReusableFuture value is retrieved successfully.
         /// </summary>
@@ -617,6 +883,14 @@ namespace Amilious.Threading {
             return true;
         }
 
+        #endregion
+        
+        #region Private Methods
+        
+        /// <summary>
+        /// This method is called on completion of the task.
+        /// </summary>
+        /// <param name="value">The tasks result.</param>
         private void AssignImpl(T value) {
             _state = FutureState.Success;
             if(_successCallback == null) return;
@@ -624,6 +898,10 @@ namespace Amilious.Threading {
             else _successCallback.Invoke(value);
         }
 
+        /// <summary>
+        /// This method is called when the task throws an error.
+        /// </summary>
+        /// <param name="error">The thrown error.</param>
         private void FailImpl(Exception error) {
             _state = FutureState.Error;
             if(_errorCallback == null) return;
@@ -631,13 +909,22 @@ namespace Amilious.Threading {
             else _errorCallback.Invoke(error);
         }
 
+        /// <summary>
+        /// This method is called when the task is cancelled.
+        /// </summary>
         private void CancelImpl() {
             _state = FutureState.Canceled;
             if(_cancelCallback == null) return;
             if(_cancelMain) Dispatcher.InvokeAsync(_cancelCallback);
             else _cancelCallback.Invoke();
         }
+        
+        #endregion
+        
     }
+    
+//######################################################################################################################
+//######################################################################################################################
     
     /// <summary>
     /// This class is used to execute a process on a background thread.
@@ -651,6 +938,8 @@ namespace Amilious.Threading {
     /// <seealso cref="ReusableFuture{T,T2}"/>
     /// <seealso cref="ReusableFuture{T,T2,T3}"/>
     public class ReusableFuture<T,T2,T3,T4> : IReusableFuture {
+        
+        #region Instance Variables
         
         private volatile FutureState _state;
         private Action<T> _successCallback;
@@ -666,18 +955,67 @@ namespace Amilious.Threading {
         private T4 _executeInput3;
         private CancellationTokenSource _tokenSource;
         
+        #endregion
+        
+        #region Properties
+        
         /// <summary>
         /// Gets the state of the ReusableFuture.
         /// </summary>
         public FutureState State { get { return _state; } }
 
+        #endregion
+        
+        #region Constructors
+        
         /// <summary>
         /// Initializes a new instance of the <see cref="ReusableFuture{T,T2,T3,T4}"/> class.
         /// </summary>
         public ReusableFuture() {
             _state = FutureState.Pending;
         }
+        
+        /// <summary>
+        /// This constructor is used to create a new reusable future using the passed
+        /// callbacks.
+        /// </summary>
+        /// <param name="onProcess">The method that is called to execute the task.</param>
+        /// <param name="onSuccess">The method to call on success.</param>
+        /// <param name="onError">The method to call on error.</param>
+        /// <param name="onCancel">The method to call on cancel.</param>
+        /// <param name="successMT">If true the success method will be called from the main thread.</param>
+        /// <param name="errorMT">If true the error method will be called from the main thread.</param>
+        /// <param name="cancelMT">If true the cancel method will be called from the main thread.</param>
+        public ReusableFuture(Func<T2,T3,T4,CancellationToken,T> onProcess, Action<T> onSuccess, 
+            Action<Exception> onError = null, Action onCancel = null, bool successMT = true,
+            bool errorMT = true, bool cancelMT = true) {
+            _state = FutureState.Pending;
+            if(onProcess != null) OnProcess(onProcess);
+            if(onSuccess != null) OnSuccess(onSuccess, successMT);
+            if(onError != null) OnError(onError, errorMT);
+            if(onCancel != null) OnCancel(onCancel, cancelMT);
+        }
 
+        /// <summary>
+        /// This constructor is used to create a new reusable future using the passed callbacks.
+        /// </summary>
+        /// <param name="onProcess">The method that is called to execute the task.</param>
+        /// <param name="onSuccess">The method to call on success.</param>
+        /// <param name="onCancel">The method to call on cancel.</param>
+        /// <param name="successMT">If true the success method will be called from the main thread.</param>
+        /// <param name="cancelMT">If true the cancel method will be called from the main thread.</param>
+        public ReusableFuture(Func<T2,T3,T4,CancellationToken,T> onProcess, Action<T> onSuccess, Action onCancel,
+            bool successMT = true, bool cancelMT = true) {
+            _state = FutureState.Pending;
+            if(onProcess != null) OnProcess(onProcess);
+            if(onSuccess != null) OnSuccess(onSuccess, successMT);
+            if(onCancel != null) OnCancel(onCancel, cancelMT);
+        }
+
+        #endregion
+        
+        #region Public Methods
+        
         /// <summary>
         /// Adds a new callback to invoke if the ReusableFuture value is retrieved successfully.
         /// </summary>
@@ -782,6 +1120,14 @@ namespace Amilious.Threading {
             return true;
         }
 
+        #endregion
+        
+        #region Private Methods
+        
+        /// <summary>
+        /// This method is called on completion of the task.
+        /// </summary>
+        /// <param name="value">The tasks result.</param>
         private void AssignImpl(T value) {
             _state = FutureState.Success;
             if(_successCallback == null) return;
@@ -789,6 +1135,10 @@ namespace Amilious.Threading {
             else _successCallback.Invoke(value);
         }
 
+        /// <summary>
+        /// This method is called when the task throws an error.
+        /// </summary>
+        /// <param name="error">The thrown error.</param>
         private void FailImpl(Exception error) {
             _state = FutureState.Error;
             if(_errorCallback == null) return;
@@ -796,12 +1146,20 @@ namespace Amilious.Threading {
             else _errorCallback.Invoke(error);
         }
 
+        /// <summary>
+        /// This method is called when the task is cancelled.
+        /// </summary>
         private void CancelImpl() {
             _state = FutureState.Canceled;
             if(_cancelCallback == null) return;
             if(_cancelMain) Dispatcher.InvokeAsync(_cancelCallback);
             else _cancelCallback.Invoke();
         }
+        
+        #endregion
+        
     }
+    
+//######################################################################################################################
     
 }
