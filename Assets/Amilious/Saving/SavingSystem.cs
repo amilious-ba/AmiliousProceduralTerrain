@@ -244,10 +244,10 @@ namespace Amilious.Saving {
             var path = GetSaveFilePath(saveFile);
             var future = new Future<Dictionary<string, object>>();
             future.OnError(x => {
-                Debug.LogError(x.error);
+                Debug.LogError(x.Error);
                 callback(null);
             });
-            future.OnSuccess(data => callback(data.value));
+            future.OnSuccess(data => callback(data.Value));
             future.Process(() => {
                 lock(GetLock(path)) { //lock the file only allowing one instance to read or write at a single time.
                     if(!File.Exists(path)) return new Dictionary<string, object>();
@@ -314,10 +314,10 @@ namespace Amilious.Saving {
             var tmpPath = Path.GetTempPath();
             var future = new Future<bool>();
             future.OnError(x => {
-                Debug.LogError(x.error);
+                Debug.LogError(x.Error);
                 callback(false);
             });
-            future.OnSuccess(x => callback(x.value));
+            future.OnSuccess(x => callback(x.Value));
             future.Process(()=>{
                 lock(GetLock(path)) { //lock the file only allowing one instance to read or write at a single time.
                     try {

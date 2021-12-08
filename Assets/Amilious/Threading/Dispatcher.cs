@@ -17,11 +17,14 @@ namespace Amilious.Threading {
 
         private const string NO_DISPATCHER = "No Dispatcher exists in the scene. Actions will not be invoked!";
 
+        #region Inspector Variables
+        
         [SerializeField] private bool useAdvancedSettings;
-
         [SerializeField, ShowIf(nameof(useAdvancedSettings))]
         [Tooltip("The queue will be emptied if it exceeds this amount.")]
         private int maxQueueSize = 500;
+        [SerializeField, ShowIf(nameof(useAdvancedSettings))]
+        private bool useFixedUpdate;
         [SerializeField, ShowIf(nameof(useAdvancedSettings))]
         private int dontInvokeIfOverMs = 2;
         [SerializeField, ShowIf(nameof(useAdvancedSettings))]
@@ -29,21 +32,30 @@ namespace Amilious.Threading {
         [SerializeField, ShowIf(nameof(useAdvancedSettings))]
         private int skippedUpdates = 2;
         
+        #endregion
+        
+        #region Instance and Static Variables
+        
         private static Dispatcher _instance;
-
-        // We can't use the behaviour reference from other threads, so we use a separate bool
-        // to track the instance so we can use that on the other threads.
         private static bool _instanceExists;
-
         private static Thread _mainThread;
-        //private static object _lockObject = new object();
-        //private static readonly Queue<Action> _actions = new Queue<Action>();
         private static readonly ConcurrentQueue<Action> Actions = new ConcurrentQueue<Action>();
+        private readonly Stopwatch _actionTimer = new Stopwatch();
+        private int _updatesSkipped;
+        private int _invokesThisUpdate;
+        
+        #endregion
+        
+        #region Properties
 
         /// <summary>
         /// Gets a value indicating whether or not the current thread is the game's main thread.
         /// </summary>
         public static bool IsMainThread => Thread.CurrentThread == _mainThread;
+        
+        #endregion
+        
+        #region Public Methods
 
         /// <summary>
         /// Queues an action to be invoked on the main game thread.
@@ -67,7 +79,14 @@ namespace Amilious.Threading {
             // Lock until the action has run
             while (!hasRun) Thread.Sleep(5);
         }
+        
+        #endregion
+        
+        #region Private Methods
 
+        /// <summary>
+        /// This is the first methods that is called by UNITY
+        /// </summary>
         private void Awake() {
             if (_instance) DestroyImmediate(this);
             else {
@@ -77,26 +96,45 @@ namespace Amilious.Threading {
             }
         }
 
+        /// <summary>
+        /// This method is called when the object is being destroyed
+        /// </summary>
         private void OnDestroy() {
             if(_instance != this) return;
             _instance = null;
             _instanceExists = false;
         }
 
+        /// <summary>
+        /// This method is called by UNITY on update.
+        /// </summary>
         private void Update() {
+            if(useFixedUpdate) return;
             if(Actions.IsEmpty) return;
             if(useAdvancedSettings) AdvancedDequeue();
             else StandardDequeue();
         }
 
+        /// <summary>
+        /// This method is called by UNITY on fixed updates.
+        /// </summary>
+        private void FixedUpdate() {
+            if(!useFixedUpdate) return;
+            if(Actions.IsEmpty) return;
+            if(useAdvancedSettings) AdvancedDequeue();
+            else StandardDequeue();
+        }
+
+        /// <summary>
+        /// This method is used to dequeue the queued tasks in the default way.
+        /// </summary>
         private static void StandardDequeue() {
             while(!Actions.IsEmpty) { if(Actions.TryDequeue(out var action))action(); }
         }
 
-        private readonly Stopwatch _actionTimer = new Stopwatch();
-        private int _updatesSkipped;
-        private int _invokesThisUpdate;
-        
+        /// <summary>
+        /// This method is used to dequeue the queued tasks using the advanced settings.
+        /// </summary>
         private void AdvancedDequeue() {
             if(skippedUpdates > 0) {
                 _updatesSkipped++;
@@ -117,6 +155,8 @@ namespace Amilious.Threading {
             }
             _actionTimer.Stop();
         }
+        
+        #endregion
         
     }
 }

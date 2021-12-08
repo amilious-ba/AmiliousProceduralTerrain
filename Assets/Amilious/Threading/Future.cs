@@ -1,79 +1,9 @@
 using System;
-using System.Collections.Generic;
 using System.Threading;
-using Amilious.Core;
+using System.Collections.Generic;
 
 namespace Amilious.Threading {
-    /// <summary>
-    /// Describes the state of a future.
-    /// </summary>
-    public enum FutureState {
-        /// <summary>
-        /// The future hasn't begun to resolve a value.
-        /// </summary>
-        Pending,
-
-        /// <summary>
-        /// The future is working on resolving a value.
-        /// </summary>
-        Processing,
-
-        /// <summary>
-        /// The future has a value ready.
-        /// </summary>
-        Success,
-
-        /// <summary>
-        /// The future failed to resolve a value.
-        /// </summary>
-        Error,
-        
-        Canceled
-    }
-
-    /// <summary>
-    /// Defines the interface of an object that can be used to track a future value.
-    /// </summary>
-    /// <typeparam name="T">The type of object being retrieved.</typeparam>
-    public interface IFuture<T>
-    {
-        /// <summary>
-        /// Gets the state of the future.
-        /// </summary>
-        FutureState state { get; }
-
-        /// <summary>
-        /// Gets the value if the State is Success.
-        /// </summary>
-        T value { get; }
-
-        /// <summary>
-        /// Gets the failure exception if the State is Error.
-        /// </summary>
-        Exception error { get; }
-
-        /// <summary>
-        /// Adds a new callback to invoke if the future value is retrieved successfully.
-        /// </summary>
-        /// <param name="callback">The callback to invoke.</param>
-        /// <returns>The future so additional calls can be chained together.</returns>
-        IFuture<T> OnSuccess(FutureCallback<T> callback);
-
-        /// <summary>
-        /// Adds a new callback to invoke if the future has an error.
-        /// </summary>
-        /// <param name="callback">The callback to invoke.</param>
-        /// <returns>The future so additional calls can be chained together.</returns>
-        IFuture<T> OnError(FutureCallback<T> callback);
-
-        /// <summary>
-        /// Adds a new callback to invoke if the future value is retrieved successfully or has an error.
-        /// </summary>
-        /// <param name="callback">The callback to invoke.</param>
-        /// <returns>The future so additional calls can be chained together.</returns>
-        IFuture<T> OnComplete(FutureCallback<T> callback);
-    }
-
+    
     /// <summary>
     /// Defines the signature for callbacks used by the future.
     /// </summary>
@@ -92,26 +22,30 @@ namespace Amilious.Threading {
     /// <typeparam name="T">The type of object being retrieved.</typeparam>
     public sealed class Future<T> : IFuture<T> {
         
+        #region Instance Variables
+        
         private volatile FutureState _state;
         private T _value;
         private Exception _error;
-
         private readonly List<FutureCallback<T>> _successCallbacks = new List<FutureCallback<T>>();
         private readonly List<FutureCallback<T>> _errorCallbacks = new List<FutureCallback<T>>();
+        
+        #endregion
 
+        #region Properties
+        
         /// <summary>
         /// Gets the state of the future.
         /// </summary>
-        public FutureState state { get { return _state; } }
+        public FutureState State { get { return _state; } }
 
         /// <summary>
         /// Gets the value if the State is Success.
         /// </summary>
-        public T value {
+        public T Value {
             get {
-                if (_state != FutureState.Success) {
+                if (_state != FutureState.Success)
                     throw new InvalidOperationException("value is not available unless state is Success.");
-                }
                 return _value;
             }
         }
@@ -119,21 +53,28 @@ namespace Amilious.Threading {
         /// <summary>
         /// Gets the failure exception if the State is Error.
         /// </summary>
-        public Exception error {
+        public Exception Error {
             get {
-                if (_state != FutureState.Error) {
+                if (_state != FutureState.Error)
                     throw new InvalidOperationException("error is not available unless state is Error.");
-                }
                 return _error;
             }
         }
+        
+        #endregion
 
+        #region Constructors
+        
         /// <summary>
         /// Initializes a new instance of the <see cref="Future{T}"/> class.
         /// </summary>
         public Future() {
             _state = FutureState.Pending;
         }
+        
+        #endregion
+        
+        #region Public Methods
 
         /// <summary>
         /// Adds a new callback to invoke if the future value is retrieved successfully.
@@ -236,7 +177,15 @@ namespace Amilious.Threading {
             }
             FailImpl(error);
         }
+        
+        #endregion
 
+        #region Private Methods
+        
+        /// <summary>
+        /// This method is called when the future's task has been completed.
+        /// </summary>
+        /// <param name="value">The resulting value.</param>
         private void AssignImpl(T value) {
             _value = value;
             _error = null;
@@ -244,6 +193,10 @@ namespace Amilious.Threading {
             Dispatcher.InvokeAsync(FlushSuccessCallbacks);
         }
 
+        /// <summary>
+        /// This method is called when an error occurs when trying to execute a future.
+        /// </summary>
+        /// <param name="error">The error that occured.</param>
         private void FailImpl(Exception error) {
             _value = default(T);
             _error = error;
@@ -251,16 +204,25 @@ namespace Amilious.Threading {
             Dispatcher.InvokeAsync(FlushErrorCallbacks);
         }
 
+        /// <summary>
+        /// This method is used to flush the success callbacks.
+        /// </summary>
         private void FlushSuccessCallbacks() {
             foreach (var callback in _successCallbacks) callback(this);
             _successCallbacks.Clear();
             _errorCallbacks.Clear();
         }
 
+        /// <summary>
+        /// This method is used to flush the error callbacks.
+        /// </summary>
         private void FlushErrorCallbacks() {
             foreach (var callback in _errorCallbacks) callback(this);
             _successCallbacks.Clear();
             _errorCallbacks.Clear();
         }
+        
+        #endregion
+        
     }
 }
