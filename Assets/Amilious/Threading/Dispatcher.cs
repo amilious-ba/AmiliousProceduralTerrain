@@ -24,7 +24,7 @@ namespace Amilious.Threading {
         [Tooltip("The queue will be emptied if it exceeds this amount.")]
         private int maxQueueSize = 500;
         [SerializeField, ShowIf(nameof(useAdvancedSettings))]
-        private bool useFixedUpdate;
+        private bool useFixedUpdate = false;
         [SerializeField, ShowIf(nameof(useAdvancedSettings))]
         private int dontInvokeIfOverMs = 2;
         [SerializeField, ShowIf(nameof(useAdvancedSettings))]
