@@ -1,8 +1,8 @@
+using System;
 using System.Linq;
 using UnityEngine;
 using Amilious.Saving;
 using System.Threading;
-using Amilious.Core;
 using Amilious.Threading;
 using Amilious.Core.Structs;
 using Amilious.ProceduralTerrain.Mesh;
@@ -41,6 +41,7 @@ namespace Amilious.ProceduralTerrain.Map.Components {
         private int _previousLODIndex = -1;
         private bool _heightMapReceived;
         private Vector2 _sampleCenter;
+        private readonly bool _usingRegions;
         private bool _hasSetCollider;
         private bool _startedToRelease;
         private bool _updated;
@@ -50,6 +51,7 @@ namespace Amilious.ProceduralTerrain.Map.Components {
         private bool _appliedMeshMaterial;
         private SaveData _saveData;
         private readonly int _numCancels;
+        
         //###############################################################
         //update methods variables if the update calls are
         //moved to a separate thead these values will need to be local to
@@ -64,6 +66,7 @@ namespace Amilious.ProceduralTerrain.Map.Components {
         private bool _updateVisible;
         private int _cancelCalls;
         //###############################################################
+        
         #endregion
 
         #region Events
@@ -194,6 +197,7 @@ namespace Amilious.ProceduralTerrain.Map.Components {
             });
             Name = CHUNK_POOLED;
             _meshSettings = mapManager.MeshSettings;
+            _usingRegions = mapManager.MapType.RegionBased();
             _biomeMap = new BiomeMap(mapManager.Seed,mapManager.MeshSettings.VertsPerLine, mapManager.BiomeSettings);
             _preparedColors = new Color[_biomeMap.GetBorderCulledValuesCount(1)];
             //create meshes

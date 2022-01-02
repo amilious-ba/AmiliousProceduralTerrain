@@ -25,4 +25,47 @@ namespace Amilious.ProceduralTerrain.Map.Enums {
         /// </summary>
         SetSizeRegionBased
     }
+    
+    /// <summary>
+    /// This class is used for adding utility methods to the MapType enum.
+    /// </summary>
+    public static class MapTypeExtenstion{
+
+        /// <summary>
+        /// This method is used to check if the given <see cref="MapType"/> is region based.
+        /// </summary>
+        /// <param name="mapType">The type that you want to check.</param>
+        /// <returns>True if the given type is region based, otherwise returns false.</returns>
+        public static bool RegionBased(this MapType mapType) {
+            return mapType == MapType.EndlessRegionBased || mapType == MapType.SetSizeRegionBased;
+        }
+
+        /// <summary>
+        /// This method is used to check if the given <see cref="MapType"/> is chunk based.
+        /// </summary>
+        /// <param name="mapType">The type that you want to check.</param>
+        /// <returns>True if the give type is chunk based, otherwise returns false.</returns>
+        public static bool ChunkBased(this MapType mapType) {
+            return mapType == MapType.EndlessChunkBased || mapType == MapType.SetSizeChunkBased;
+        }
+
+        /// <summary>
+        /// This method is used to check if the given <see cref="MapType"/> is endless.
+        /// </summary>
+        /// <param name="mapType">The type that you want to check.</param>
+        /// <returns>True if the type is endless, otherwise returns false.</returns>
+        public static bool IsEndless(this MapType mapType) {
+            return mapType == MapType.EndlessChunkBased || mapType == MapType.EndlessRegionBased;
+        }
+
+        /// <summary>
+        /// This method is used to check if the given <see cref="MapType"/> is a set size.
+        /// </summary>
+        /// <param name="mapType">The type that you want to check.</param>
+        /// <returns>True if the type is a set size, otherwise returns false.</returns>
+        public static bool IsSetSize(this MapType mapType) {
+            return mapType == MapType.SetSizeChunkBased || mapType == MapType.SetSizeRegionBased;
+        }
+        
+    }
 }
