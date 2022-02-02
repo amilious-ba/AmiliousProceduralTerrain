@@ -2,7 +2,6 @@ using System;
 using UnityEngine;
 using Amilious.Saving;
 using System.Threading;
-using Amilious.Core;
 using Amilious.Threading;
 using Amilious.ProceduralTerrain.Noise;
 using Amilious.ProceduralTerrain.Mesh.Enums;
@@ -160,6 +159,10 @@ namespace Amilious.ProceduralTerrain.Mesh {
             //complete on cancel
         }
 
+        /// <summary>
+        /// This method is called when one of the future tasks is
+        /// canceled.
+        /// </summary>
         private void OnCancel() {
             if(!_resetting) return;
             _cancelCalls++;
